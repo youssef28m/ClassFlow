@@ -6,3 +6,244 @@ generator client {
 datasource db {
   provider = "postgresql"
 }
+
+enum Role {
+  ADMIN
+  MANAGER
+  ACCOUNTANT
+  RECEPTIONIST
+}
+
+enum StudentStatus {
+  ACTIVE
+  INACTIVE
+  SUSPENDED
+}
+
+enum PaymentType {
+  MONTHLY
+  TERMLY
+  YEARLY
+  PER_SESSION
+}
+
+enum DayOfWeek {
+  SATURDAY
+  SUNDAY
+  MONDAY
+  TUESDAY
+  WEDNESDAY
+  THURSDAY
+  FRIDAY
+}
+
+enum AttendanceStatus {
+  PRESENT
+  ABSENT
+}
+
+enum PaymentMethod {
+  CASH
+  CARD
+}
+
+enum ExpenseCategory {
+  RENT
+  SALARIES
+  SUPPLIES
+  MAINTENANCE
+  UTILITIES
+  MARKETING
+  OTHER
+}
+
+model User {
+  id           Int      @id @default(autoincrement())
+  username     String   @unique
+  passwordHash String   @map("password_hash")
+  role         Role
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  @@index([role])
+  @@map("users")
+}
+
+model Student {
+  id          Int           @id @default(autoincrement())
+  fullName    String        @map("full_name")
+  phone       String
+  parentPhone String?       @map("parent_phone")
+  grade       String
+  school      String
+  address     String
+  joinDate    DateTime      @db.Date @map("join_date")
+  status      StudentStatus @default(ACTIVE)
+  notes       String?
+  createdAt   DateTime      @default(now()) @map("created_at")
+  updatedAt   DateTime      @updatedAt @map("updated_at")
+
+  enrollments Enrollment[]
+
+  @@index([status])
+  @@index([joinDate])
+  @@map("students")
+}
+
+model Teacher {
+  id             Int      @id @default(autoincrement())
+  fullName       String   @map("full_name")
+  phone          String
+  specialization String
+  salary         Decimal  @db.Decimal(10, 2)
+  active         Boolean  @default(true)
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  groups   Group[]
+  salaries TeacherSalary[]
+
+  @@index([active])
+  @@map("teachers")
+}
+
+model Group {
+  id          Int         @id @default(autoincrement())
+  teacherId   Int         @map("teacher_id")
+  name        String
+  subject     String
+  room        String
+  fee         Decimal     @db.Decimal(10, 2)
+  paymentType PaymentType @map("payment_type")
+  maxStudents Int         @map("max_students")
+  createdAt   DateTime    @default(now()) @map("created_at")
+  updatedAt   DateTime    @updatedAt @map("updated_at")
+
+  teacher     Teacher         @relation(fields: [teacherId], references: [id], onDelete: Restrict)
+  schedules   GroupSchedule[]
+  enrollments Enrollment[]
+  sessions    Session[]
+
+  @@index([teacherId])
+  @@map("groups")
+}
+
+model GroupSchedule {
+  id        Int       @id @default(autoincrement())
+  groupId   Int       @map("group_id")
+  dayOfWeek DayOfWeek @map("day_of_week")
+  startTime DateTime  @db.Time(0) @map("start_time")
+  endTime   DateTime  @db.Time(0) @map("end_time")
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+
+  group    Group     @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  sessions Session[]
+
+  @@unique([groupId, dayOfWeek, startTime])
+  @@index([groupId])
+  @@map("group_schedules")
+}
+
+model Enrollment {
+  id             Int      @id @default(autoincrement())
+  studentId      Int      @map("student_id")
+  groupId        Int      @map("group_id")
+  enrollmentDate DateTime @default(now()) @db.Date @map("enrollment_date")
+  active         Boolean  @default(true)
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  student           Student      @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  group             Group        @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  payments          Payment[]
+  attendanceRecords Attendance[]
+
+  @@unique([studentId, groupId])
+  @@index([groupId])
+  @@map("enrollments")
+}
+
+model Session {
+  id          Int      @id @default(autoincrement())
+  groupId     Int      @map("group_id")
+  scheduleId  Int      @map("schedule_id")
+  sessionDate DateTime @db.Date @map("session_date")
+  completed   Boolean  @default(false)
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  group             Group         @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  schedule          GroupSchedule @relation(fields: [scheduleId], references: [id], onDelete: Cascade)
+  attendanceRecords Attendance[]
+
+  @@unique([scheduleId, sessionDate])
+  @@index([groupId])
+  @@map("sessions")
+}
+
+model Attendance {
+  id           Int              @id @default(autoincrement())
+  enrollmentId Int              @map("enrollment_id")
+  sessionId    Int              @map("session_id")
+  status       AttendanceStatus
+  notes        String?
+  createdAt    DateTime         @default(now()) @map("created_at")
+  updatedAt    DateTime         @updatedAt @map("updated_at")
+
+  enrollment Enrollment @relation(fields: [enrollmentId], references: [id], onDelete: Cascade)
+  session    Session    @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@unique([enrollmentId, sessionId])
+  @@index([sessionId])
+  @@map("attendances")
+}
+
+model Payment {
+  id            Int           @id @default(autoincrement())
+  enrollmentId  Int           @map("enrollment_id")
+  amount        Decimal       @db.Decimal(10, 2)
+  paymentDate   DateTime      @db.Date @map("payment_date")
+  paymentMethod PaymentMethod @map("payment_method")
+  notes         String?
+  createdAt     DateTime      @default(now()) @map("created_at")
+  updatedAt     DateTime      @updatedAt @map("updated_at")
+
+  enrollment Enrollment @relation(fields: [enrollmentId], references: [id], onDelete: Cascade)
+
+  @@index([enrollmentId])
+  @@index([paymentDate])
+  @@map("payments")
+}
+
+model TeacherSalary {
+  id          Int      @id @default(autoincrement())
+  teacherId   Int      @map("teacher_id")
+  salaryMonth Int      @map("salary_month")
+  salaryYear  Int      @map("salary_year")
+  amount      Decimal  @db.Decimal(10, 2)
+  paymentDate DateTime @db.Date @map("payment_date")
+  isPaid      Boolean  @default(false) @map("is_paid")
+  notes       String?
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  teacher Teacher @relation(fields: [teacherId], references: [id], onDelete: Cascade)
+
+  @@unique([teacherId, salaryMonth, salaryYear])
+  @@map("teacher_salaries")
+}
+
+model Expense {
+  id          Int            @id @default(autoincrement())
+  category    ExpenseCategory
+  amount      Decimal        @db.Decimal(10, 2)
+  expenseDate DateTime       @db.Date @map("expense_date")
+  description String?
+  createdAt   DateTime       @default(now()) @map("created_at")
+  updatedAt   DateTime       @updatedAt @map("updated_at")
+
+  @@index([category])
+  @@index([expenseDate])
+  @@map("expenses")
+}
