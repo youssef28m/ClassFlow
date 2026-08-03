@@ -1,9 +1,10 @@
+import cors from 'cors';
 import express, { type Express } from 'express';
 import helmet from 'helmet';
-import cors from 'cors';
-import pinoHttp from 'pino-http';
+import { pinoHttp } from 'pino-http';
 import { env, parseCorsOrigins } from './config/env.js';
 import { logger } from './config/logger.js';
+import authRouter from './modules/auth/routes/auth.routes.js';
 import { errorHandler } from './shared/middleware/error-handler.js';
 import { notFoundHandler } from './shared/middleware/not-found.js';
 import healthRouter from './shared/routes/health.routes.js';
@@ -33,6 +34,7 @@ export function createApp(): Express {
   app.use(pinoHttp({ logger }));
 
   app.use('/api/health', healthRouter);
+  app.use('/api/auth', authRouter);
 
   app.use(notFoundHandler);
   app.use(errorHandler);
