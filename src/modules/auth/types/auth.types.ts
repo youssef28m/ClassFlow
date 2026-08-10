@@ -8,6 +8,9 @@ export interface AuthUser {
 
 export interface LoginResponse {
   accessToken: string;
-  refreshToken: string;
   user: AuthUser;
+}
+
+export interface TokenPair extends LoginResponse {
+  refreshToken: string;
 }

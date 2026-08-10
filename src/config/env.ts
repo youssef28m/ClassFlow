@@ -14,6 +14,9 @@ const envSchema = z.object({
   JWT_REFRESH_EXPIRES_IN: z.string().min(1).default('30d'),
   JWT_ISSUER: z.string().min(1).default('classflow-api'),
   JWT_AUDIENCE: z.string().min(1).default('classflow-client'),
+  LOGIN_RATE_LIMIT: z.coerce.number().int().positive().default(10),
+  REFRESH_RATE_LIMIT: z.coerce.number().int().positive().default(30),
+  SIGNUP_RATE_LIMIT: z.coerce.number().int().positive().default(5),
 });
 
 const parsed = envSchema.safeParse(process.env);

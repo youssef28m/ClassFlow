@@ -1,7 +1,7 @@
 import { Prisma, Role, type User } from '../../../generated/prisma/client.js';
 import { AppError } from '../../../shared/middleware/error-handler.js';
 import type { AuthRepository } from '../repositories/auth.repository.js';
-import type { AuthUser, LoginResponse } from '../types/auth.types.js';
+import type { AuthUser, TokenPair } from '../types/auth.types.js';
 import type { LoginInput, SignupInput } from '../validation/auth.validation.js';
 import {
   hashRefreshToken,
@@ -14,7 +14,7 @@ import { hashPassword, verifyPassword } from './password.service.js';
 export class AuthService {
   constructor(private readonly repository: AuthRepository) {}
 
-  async login(input: LoginInput): Promise<LoginResponse> {
+  async login(input: LoginInput): Promise<TokenPair> {
     const user = await this.repository.findByUsername(input.username);
     if (!user) {
       throw new AppError('Invalid username or password', 401);
@@ -28,7 +28,7 @@ export class AuthService {
     return this.issueTokenPair(user);
   }
 
-  async signup(input: SignupInput): Promise<LoginResponse> {
+  async signup(input: SignupInput): Promise<TokenPair> {
     const existing = await this.repository.findByUsername(input.username);
     if (existing) {
       throw new AppError('Username is already taken', 409);
@@ -53,7 +53,7 @@ export class AuthService {
     return this.issueTokenPair(user);
   }
 
-  async refresh(refreshToken: string): Promise<LoginResponse> {
+  async refresh(refreshToken: string): Promise<TokenPair> {
     try {
       verifyRefreshToken(refreshToken);
     } catch {
@@ -106,7 +106,7 @@ export class AuthService {
     };
   }
 
-  private async issueTokenPair(user: User): Promise<LoginResponse> {
+  private async issueTokenPair(user: User): Promise<TokenPair> {
     const authUser: AuthUser = {
       id: user.id,
       username: user.username,
