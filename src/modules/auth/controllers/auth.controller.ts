@@ -15,6 +15,29 @@ export class AuthController {
     res.status(201).json(result);
   };
 
+  refresh = async (req: Request, res: Response): Promise<void> => {
+    const result = await this.service.refresh(req.body.refreshToken);
+    res.status(200).json(result);
+  };
+
+  logout = async (req: Request, res: Response): Promise<void> => {
+    const authUser = req.user;
+    if (!authUser) {
+      throw new AppError('Unauthorized', 401);
+    }
+    await this.service.logout(authUser.id, req.body.refreshToken);
+    res.status(204).send();
+  };
+
+  logoutAll = async (req: Request, res: Response): Promise<void> => {
+    const authUser = req.user;
+    if (!authUser) {
+      throw new AppError('Unauthorized', 401);
+    }
+    await this.service.logoutAll(authUser.id);
+    res.status(204).send();
+  };
+
   me = async (req: Request, res: Response): Promise<void> => {
     const authUser = req.user;
     if (!authUser) {

@@ -58,15 +58,32 @@ enum ExpenseCategory {
 }
 
 model User {
-  id           Int      @id @default(autoincrement())
-  username     String   @unique
-  passwordHash String   @map("password_hash")
-  role         Role
-  createdAt    DateTime @default(now()) @map("created_at")
-  updatedAt    DateTime @updatedAt @map("updated_at")
+  id            Int            @id @default(autoincrement())
+  username      String         @unique
+  passwordHash  String         @map("password_hash")
+  role          Role
+  createdAt     DateTime       @default(now()) @map("created_at")
+  updatedAt     DateTime       @updatedAt @map("updated_at")
+
+  refreshTokens RefreshToken[]
 
   @@index([role])
   @@map("users")
+}
+
+model RefreshToken {
+  id        Int       @id @default(autoincrement())
+  tokenHash String    @unique @map("token_hash")
+  userId    Int       @map("user_id")
+  expiresAt DateTime  @map("expires_at")
+  createdAt DateTime  @default(now()) @map("created_at")
+  revokedAt DateTime? @map("revoked_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expiresAt])
+  @@map("refresh_tokens")
 }
 
 model Student {
@@ -75,7 +92,7 @@ model Student {
   phone       String
   parentPhone String?       @map("parent_phone")
   grade       String
-  school      String
+  school      String?
   address     String
   joinDate    DateTime      @db.Date @map("join_date")
   status      StudentStatus @default(ACTIVE)

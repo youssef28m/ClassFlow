@@ -8,7 +8,7 @@ export function validate<T>(schema: ZodType<T>) {
       res.status(400).json({
         status: 'error',
         message: 'Validation failed',
-        errors: result.error.flatten(),
+        errors: result.error,
       });
       return;
     }

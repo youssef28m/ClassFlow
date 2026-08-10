@@ -4,7 +4,7 @@ import { AuthController } from '../controllers/auth.controller.js';
 import { authenticate } from '../middleware/authenticate.js';
 import { AuthRepository } from '../repositories/auth.repository.js';
 import { AuthService } from '../services/auth.service.js';
-import { loginSchema, signupSchema } from '../validation/auth.validation.js';
+import { loginSchema, refreshSchema, signupSchema } from '../validation/auth.validation.js';
 
 const repository = new AuthRepository();
 const service = new AuthService(repository);
@@ -14,6 +14,9 @@ const router = Router();
 
 router.post('/login', validate(loginSchema), controller.login);
 router.post('/signup', validate(signupSchema), controller.signup);
+router.post('/refresh', validate(refreshSchema), controller.refresh);
+router.post('/logout', authenticate, validate(refreshSchema), controller.logout);
+router.post('/logout-all', authenticate, controller.logoutAll);
 router.get('/me', authenticate, controller.me);
 
 export default router;

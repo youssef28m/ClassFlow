@@ -9,7 +9,9 @@ const envSchema = z.object({
   CORS_ORIGIN: z.string().min(1).default('*'),
   LOG_LEVEL: z.enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace', 'silent']).default('info'),
   JWT_SECRET: z.string().min(32, 'JWT_SECRET must be at least 32 characters'),
-  JWT_EXPIRES_IN: z.string().min(1).default('1d'),
+  JWT_REFRESH_SECRET: z.string().min(32, 'JWT_REFRESH_SECRET must be at least 32 characters'),
+  JWT_EXPIRES_IN: z.string().min(1).default('7d'),
+  JWT_REFRESH_EXPIRES_IN: z.string().min(1).default('30d'),
   JWT_ISSUER: z.string().min(1).default('classflow-api'),
   JWT_AUDIENCE: z.string().min(1).default('classflow-client'),
 });
