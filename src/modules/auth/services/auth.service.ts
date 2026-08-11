@@ -1,6 +1,6 @@
 import { Prisma, Role, type User } from '../../../generated/prisma/client.js';
 import { AppError } from '../../../shared/middleware/error-handler.js';
-import type { AuthRepository } from '../repositories/auth.repository.js';
+import type { AuthRepository, UserWithCenter } from '../repositories/auth.repository.js';
 import type { AuthUser, TokenPair } from '../types/auth.types.js';
 import type { LoginInput, SignupInput } from '../validation/auth.validation.js';
 import {
@@ -15,7 +15,7 @@ export class AuthService {
   constructor(private readonly repository: AuthRepository) {}
 
   async login(input: LoginInput): Promise<TokenPair> {
-    const user = await this.repository.findByUsername(input.username);
+    const user = await this.repository.findByUsername(input.username, input.centerId);
     if (!user) {
       throw new AppError('Invalid username or password', 401);
     }
@@ -25,11 +25,18 @@ export class AuthService {
       throw new AppError('Invalid username or password', 401);
     }
 
+    this.assertCenterActive(user);
+
     return this.issueTokenPair(user);
   }
 
   async signup(input: SignupInput): Promise<TokenPair> {
-    const existing = await this.repository.findByUsername(input.username);
+    const centerId = input.centerId ?? (await this.repository.findFirstActiveCenterId());
+    if (centerId === null || centerId === undefined) {
+      throw new AppError('No active center is available for signup', 400);
+    }
+
+    const existing = await this.repository.findByUsername(input.username, centerId);
     if (existing) {
       throw new AppError('Username is already taken', 409);
     }
@@ -42,6 +49,7 @@ export class AuthService {
         username: input.username,
         passwordHash,
         role: Role.RECEPTIONIST,
+        centerId,
       });
     } catch (error) {
       if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
@@ -76,6 +84,8 @@ export class AuthService {
       throw new AppError('User no longer exists', 401);
     }
 
+    this.assertCenterActive(user);
+
     // Rotate: revoke the used token before issuing a new pair, so a stolen
     // refresh token is only usable once.
     await this.repository.revokeRefreshToken(tokenHash, stored.userId);
@@ -103,7 +113,14 @@ export class AuthService {
       id: user.id,
       username: user.username,
       role: user.role,
+      centerId: user.centerId,
     };
+  }
+
+  private assertCenterActive(user: UserWithCenter): void {
+    if (user.centerId !== null && user.center?.active === false) {
+      throw new AppError('Center has been deactivated', 403);
+    }
   }
 
   private async issueTokenPair(user: User): Promise<TokenPair> {
@@ -111,6 +128,7 @@ export class AuthService {
       id: user.id,
       username: user.username,
       role: user.role,
+      centerId: user.centerId,
     };
 
     const accessToken = signAccessToken(authUser);

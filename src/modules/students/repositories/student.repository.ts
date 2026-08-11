@@ -4,6 +4,7 @@ import { prisma } from '../../../shared/prisma/prisma-client.js';
 export interface StudentFindManyParams {
   search?: string;
   status?: StudentStatus;
+  centerId?: number | null;
   skip: number;
   take: number;
 }
@@ -13,27 +14,35 @@ export class StudentRepository {
     return prisma.student.create({ data });
   }
 
-  findById(id: number): Promise<Student | null> {
-    return prisma.student.findUnique({
-      where: { id },
+  findById(id: number, centerId: number): Promise<Student | null> {
+    return prisma.student.findFirst({
+      where: { id, centerId },
     });
   }
 
-  update(id: number, data: Prisma.StudentUncheckedUpdateInput): Promise<Student> {
-    return prisma.student.update({
-      where: { id },
-      data,
-    });
+  async update(
+    id: number,
+    centerId: number,
+    data: Prisma.StudentUncheckedUpdateInput,
+  ): Promise<Student | null> {
+    const result = await prisma.student.updateMany({ where: { id, centerId }, data });
+    if (result.count === 0) {
+      return null;
+    }
+    return prisma.student.findUniqueOrThrow({ where: { id } });
   }
 
-  delete(id: number): Promise<Student> {
-    return prisma.student.delete({
-      where: { id },
-    });
+  async delete(id: number, centerId: number): Promise<boolean> {
+    const result = await prisma.student.deleteMany({ where: { id, centerId } });
+    return result.count > 0;
   }
 
   async findMany(params: StudentFindManyParams): Promise<{ items: Student[]; total: number }> {
     const where: Prisma.StudentWhereInput = {};
+
+    if (params.centerId !== null && params.centerId !== undefined) {
+      where.centerId = params.centerId;
+    }
 
     if (params.search) {
       where.OR = [

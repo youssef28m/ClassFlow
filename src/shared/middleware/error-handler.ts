@@ -1,6 +1,7 @@
 import type { NextFunction, Request, Response } from 'express';
 import { env } from '../../config/env.js';
 import { logger } from '../../config/logger.js';
+import { Prisma } from '../../generated/prisma/client.js';
 
 export class AppError extends Error {
   public readonly statusCode: number;
@@ -21,8 +22,13 @@ export function errorHandler(
   _next: NextFunction,
 ): void {
   const isOperational = error instanceof AppError;
-  const statusCode = isOperational ? error.statusCode : 500;
-  const message = isOperational ? error.message : 'Internal server error';
+  let statusCode = isOperational ? error.statusCode : 500;
+  let message = isOperational ? error.message : 'Internal server error';
+
+  if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2003') {
+    statusCode = 400;
+    message = 'Referenced resource does not exist';
+  }
 
   logger.error({ err: error, statusCode, method: req.method, url: req.originalUrl }, message);
 

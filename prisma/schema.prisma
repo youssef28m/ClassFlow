@@ -8,6 +8,7 @@ datasource db {
 }
 
 enum Role {
+  SUPERADMIN
   ADMIN
   MANAGER
   ACCOUNTANT
@@ -57,16 +58,38 @@ enum ExpenseCategory {
   OTHER
 }
 
-model User {
-  id            Int            @id @default(autoincrement())
-  username      String         @unique
-  passwordHash  String         @map("password_hash")
-  role          Role
-  createdAt     DateTime       @default(now()) @map("created_at")
-  updatedAt     DateTime       @updatedAt @map("updated_at")
+model Center {
+  id        Int      @id @default(autoincrement())
+  name      String
+  address   String
+  phone     String
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
 
+  users    User[]
+  students Student[]
+  teachers Teacher[]
+  groups   Group[]
+  expenses Expense[]
+
+  @@map("centers")
+}
+
+model User {
+  id            Int      @id @default(autoincrement())
+  username      String
+  passwordHash  String   @map("password_hash")
+  role          Role
+  centerId      Int?     @map("center_id")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  center        Center?        @relation(fields: [centerId], references: [id], onDelete: Restrict)
   refreshTokens RefreshToken[]
 
+  @@unique([centerId, username])
+  @@index([centerId])
   @@index([role])
   @@map("users")
 }
@@ -97,11 +120,14 @@ model Student {
   joinDate    DateTime      @db.Date @map("join_date")
   status      StudentStatus @default(ACTIVE)
   notes       String?
+  centerId    Int           @map("center_id")
   createdAt   DateTime      @default(now()) @map("created_at")
   updatedAt   DateTime      @updatedAt @map("updated_at")
 
+  center      Center       @relation(fields: [centerId], references: [id], onDelete: Restrict)
   enrollments Enrollment[]
 
+  @@index([centerId])
   @@index([status])
   @@index([joinDate])
   @@map("students")
@@ -114,12 +140,15 @@ model Teacher {
   specialization String
   salary         Decimal  @db.Decimal(10, 2)
   active         Boolean  @default(true)
+  centerId       Int      @map("center_id")
   createdAt      DateTime @default(now()) @map("created_at")
   updatedAt      DateTime @updatedAt @map("updated_at")
 
+  center   Center          @relation(fields: [centerId], references: [id], onDelete: Restrict)
   groups   Group[]
   salaries TeacherSalary[]
 
+  @@index([centerId])
   @@index([active])
   @@map("teachers")
 }
@@ -133,14 +162,17 @@ model Group {
   fee         Decimal     @db.Decimal(10, 2)
   paymentType PaymentType @map("payment_type")
   maxStudents Int         @map("max_students")
+  centerId    Int         @map("center_id")
   createdAt   DateTime    @default(now()) @map("created_at")
   updatedAt   DateTime    @updatedAt @map("updated_at")
 
-  teacher     Teacher         @relation(fields: [teacherId], references: [id], onDelete: Restrict)
-  schedules   GroupSchedule[]
+  center    Center          @relation(fields: [centerId], references: [id], onDelete: Restrict)
+  teacher   Teacher         @relation(fields: [teacherId], references: [id], onDelete: Restrict)
+  schedules GroupSchedule[]
   enrollments Enrollment[]
   sessions    Session[]
 
+  @@index([centerId])
   @@index([teacherId])
   @@map("groups")
 }
@@ -257,9 +289,13 @@ model Expense {
   amount      Decimal        @db.Decimal(10, 2)
   expenseDate DateTime       @db.Date @map("expense_date")
   description String?
+  centerId    Int            @map("center_id")
   createdAt   DateTime       @default(now()) @map("created_at")
   updatedAt   DateTime       @updatedAt @map("updated_at")
 
+  center Center @relation(fields: [centerId], references: [id], onDelete: Restrict)
+
+  @@index([centerId])
   @@index([category])
   @@index([expenseDate])
   @@map("expenses")

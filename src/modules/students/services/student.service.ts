@@ -13,43 +13,43 @@ type RouteId = string | string[] | undefined;
 export class StudentService {
   constructor(private readonly repository: StudentRepository) {}
 
-  async create(input: CreateStudentInput): Promise<StudentDTO> {
-    const student = await this.repository.create(input);
+  async create(input: CreateStudentInput, centerId: number): Promise<StudentDTO> {
+    const student = await this.repository.create({ ...input, centerId });
     return toStudentDTO(student);
   }
 
-  async getById(id: RouteId): Promise<StudentDTO> {
-    const student = await this.repository.findById(this.parseId(id));
+  async getById(id: RouteId, centerId: number): Promise<StudentDTO> {
+    const student = await this.repository.findById(this.parseId(id), centerId);
     if (!student) {
       throw new AppError('Student not found', 404);
     }
     return toStudentDTO(student);
   }
 
-  async update(id: RouteId, input: UpdateStudentInput): Promise<StudentDTO> {
-    const parsedId = this.parseId(id);
-    const existing = await this.repository.findById(parsedId);
-    if (!existing) {
+  async update(id: RouteId, centerId: number, input: UpdateStudentInput): Promise<StudentDTO> {
+    const student = await this.repository.update(this.parseId(id), centerId, input);
+    if (!student) {
       throw new AppError('Student not found', 404);
     }
-    const student = await this.repository.update(parsedId, input);
     return toStudentDTO(student);
   }
 
-  async delete(id: RouteId): Promise<void> {
-    const parsedId = this.parseId(id);
-    const existing = await this.repository.findById(parsedId);
-    if (!existing) {
+  async delete(id: RouteId, centerId: number): Promise<void> {
+    const deleted = await this.repository.delete(this.parseId(id), centerId);
+    if (!deleted) {
       throw new AppError('Student not found', 404);
     }
-    await this.repository.delete(parsedId);
   }
 
-  async list(query: ListStudentsQuery): Promise<PaginatedResponse<StudentDTO>> {
+  async list(
+    query: ListStudentsQuery,
+    centerId: number | null,
+  ): Promise<PaginatedResponse<StudentDTO>> {
     const { page, pageSize, search, status } = query;
     const { items, total } = await this.repository.findMany({
       search,
       status,
+      centerId,
       skip: (page - 1) * pageSize,
       take: pageSize,
     });

@@ -6,6 +6,7 @@ import type { Role } from '../../../generated/prisma/client.js';
 export interface AccessTokenPayload {
   sub: number;
   role: Role;
+  centerId: number | null;
 }
 
 export interface RefreshTokenPayload {
@@ -16,6 +17,7 @@ export interface RefreshTokenPayload {
 export interface AuthToken {
   id: number;
   role: Role;
+  centerId: number | null;
 }
 
 const MS_PER_SECOND = 1000;
@@ -40,7 +42,7 @@ export function parseDurationToMs(value: string): number {
 }
 
 export function signAccessToken(user: AuthToken): string {
-  const payload: AccessTokenPayload = { sub: user.id, role: user.role };
+  const payload: AccessTokenPayload = { sub: user.id, role: user.role, centerId: user.centerId };
   const options: SignOptions = {
     expiresIn: env.JWT_EXPIRES_IN as SignOptions['expiresIn'],
     issuer: env.JWT_ISSUER,
@@ -57,7 +59,11 @@ export function verifyAccessToken(token: string): AccessTokenPayload {
   if (typeof payload === 'string' || typeof payload.sub !== 'number') {
     throw new Error('Malformed access token payload');
   }
-  return { sub: payload.sub, role: payload.role as Role };
+  return {
+    sub: payload.sub,
+    role: payload.role as Role,
+    centerId: (payload.centerId as number | null) ?? null,
+  };
 }
 
 export function signRefreshToken(user: AuthToken): { token: string; expiresAt: Date } {

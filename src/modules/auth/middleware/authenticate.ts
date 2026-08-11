@@ -28,10 +28,16 @@ export async function authenticate(
     throw new AppError('User no longer exists', 401);
   }
 
+  if (user.centerId !== null && user.center?.active === false) {
+    throw new AppError('Center has been deactivated', 403);
+  }
+
   req.user = {
     id: user.id,
     username: user.username,
     role: user.role,
+    centerId: user.centerId,
   };
+  req.centerId = user.centerId;
   next();
 }

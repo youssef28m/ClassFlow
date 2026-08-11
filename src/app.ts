@@ -6,6 +6,7 @@ import { pinoHttp } from 'pino-http';
 import { env, parseCorsOrigins } from './config/env.js';
 import { logger } from './config/logger.js';
 import authRouter from './modules/auth/routes/auth.routes.js';
+import centerRouter from './modules/centers/routes/center.routes.js';
 import studentRouter from './modules/students/routes/student.routes.js';
 import teacherRouter from './modules/teachers/routes/teacher.routes.js';
 import { errorHandler } from './shared/middleware/error-handler.js';
@@ -39,6 +40,7 @@ export function createApp(): Express {
 
   app.use('/api/health', healthRouter);
   app.use('/api/auth', authRouter);
+  app.use('/api/centers', centerRouter);
   app.use('/api/students', studentRouter);
   app.use('/api/teachers', teacherRouter);
 
