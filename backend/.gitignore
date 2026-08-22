@@ -1,0 +1,11 @@
+node_modules/
+dist/
+src/generated/
+.env
+.env.local
+.env.*.local
+logs/
+*.log
+npm-debug.log*
+prisma/dev.db
+prisma/dev.db-journal

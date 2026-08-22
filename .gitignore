@@ -2,10 +2,10 @@
 node_modules/
 
 # Build output
-dist/
+backend/dist/
 
 # Prisma generated client
-src/generated/
+backend/src/generated/
 
 # Environment files (never commit secrets)
 .env
@@ -18,8 +18,8 @@ logs/
 npm-debug.log*
 
 # Prisma local artifacts
-prisma/dev.db
-prisma/dev.db-journal
+backend/prisma/dev.db
+backend/prisma/dev.db-journal
 
 # OS / editors
 .DS_Store

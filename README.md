@@ -2,13 +2,14 @@
 
 Center Management System
 
-A backend REST API for managing the daily operations and finances of an educational center. The system allows to manage students, teachers, groups, schedules, enrollments, attendance, payments, teacher salaries, and expenses.
+ClassFlow is organized as a backend/frontend monorepo. The backend is a REST API for managing the daily operations and finances of an educational center. The system manages students, teachers, groups, schedules, enrollments, attendance, payments, teacher salaries, and expenses.
 
 Built with Node.js, Express, TypeScript, PostgreSQL, and Prisma, with a modular architecture designed to be secure, maintainable, and easy to extend.
 
 ## Getting started
 
 ```bash
+cd backend
 npm install
 cp .env.example .env   # fill in DATABASE_URL + JWT secrets
 npx prisma migrate deploy
@@ -21,6 +22,7 @@ Server runs at `http://localhost:3000`.
 
 | Command              | Description                          |
 | -------------------- | ------------------------------------ |
+| `cd backend`         | Enter the backend project             |
 | `npm run dev`        | Start dev server with hot reload     |
 | `npm run build`      | Generate Prisma client + build       |
 | `npm run start`      | Run the built server                 |
