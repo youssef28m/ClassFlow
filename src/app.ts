@@ -7,6 +7,7 @@ import { env, parseCorsOrigins } from './config/env.js';
 import { logger } from './config/logger.js';
 import authRouter from './modules/auth/routes/auth.routes.js';
 import centerRouter from './modules/centers/routes/center.routes.js';
+import enrollmentRouter from './modules/enrollments/routes/enrollment.routes.js';
 import groupRouter from './modules/groups/routes/group.routes.js';
 import studentRouter from './modules/students/routes/student.routes.js';
 import teacherRouter from './modules/teachers/routes/teacher.routes.js';
@@ -45,6 +46,7 @@ export function createApp(): Express {
     app.use('/api/students', studentRouter);
     app.use('/api/teachers', teacherRouter);
     app.use('/api/groups', groupRouter);
+    app.use('/api/enrollments', enrollmentRouter);
 
     app.use(notFoundHandler);
     app.use(errorHandler);
