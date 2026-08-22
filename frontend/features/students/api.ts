@@ -1,0 +1,44 @@
+import { apiClient } from "@/lib/api-client";
+import type {
+  Student,
+  StudentFilters,
+  StudentListResponse,
+} from "@/features/students/types";
+import type { StudentPayload } from "@/features/students/schema";
+
+export const studentsApi = {
+  list(filters: StudentFilters = {}): Promise<StudentListResponse> {
+    return apiClient.request<StudentListResponse>("/students", {
+      params: filters as Record<string, string | number | undefined>,
+    });
+  },
+
+  get(id: number): Promise<Student> {
+    return apiClient.request<Student>(`/students/${id}`);
+  },
+
+  create(payload: StudentPayload): Promise<Student> {
+    return apiClient.request<Student>("/students", {
+      method: "POST",
+      body: payload,
+    });
+  },
+
+  update(id: number, payload: Partial<StudentPayload>): Promise<Student> {
+    return apiClient.request<Student>(`/students/${id}`, {
+      method: "PATCH",
+      body: payload,
+    });
+  },
+
+  remove(id: number): Promise<void> {
+    return apiClient.request<void>(`/students/${id}`, { method: "DELETE" });
+  },
+};
+
+export const studentKeys = {
+  all: ["students"] as const,
+  lists: () => [...studentKeys.all, "list"] as const,
+  list: (filters: StudentFilters) => [...studentKeys.lists(), filters] as const,
+  details: () => [...studentKeys.all, "detail"] as const,
+};

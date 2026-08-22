@@ -5,8 +5,29 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL;
 interface RequestOptions {
   method?: "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
   body?: unknown;
+  params?: QueryParams;
   headers?: HeadersInit;
   signal?: AbortSignal;
+}
+
+export type QueryParams = Record<
+  string,
+  string | number | boolean | null | undefined
+>;
+
+function buildUrl(
+  baseUrl: string,
+  path: string,
+  params?: QueryParams,
+): string {
+  if (!params) return `${baseUrl}${path}`;
+  const search = new URLSearchParams();
+  for (const [key, value] of Object.entries(params)) {
+    if (value === undefined || value === null || value === "") continue;
+    search.set(key, String(value));
+  }
+  const queryString = search.toString();
+  return queryString ? `${baseUrl}${path}?${queryString}` : `${baseUrl}${path}`;
 }
 
 const AUTH_FREE_PATHS = [/^\/auth\/login$/, /^\/auth\/refresh$/];
@@ -160,7 +181,7 @@ export const apiClient = {
 
     let res: Response;
     try {
-      res = await fetch(`${API_URL}${path}`, {
+      res = await fetch(buildUrl(API_URL, path, options.params), {
         method: options.method ?? "GET",
         headers,
         body: options.body !== undefined ? JSON.stringify(options.body) : undefined,
