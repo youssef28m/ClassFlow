@@ -1,7 +1,10 @@
 import { Prisma, Role } from '../../../generated/prisma/client.js';
+import { assertCanAccessCenter } from '../../../shared/authz/apply-center-scope.js';
+import { canManageUserAccount, resolveScope } from '../../../shared/authz/permissions.js';
 import { AppError } from '../../../shared/middleware/error-handler.js';
 import type { AuthRepository } from '../../auth/repositories/auth.repository.js';
 import { hashPassword } from '../../auth/services/password.service.js';
+import type { AuthUser } from '../../auth/types/auth.types.js';
 import type { CenterRepository } from '../repositories/center.repository.js';
 import type { CenterDTO, CenterUserDTO, PaginatedResponse } from '../types/center.types.js';
 import { toCenterDTO, toCenterUserDTO } from '../types/center.types.js';
@@ -25,11 +28,12 @@ export class CenterService {
     return toCenterDTO(center);
   }
 
-  async getById(id: RouteId): Promise<CenterDTO> {
+  async getById(id: RouteId, user: AuthUser): Promise<CenterDTO> {
     const center = await this.repository.findById(this.parseId(id));
     if (!center) {
       throw new AppError('Center not found', 404);
     }
+    assertOwnCenter(user, center.id);
     return toCenterDTO(center);
   }
 
@@ -49,11 +53,13 @@ export class CenterService {
     return toCenterDTO(center);
   }
 
-  async list(query: ListCentersQuery): Promise<PaginatedResponse<CenterDTO>> {
+  async list(query: ListCentersQuery, user: AuthUser): Promise<PaginatedResponse<CenterDTO>> {
     const { page, pageSize, search, active } = query;
+    // Center-scope actors (ADMIN/MANAGER) only ever see their own center.
     const { items, total } = await this.repository.findMany({
       search,
       active,
+      id: resolveScope(user) === 'center' ? (user.centerId ?? undefined) : undefined,
       skip: (page - 1) * pageSize,
       take: pageSize,
     });
@@ -69,8 +75,14 @@ export class CenterService {
     };
   }
 
-  async registerUser(id: RouteId, input: CreateCenterUserInput): Promise<CenterUserDTO> {
+  async registerUser(
+    id: RouteId,
+    input: CreateCenterUserInput,
+    actor: AuthUser,
+  ): Promise<CenterUserDTO> {
     const centerId = this.parseId(id);
+
+    assertOwnCenter(actor, centerId);
 
     const center = await this.repository.findById(centerId);
     if (!center) {
@@ -80,13 +92,19 @@ export class CenterService {
       throw new AppError('Center is deactivated', 400);
     }
 
+    // ADMINs may only create accounts below their own role; ADMIN/SUPERADMIN
+    // accounts require a SUPERADMIN actor.
+    const role = input.role ?? Role.ADMIN;
+    if (!canManageUserAccount(actor, role)) {
+      throw new AppError('Forbidden: cannot manage accounts at or above your role', 403);
+    }
+
     const existing = await this.authRepository.findByUsername(input.username, centerId);
     if (existing) {
       throw new AppError('Username is already taken', 409);
     }
 
     const passwordHash = await hashPassword(input.password);
-    const role = input.role ?? Role.ADMIN;
 
     try {
       const user = await this.authRepository.create({
@@ -114,4 +132,9 @@ export class CenterService {
     }
     return parsed;
   }
+}
+
+/** Center-scope actors may only touch their own center; responds with 404. */
+function assertOwnCenter(user: AuthUser, centerId: number): void {
+  assertCanAccessCenter(resolveScope(user), user.centerId, centerId);
 }

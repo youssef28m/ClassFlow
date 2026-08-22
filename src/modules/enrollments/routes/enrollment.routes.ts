@@ -1,12 +1,11 @@
 import { Router } from 'express';
-import { Role } from '../../../generated/prisma/client.js';
+import { requirePermission } from '../../../shared/authz/require-permission.js';
 import {
   requireCenterScope,
   requireResolvedCenterId,
 } from '../../../shared/middleware/require-center-scope.js';
 import { validate, validateQuery } from '../../../shared/middleware/validate.js';
 import { authenticate } from '../../auth/middleware/authenticate.js';
-import { authorize } from '../../auth/middleware/authorize.js';
 import { EnrollmentController } from '../controllers/enrollment.controller.js';
 import { EnrollmentRepository } from '../repositories/enrollment.repository.js';
 import { EnrollmentService } from '../services/enrollment.service.js';
@@ -20,8 +19,8 @@ const repository = new EnrollmentRepository();
 const service = new EnrollmentService(repository);
 const controller = new EnrollmentController(service);
 
-const WRITER_ROLES = [Role.SUPERADMIN, Role.ADMIN, Role.MANAGER, Role.RECEPTIONIST];
-
+// Enrollments are enforced against the `students` resource per the matrix
+// ruling: they are part of the student lifecycle and inherit its permissions.
 const router = Router();
 
 router.use(authenticate, requireCenterScope);
@@ -30,18 +29,23 @@ router.get('/', validateQuery(listEnrollmentsQuerySchema), controller.list);
 router.get('/:id', requireResolvedCenterId, controller.getById);
 router.post(
   '/',
-  authorize(...WRITER_ROLES),
+  requirePermission('students', 'create'),
   requireResolvedCenterId,
   validate(createEnrollmentSchema),
   controller.create,
 );
 router.patch(
   '/:id/status',
-  authorize(...WRITER_ROLES),
+  requirePermission('students', 'update'),
   requireResolvedCenterId,
   validate(updateEnrollmentStatusSchema),
   controller.updateStatus,
 );
-router.delete('/:id', authorize(...WRITER_ROLES), requireResolvedCenterId, controller.delete);
+router.delete(
+  '/:id',
+  requirePermission('students', 'delete'),
+  requireResolvedCenterId,
+  controller.delete,
+);
 
 export default router;

@@ -4,6 +4,7 @@ import { prisma } from '../../../shared/prisma/prisma-client.js';
 export interface CenterFindManyParams {
   search?: string;
   active?: boolean;
+  id?: number;
   skip: number;
   take: number;
 }
@@ -29,6 +30,10 @@ export class CenterRepository {
 
   async findMany(params: CenterFindManyParams): Promise<{ items: Center[]; total: number }> {
     const where: Prisma.CenterWhereInput = {};
+
+    if (params.id !== undefined) {
+      where.id = params.id;
+    }
 
     if (params.search) {
       where.OR = [

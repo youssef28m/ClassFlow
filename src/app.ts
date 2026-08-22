@@ -11,6 +11,7 @@ import enrollmentRouter from './modules/enrollments/routes/enrollment.routes.js'
 import groupRouter from './modules/groups/routes/group.routes.js';
 import studentRouter from './modules/students/routes/student.routes.js';
 import teacherRouter from './modules/teachers/routes/teacher.routes.js';
+import userRouter from './modules/users/routes/user.routes.js';
 import { errorHandler } from './shared/middleware/error-handler.js';
 import { notFoundHandler } from './shared/middleware/not-found.js';
 import healthRouter from './shared/routes/health.routes.js';
@@ -47,6 +48,7 @@ export function createApp(): Express {
     app.use('/api/teachers', teacherRouter);
     app.use('/api/groups', groupRouter);
     app.use('/api/enrollments', enrollmentRouter);
+    app.use('/api/users', userRouter);
 
     app.use(notFoundHandler);
     app.use(errorHandler);
