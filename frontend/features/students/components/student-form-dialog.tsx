@@ -38,7 +38,6 @@ function defaultValues(): StudentFormValues {
     parentPhone: "",
     grade: "",
     school: "",
-    address: "",
     joinDate: new Date().toISOString().slice(0, 10),
     status: "ACTIVE",
     notes: "",
@@ -186,17 +185,6 @@ export function StudentFormDialog({
             />
           </Field>
         </div>
-
-        <Field label="Address" htmlFor="address" error={errors.address?.message}>
-          <input
-            id="address"
-            type="text"
-            placeholder="Street, area, city"
-            aria-invalid={Boolean(errors.address)}
-            className={inputClassName}
-            {...register("address")}
-          />
-        </Field>
 
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <Field

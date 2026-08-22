@@ -12,7 +12,6 @@ const VALID_FORM = {
   parentPhone: "0100000000",
   grade: "Grade 7",
   school: "",
-  address: "12 Street, Cairo",
   joinDate: "2026-08-23",
   status: "ACTIVE",
   notes: "",
@@ -23,8 +22,8 @@ describe("studentFormSchema", () => {
     expect(studentFormSchema.safeParse(VALID_FORM).success).toBe(true);
   });
 
-  it("requires fullName, grade, address and joinDate", () => {
-    const required = ["fullName", "grade", "address", "joinDate"] as const;
+  it("requires fullName, grade and joinDate", () => {
+    const required = ["fullName", "grade", "joinDate"] as const;
     for (const field of required) {
       const parsed = studentFormSchema.safeParse({ ...VALID_FORM, [field]: "" });
       expect(parsed.success).toBe(false);
@@ -37,10 +36,6 @@ describe("studentFormSchema", () => {
         ...VALID_FORM,
         fullName: "a".repeat(101),
       }).success,
-    ).toBe(false);
-    expect(
-      studentFormSchema.safeParse({ ...VALID_FORM, address: "a".repeat(201) })
-        .success,
     ).toBe(false);
     expect(
       studentFormSchema.safeParse({ ...VALID_FORM, notes: "n".repeat(501) })
@@ -86,7 +81,6 @@ describe("toStudentFormValues", () => {
       parentPhone: "0111111111",
       grade: "Grade 5",
       school: "El-Nasr",
-      address: "Giza",
       joinDate: "2026-08-23T00:00:00.000Z",
       status: "INACTIVE",
       notes: null,

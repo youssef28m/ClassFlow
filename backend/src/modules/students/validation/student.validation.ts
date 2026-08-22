@@ -9,7 +9,6 @@ export const createStudentSchema = z.object({
   parentPhone: nullableString(20),
   grade: z.string().trim().min(1, 'Grade is required').max(50, 'Grade is too long'),
   school: nullableString(100),
-  address: z.string().trim().min(1, 'Address is required').max(200, 'Address is too long'),
   joinDate: z.coerce.date(),
   status: z.nativeEnum(StudentStatus).optional(),
   notes: nullableString(500),

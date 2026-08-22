@@ -116,7 +116,6 @@ model Student {
   parentPhone String?       @map("parent_phone")
   grade       String
   school      String?
-  address     String
   joinDate    DateTime      @db.Date @map("join_date")
   status      StudentStatus @default(ACTIVE)
   notes       String?

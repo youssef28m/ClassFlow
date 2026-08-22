@@ -18,11 +18,6 @@ export const studentFormSchema = z.object({
     .min(1, "Grade is required")
     .max(50, "Grade must be 50 characters or fewer"),
   school: z.string().trim().max(100, "School must be 100 characters or fewer"),
-  address: z
-    .string()
-    .trim()
-    .min(1, "Address is required")
-    .max(200, "Address must be 200 characters or fewer"),
   joinDate: z
     .string()
     .min(1, "Join date is required")
@@ -41,7 +36,6 @@ export interface StudentPayload {
   parentPhone: string | null;
   grade: string;
   school: string | null;
-  address: string;
   joinDate: string;
   status: StudentStatus;
   notes: string | null;
@@ -56,7 +50,6 @@ export function toStudentPayload(values: StudentFormValues): StudentPayload {
     parentPhone: emptyToNull(values.parentPhone),
     grade: values.grade,
     school: emptyToNull(values.school),
-    address: values.address,
     joinDate: values.joinDate,
     status: values.status,
     notes: emptyToNull(values.notes),
@@ -70,7 +63,6 @@ export function toStudentFormValues(student: Student): StudentFormValues {
     parentPhone: student.parentPhone ?? "",
     grade: student.grade,
     school: student.school ?? "",
-    address: student.address,
     joinDate: student.joinDate.slice(0, 10),
     status: student.status,
     notes: student.notes ?? "",

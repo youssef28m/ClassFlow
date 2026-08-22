@@ -9,7 +9,6 @@ export interface Student {
   parentPhone: string | null;
   grade: string;
   school: string | null;
-  address: string;
   joinDate: string;
   status: StudentStatus;
   notes: string | null;

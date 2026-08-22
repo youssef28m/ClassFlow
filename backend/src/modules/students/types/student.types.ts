@@ -7,7 +7,6 @@ export interface StudentDTO {
   parentPhone: string | null;
   grade: string;
   school: string | null;
-  address: string;
   joinDate: Date;
   status: StudentStatus;
   notes: string | null;
@@ -35,7 +34,6 @@ export function toStudentDTO(student: Student): StudentDTO {
     parentPhone: student.parentPhone,
     grade: student.grade,
     school: student.school,
-    address: student.address,
     joinDate: student.joinDate,
     status: student.status,
     notes: student.notes,
