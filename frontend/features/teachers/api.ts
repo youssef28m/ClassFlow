@@ -4,6 +4,7 @@ import type {
   TeacherFilters,
   TeacherListResponse,
 } from "@/features/teachers/types";
+import type { TeacherPayload } from "@/features/teachers/schema";
 
 export const teachersApi = {
   list(filters: TeacherFilters = {}): Promise<TeacherListResponse> {
@@ -16,16 +17,22 @@ export const teachersApi = {
     return apiClient.request<Teacher>(`/teachers/${id}`);
   },
 
-  create(payload: {
-    fullName: string;
-    phone: string;
-    specialization: string;
-    salary: string;
-  }): Promise<Teacher> {
+  create(payload: TeacherPayload): Promise<Teacher> {
     return apiClient.request<Teacher>("/teachers", {
       method: "POST",
       body: payload,
     });
+  },
+
+  update(id: number, payload: Partial<TeacherPayload>): Promise<Teacher> {
+    return apiClient.request<Teacher>(`/teachers/${id}`, {
+      method: "PATCH",
+      body: payload,
+    });
+  },
+
+  remove(id: number): Promise<void> {
+    return apiClient.request<void>(`/teachers/${id}`, { method: "DELETE" });
   },
 };
 

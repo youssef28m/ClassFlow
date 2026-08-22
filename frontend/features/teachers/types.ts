@@ -25,4 +25,5 @@ export interface TeacherFilters {
   page?: number;
   pageSize?: number;
   search?: string;
+  active?: boolean;
 }
