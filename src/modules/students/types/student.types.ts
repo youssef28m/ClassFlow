@@ -3,7 +3,7 @@ import type { Student, StudentStatus } from '../../../generated/prisma/client.js
 export interface StudentDTO {
   id: number;
   fullName: string;
-  phone: string;
+  phone: string | null;
   parentPhone: string | null;
   grade: string;
   school: string | null;

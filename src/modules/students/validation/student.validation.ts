@@ -5,7 +5,7 @@ const nullableString = (max: number) => z.string().trim().max(max).nullable().op
 
 export const createStudentSchema = z.object({
   fullName: z.string().trim().min(1, 'Full name is required').max(100, 'Full name is too long'),
-  phone: z.string().trim().min(1, 'Phone is required').max(20, 'Phone is too long'),
+  phone: nullableString(20),
   parentPhone: nullableString(20),
   grade: z.string().trim().min(1, 'Grade is required').max(50, 'Grade is too long'),
   school: nullableString(100),

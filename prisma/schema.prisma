@@ -112,7 +112,7 @@ model RefreshToken {
 model Student {
   id          Int           @id @default(autoincrement())
   fullName    String        @map("full_name")
-  phone       String
+  phone       String?
   parentPhone String?       @map("parent_phone")
   grade       String
   school      String?
@@ -130,6 +130,7 @@ model Student {
   @@index([centerId])
   @@index([status])
   @@index([joinDate])
+  @@unique([centerId, fullName, phone])
   @@map("students")
 }
 

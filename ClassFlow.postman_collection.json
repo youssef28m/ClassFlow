@@ -1,0 +1,1111 @@
+{
+    "info": {
+        "name": "ClassFlow API",
+        "description": "Endpoints for the ClassFlow school management API.\n\nBefore testing: set the collection variable `baseUrl` (default http://localhost:3000), then run **Login** or **Signup** first — they auto-save the access token into `{{accessToken}}`.\n\nRole notes:\n- `/api/centers/**` requires SUPERADMIN.\n- `/api/students/**` and `/api/teachers/**` writes require SUPERADMIN/ADMIN/MANAGER/RECEPTIONIST.\n- For writes/by-id on students & teachers, non-SUPERADMINs use their token center automatically; SUPERADMINs must add `?centerId=<id>` (also set the `centerId` variable).",
+        "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+    },
+    "variable": [
+        {
+            "key": "baseUrl",
+            "value": "http://localhost:3000"
+        },
+        {
+            "key": "accessToken",
+            "value": ""
+        },
+        {
+            "key": "centerId",
+            "value": "1"
+        },
+        {
+            "key": "studentId",
+            "value": "1"
+        },
+        {
+            "key": "teacherId",
+            "value": "1"
+        },
+        {
+            "key": "groupId",
+            "value": "1"
+        }
+    ],
+    "item": [
+        {
+            "name": "Health",
+            "item": [
+                {
+                    "name": "GET /api/health",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/health",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "health"
+                            ]
+                        },
+                        "description": "Public. Returns service status and uptime."
+                    },
+                    "response": []
+                }
+            ]
+        },
+        {
+            "name": "Auth",
+            "item": [
+                {
+                    "name": "POST /api/auth/signup",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"username\": \"receptionist1\",\n  \"password\": \"password123\",\n  \"centerId\": 1\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/auth/signup",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "auth",
+                                "signup"
+                            ]
+                        },
+                        "description": "Public (rate-limited). Creates a RECEPTIONIST user. `centerId` optional — defaults to the first active center. Returns 201 with accessToken + user, and sets the refreshToken HttpOnly cookie."
+                    },
+                    "response": [],
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "const json = pm.response.json();",
+                                    "if (pm.response.code === 201 && json.accessToken) {",
+                                    "  pm.collectionVariables.set('accessToken', json.accessToken);",
+                                    "}",
+                                    "if (json.user && json.user.centerId) {",
+                                    "  pm.collectionVariables.set('centerId', String(json.user.centerId));",
+                                    "}"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "POST /api/auth/login",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"username\": \"receptionist1\",\n  \"password\": \"password123\",\n  \"centerId\": 1\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/auth/login",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "auth",
+                                "login"
+                            ]
+                        },
+                        "description": "Public (rate-limited). Returns 200 with accessToken + user, and sets the refreshToken HttpOnly cookie. `centerId` optional — used to disambiguate when the same username exists in multiple centers."
+                    },
+                    "response": [],
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "const json = pm.response.json();",
+                                    "if (pm.response.code === 200 && json.accessToken) {",
+                                    "  pm.collectionVariables.set('accessToken', json.accessToken);",
+                                    "}",
+                                    "if (json.user && json.user.centerId) {",
+                                    "  pm.collectionVariables.set('centerId', String(json.user.centerId));",
+                                    "}"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "POST /api/auth/refresh",
+                    "request": {
+                        "method": "POST",
+                        "header": [],
+                        "body": {
+                            "mode": "raw",
+                            "raw": ""
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/auth/refresh",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "auth",
+                                "refresh"
+                            ]
+                        },
+                        "description": "Public (rate-limited). Reads the `refreshToken` cookie sent by a previous login/signup. Rotates the token and returns 200 with a new accessToken + refreshed cookie."
+                    },
+                    "response": [],
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "const json = pm.response.json();",
+                                    "if (pm.response.code === 200 && json.accessToken) {",
+                                    "  pm.collectionVariables.set('accessToken', json.accessToken);",
+                                    "}"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "POST /api/auth/logout",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": ""
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/auth/logout",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "auth",
+                                "logout"
+                            ]
+                        },
+                        "description": "Requires Bearer token + refresh cookie. Revokes the current refresh token. Returns 204."
+                    },
+                    "response": []
+                },
+                {
+                    "name": "POST /api/auth/logout-all",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": ""
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/auth/logout-all",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "auth",
+                                "logout-all"
+                            ]
+                        },
+                        "description": "Requires Bearer token. Revokes all refresh tokens for the user. Returns 204."
+                    },
+                    "response": []
+                },
+                {
+                    "name": "GET /api/auth/me",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/auth/me",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "auth",
+                                "me"
+                            ]
+                        },
+                        "description": "Requires Bearer token. Returns the current user."
+                    },
+                    "response": []
+                }
+            ]
+        },
+        {
+            "name": "Centers",
+            "item": [
+                {
+                    "name": "GET /api/centers (list)",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/centers?page=1&pageSize=10&active=true",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "centers"
+                            ],
+                            "query": [
+                                {
+                                    "key": "page",
+                                    "value": "1",
+                                    "description": "optional"
+                                },
+                                {
+                                    "key": "pageSize",
+                                    "value": "10",
+                                    "description": "optional, max 100"
+                                },
+                                {
+                                    "key": "active",
+                                    "value": "true",
+                                    "description": "optional: true|false"
+                                }
+                            ]
+                        },
+                        "description": "Requires SUPERADMIN. Returns paginated centers."
+                    },
+                    "response": []
+                },
+                {
+                    "name": "GET /api/centers/:id",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/centers/{{centerId}}",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "centers",
+                                "{{centerId}}"
+                            ]
+                        },
+                        "description": "Requires SUPERADMIN. Returns a single center."
+                    },
+                    "response": []
+                },
+                {
+                    "name": "POST /api/centers (create)",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"name\": \"Main Branch\",\n  \"address\": \"123 Example Street\",\n  \"phone\": \"01012345678\",\n  \"active\": true\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/centers",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "centers"
+                            ]
+                        },
+                        "description": "Requires SUPERADMIN. Creates a center. Returns 201 with the created center."
+                    },
+                    "response": []
+                },
+                {
+                    "name": "PATCH /api/centers/:id (update)",
+                    "request": {
+                        "method": "PATCH",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"phone\": \"01098765432\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/centers/{{centerId}}",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "centers",
+                                "{{centerId}}"
+                            ]
+                        },
+                        "description": "Requires SUPERADMIN. Partial update (any subset of name/address/phone/active). Returns the updated center."
+                    },
+                    "response": []
+                },
+                {
+                    "name": "PATCH /api/centers/:id/deactivate",
+                    "request": {
+                        "method": "PATCH",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": ""
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/centers/{{centerId}}/deactivate",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "centers",
+                                "{{centerId}}",
+                                "deactivate"
+                            ]
+                        },
+                        "description": "Requires SUPERADMIN. Sets active=false. Returns the updated center."
+                    },
+                    "response": []
+                },
+                {
+                    "name": "POST /api/centers/:id/users (register user)",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"username\": \"admin1\",\n  \"password\": \"password123\",\n  \"role\": \"ADMIN\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/centers/{{centerId}}/users",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "centers",
+                                "{{centerId}}",
+                                "users"
+                            ]
+                        },
+                        "description": "Requires SUPERADMIN. Creates a center user. role optional (default ADMIN); allowed: ADMIN, MANAGER, ACCOUNTANT, RECEPTIONIST. Returns 201 with { id, username, role, centerId }."
+                    },
+                    "response": []
+                }
+            ]
+        },
+        {
+            "name": "Students",
+            "item": [
+                {
+                    "name": "GET /api/students (list)",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/students?page=1&pageSize=10&status=ACTIVE&centerId={{centerId}}",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "students"
+                            ],
+                            "query": [
+                                {
+                                    "key": "page",
+                                    "value": "1",
+                                    "description": "optional"
+                                },
+                                {
+                                    "key": "pageSize",
+                                    "value": "10",
+                                    "description": "optional, max 100"
+                                },
+                                {
+                                    "key": "status",
+                                    "value": "ACTIVE",
+                                    "description": "optional: ACTIVE|INACTIVE|SUSPENDED"
+                                },
+                                {
+                                    "key": "centerId",
+                                    "value": "{{centerId}}",
+                                    "description": "optional; ignored for non-SUPERADMINs, REQUIRED for SUPERADMIN writes/by-id"
+                                }
+                            ]
+                        },
+                        "description": "Requires Bearer token. Non-SUPERADMINs are scoped to their own center automatically. Returns paginated students."
+                    },
+                    "response": []
+                },
+                {
+                    "name": "GET /api/students/:id",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/students/{{studentId}}?centerId={{centerId}}",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "students",
+                                "{{studentId}}"
+                            ],
+                            "query": [
+                                {
+                                    "key": "centerId",
+                                    "value": "{{centerId}}",
+                                    "description": "required for SUPERADMINs"
+                                }
+                            ]
+                        },
+                        "description": "Requires Bearer token + resolved center. Returns a single student."
+                    },
+                    "response": []
+                },
+                {
+                    "name": "POST /api/students (create)",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"fullName\": \"Ahmed Hassan\",\n  \"phone\": \"01012345678\",\n  \"parentPhone\": \"01112345678\",\n  \"grade\": \"Grade 5\",\n  \"school\": \"El Nozha School\",\n  \"address\": \"15 Nasr City, Cairo\",\n  \"joinDate\": \"2026-08-16\",\n  \"status\": \"ACTIVE\",\n  \"notes\": \"New student\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/students?centerId={{centerId}}",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "students"
+                            ],
+                            "query": [
+                                {
+                                    "key": "centerId",
+                                    "value": "{{centerId}}",
+                                    "description": "required for SUPERADMINs"
+                                }
+                            ]
+                        },
+                        "description": "Requires Bearer + writer role (SUPERADMIN/ADMIN/MANAGER/RECEPTIONIST) + resolved center. Returns 201 with the created student. After creating, copy the id into the `studentId` collection variable."
+                    },
+                    "response": [],
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "const json = pm.response.json();",
+                                    "if (pm.response.code === 201 && json.id) {",
+                                    "  pm.collectionVariables.set('studentId', String(json.id));",
+                                    "}"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "PATCH /api/students/:id (update)",
+                    "request": {
+                        "method": "PATCH",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"fullName\": \"Ahmed Hassan El-Sayed\",\n  \"phone\": \"01012345678\",\n  \"notes\": \"Updated notes\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/students/{{studentId}}?centerId={{centerId}}",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "students",
+                                "{{studentId}}"
+                            ],
+                            "query": [
+                                {
+                                    "key": "centerId",
+                                    "value": "{{centerId}}",
+                                    "description": "required for SUPERADMINs"
+                                }
+                            ]
+                        },
+                        "description": "Requires Bearer + writer role + resolved center. Partial update. Returns the updated student."
+                    },
+                    "response": []
+                },
+                {
+                    "name": "DELETE /api/students/:id",
+                    "request": {
+                        "method": "DELETE",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/students/{{studentId}}?centerId={{centerId}}",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "students",
+                                "{{studentId}}"
+                            ],
+                            "query": [
+                                {
+                                    "key": "centerId",
+                                    "value": "{{centerId}}",
+                                    "description": "required for SUPERADMINs"
+                                }
+                            ]
+                        },
+                        "description": "Requires Bearer + writer role + resolved center. Returns 204 on success."
+                    },
+                    "response": []
+                }
+            ]
+        },
+        {
+            "name": "Teachers",
+            "item": [
+                {
+                    "name": "GET /api/teachers (list)",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/teachers?page=1&pageSize=10&active=true&centerId={{centerId}}",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "teachers"
+                            ],
+                            "query": [
+                                {
+                                    "key": "page",
+                                    "value": "1",
+                                    "description": "optional"
+                                },
+                                {
+                                    "key": "pageSize",
+                                    "value": "10",
+                                    "description": "optional, max 100"
+                                },
+                                {
+                                    "key": "active",
+                                    "value": "true",
+                                    "description": "optional: true|false"
+                                },
+                                {
+                                    "key": "centerId",
+                                    "value": "{{centerId}}",
+                                    "description": "optional; ignored for non-SUPERADMINs"
+                                }
+                            ]
+                        },
+                        "description": "Requires Bearer token. Non-SUPERADMINs are scoped to their own center automatically. Returns paginated teachers."
+                    },
+                    "response": []
+                },
+                {
+                    "name": "GET /api/teachers/:id",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/teachers/{{teacherId}}?centerId={{centerId}}",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "teachers",
+                                "{{teacherId}}"
+                            ],
+                            "query": [
+                                {
+                                    "key": "centerId",
+                                    "value": "{{centerId}}",
+                                    "description": "required for SUPERADMINs"
+                                }
+                            ]
+                        },
+                        "description": "Requires Bearer token + resolved center. Returns a single teacher."
+                    },
+                    "response": []
+                },
+                {
+                    "name": "POST /api/teachers (create)",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"fullName\": \"Sara Mohamed\",\n  \"phone\": \"01055556666\",\n  \"specialization\": \"Mathematics\",\n  \"salary\": 8500.5,\n  \"active\": true\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/teachers?centerId={{centerId}}",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "teachers"
+                            ],
+                            "query": [
+                                {
+                                    "key": "centerId",
+                                    "value": "{{centerId}}",
+                                    "description": "required for SUPERADMINs"
+                                }
+                            ]
+                        },
+                        "description": "Requires Bearer + writer role + resolved center. Returns 201 with the created teacher. After creating, copy the id into the `teacherId` collection variable."
+                    },
+                    "response": [],
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "const json = pm.response.json();",
+                                    "if (pm.response.code === 201 && json.id) {",
+                                    "  pm.collectionVariables.set('teacherId', String(json.id));",
+                                    "}"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "PATCH /api/teachers/:id (update)",
+                    "request": {
+                        "method": "PATCH",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"salary\": 9000,\n  \"active\": false\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/teachers/{{teacherId}}?centerId={{centerId}}",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "teachers",
+                                "{{teacherId}}"
+                            ],
+                            "query": [
+                                {
+                                    "key": "centerId",
+                                    "value": "{{centerId}}",
+                                    "description": "required for SUPERADMINs"
+                                }
+                            ]
+                        },
+                        "description": "Requires Bearer + writer role + resolved center. Partial update. Returns the updated teacher."
+                    },
+                    "response": []
+                },
+                {
+                    "name": "DELETE /api/teachers/:id",
+                    "request": {
+                        "method": "DELETE",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/teachers/{{teacherId}}?centerId={{centerId}}",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "teachers",
+                                "{{teacherId}}"
+                            ],
+                            "query": [
+                                {
+                                    "key": "centerId",
+                                    "value": "{{centerId}}",
+                                    "description": "required for SUPERADMINs"
+                                }
+                            ]
+                        },
+                        "description": "Requires Bearer + writer role + resolved center. Returns 204 on success."
+                    },
+                    "response": []
+                }
+            ]
+        },
+        {
+            "name": "Groups",
+            "item": [
+                {
+                    "name": "GET /api/groups (list)",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/groups?page=1&pageSize=10&teacherId={{teacherId}}&paymentType=MONTHLY&centerId={{centerId}}",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "groups"
+                            ],
+                            "query": [
+                                {
+                                    "key": "page",
+                                    "value": "1",
+                                    "description": "optional"
+                                },
+                                {
+                                    "key": "pageSize",
+                                    "value": "10",
+                                    "description": "optional, max 100"
+                                },
+                                {
+                                    "key": "search",
+                                    "value": "",
+                                    "description": "optional: searches name, subject, and room"
+                                },
+                                {
+                                    "key": "teacherId",
+                                    "value": "{{teacherId}}",
+                                    "description": "optional"
+                                },
+                                {
+                                    "key": "paymentType",
+                                    "value": "MONTHLY",
+                                    "description": "optional: MONTHLY|TERMLY|YEARLY|PER_SESSION"
+                                },
+                                {
+                                    "key": "centerId",
+                                    "value": "{{centerId}}",
+                                    "description": "optional; ignored for non-SUPERADMINs"
+                                }
+                            ]
+                        },
+                        "description": "Requires Bearer token. Non-SUPERADMINs are scoped to their own center automatically. Returns paginated groups."
+                    },
+                    "response": []
+                },
+                {
+                    "name": "GET /api/groups/:id",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/groups/{{groupId}}?centerId={{centerId}}",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "groups",
+                                "{{groupId}}"
+                            ],
+                            "query": [
+                                {
+                                    "key": "centerId",
+                                    "value": "{{centerId}}",
+                                    "description": "required for SUPERADMINs"
+                                }
+                            ]
+                        },
+                        "description": "Requires Bearer token + resolved center. Returns a single group."
+                    },
+                    "response": []
+                },
+                {
+                    "name": "POST /api/groups (create)",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"teacherId\": 1,\n  \"name\": \"Grade 10 Mathematics\",\n  \"subject\": \"Mathematics\",\n  \"room\": \"Room A1\",\n  \"fee\": 1500,\n  \"paymentType\": \"MONTHLY\",\n  \"maxStudents\": 25\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/groups?centerId={{centerId}}",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "groups"
+                            ],
+                            "query": [
+                                {
+                                    "key": "centerId",
+                                    "value": "{{centerId}}",
+                                    "description": "required for SUPERADMINs"
+                                }
+                            ]
+                        },
+                        "description": "Requires Bearer + writer role + resolved center. The teacher must belong to the selected center. Returns 201 with the created group."
+                    },
+                    "response": [],
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "const json = pm.response.json();",
+                                    "if (pm.response.code === 201 && json.id) {",
+                                    "  pm.collectionVariables.set('groupId', String(json.id));",
+                                    "}"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "PATCH /api/groups/:id (update)",
+                    "request": {
+                        "method": "PATCH",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"room\": \"Room B2\",\n  \"fee\": 1600,\n  \"maxStudents\": 30\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/groups/{{groupId}}?centerId={{centerId}}",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "groups",
+                                "{{groupId}}"
+                            ],
+                            "query": [
+                                {
+                                    "key": "centerId",
+                                    "value": "{{centerId}}",
+                                    "description": "required for SUPERADMINs"
+                                }
+                            ]
+                        },
+                        "description": "Requires Bearer + writer role + resolved center. Partial update. maxStudents cannot be lower than active enrollments."
+                    },
+                    "response": []
+                },
+                {
+                    "name": "DELETE /api/groups/:id",
+                    "request": {
+                        "method": "DELETE",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/groups/{{groupId}}?centerId={{centerId}}",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "groups",
+                                "{{groupId}}"
+                            ],
+                            "query": [
+                                {
+                                    "key": "centerId",
+                                    "value": "{{centerId}}",
+                                    "description": "required for SUPERADMINs"
+                                }
+                            ]
+                        },
+                        "description": "Requires Bearer + writer role + resolved center. Returns 204 on success and cascades related group records."
+                    },
+                    "response": []
+                }
+            ]
+        }
+    ]
+}

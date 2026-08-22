@@ -20,6 +20,12 @@ export class StudentRepository {
     });
   }
 
+  findDuplicate(centerId: number, fullName: string, phone: string): Promise<Student | null> {
+    return prisma.student.findFirst({
+      where: { centerId, fullName, phone },
+    });
+  }
+
   async update(
     id: number,
     centerId: number,
