@@ -15,6 +15,8 @@ import type { AuthUser } from '../../modules/auth/types/auth.types.js';
  *  - scope: 'all'                   -> not center-scoped (SUPERADMIN only).
  *  - scope: 'center'                -> queries must filter by req.centerId.
  *  - actions                        -> explicit verbs; never collapse to CRUD.
+ *  - Invariant (checked at startup): all grants of one role share one scope;
+ *    no hardcoded role bypass exists anywhere in this module.
  */
 
 export const RESOURCES = [
@@ -62,14 +64,21 @@ export const RESOURCE_ACTIONS = {
 
 export type ActionsOf<R extends Resource> = (typeof RESOURCE_ACTIONS)[R][number];
 
-export interface Grant {
-  /** 'all' bypasses center scoping entirely; 'center' locks to req.centerId. */
-  scope: 'all' | 'center';
-  actions: readonly ActionsOf<Resource>[];
+export type Scope = 'all' | 'center';
+
+interface GrantOf<R extends Resource> {
+  scope: Scope;
+  actions: readonly ActionsOf<R>[];
 }
 
-/** Role -> Resource -> Grant. Missing resource key means No Access. */
-export type PermissionTable = Record<Role, Partial<Record<Resource, Grant>>>;
+/**
+ * Role -> Resource -> Grant. Missing resource key means No Access.
+ *
+ * The grant map is keyed per-resource, so an actions array may only contain
+ * verbs from that exact resource's vocabulary — e.g. listing 'manageSalaries'
+ * inside the students grant is a compile error, not a runtime surprise.
+ */
+export type PermissionTable = Record<Role, { [R in Resource]?: GrantOf<R> }>;
 
 export const PERMISSIONS: PermissionTable = {
   // ── SUPERADMIN ─ Full (All) on every resource. centerId is null on token;
@@ -174,18 +183,56 @@ export const PERMISSIONS: PermissionTable = {
 };
 
 /**
- * Pure authorization check. `user` must be the already-authenticated
- * `req.user` (JWT verification happens elsewhere; this never inspects tokens).
+ * Startup invariant: every grant belonging to one role must declare the same
+ * scope. `resolveScope()` reads a single entry for the role, so a table that
+ * mixed scopes within a role would silently mis-scope requests — fail fast at
+ * import time instead.
  */
-export function can(user: AuthUser, resource: Resource, action: string): boolean {
-  if (user.role === 'SUPERADMIN') return true;
+function assertUniformRoleScopes(): void {
+  for (const role of Object.keys(PERMISSIONS) as Role[]) {
+    const scopes = new Set<Scope>();
+    for (const grant of Object.values(PERMISSIONS[role])) {
+      if (grant) {
+        scopes.add(grant.scope);
+      }
+    }
+    if (scopes.size > 1) {
+      throw new Error(`Invalid permission table: ${role} grants mix 'all' and 'center' scopes`);
+    }
+  }
+}
+assertUniformRoleScopes();
+
+/**
+ * Pure authorization check against PERMISSIONS — including for SUPERADMIN,
+ * whose row simply grants every action on every resource; there is no
+ * hardcoded role shortcut, so edits to the table always take effect.
+ * `user` must be the already-authenticated `req.user` (JWT verification
+ * happens elsewhere; this never inspects tokens).
+ */
+export function can<R extends Resource>(
+  user: AuthUser,
+  resource: R,
+  action: ActionsOf<R>,
+): boolean {
   const grant = PERMISSIONS[user.role][resource];
-  return grant !== undefined && (grant.actions as readonly string[]).includes(action);
+  return grant?.actions.includes(action) === true;
 }
 
-/** Resolves the data scope of an authorized request: global vs center-locked. */
-export function resolveScope(user: AuthUser): 'all' | 'center' {
-  return user.role === 'SUPERADMIN' ? 'all' : 'center';
+/**
+ * Resolves the data scope of an authorized request: global vs center-locked.
+ * Derived from the table rather than from role names;
+ * `assertUniformRoleScopes()` guarantees every grant of the role agrees, so
+ * any single entry is authoritative. Roles with no grants default to the
+ * restrictive 'center'.
+ */
+export function resolveScope(user: AuthUser): Scope {
+  for (const grant of Object.values(PERMISSIONS[user.role])) {
+    if (grant) {
+      return grant.scope;
+    }
+  }
+  return 'center';
 }
 
 const ROLE_RANK: Record<Role, number> = {

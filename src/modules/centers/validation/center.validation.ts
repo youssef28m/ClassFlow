@@ -38,7 +38,7 @@ export const createCenterUserSchema = z.object({
     .string()
     .min(8, 'Password must be at least 8 characters')
     .max(128, 'Password is too long'),
-  role: z.enum(centerUserRoles).optional(),
+  role: z.enum(centerUserRoles),
 });
 
 export type CreateCenterUserInput = z.infer<typeof createCenterUserSchema>;

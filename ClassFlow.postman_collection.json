@@ -28,6 +28,14 @@
         {
             "key": "groupId",
             "value": "1"
+        },
+        {
+            "key": "scheduleId",
+            "value": "1"
+        },
+        {
+            "key": "sessionId",
+            "value": "1"
         }
     ],
     "item": [
@@ -1102,6 +1110,482 @@
                             ]
                         },
                         "description": "Requires Bearer + writer role + resolved center. Returns 204 on success and cascades related group records."
+                    },
+                    "response": []
+                }
+            ]
+        },
+        {
+            "name": "Schedules",
+            "item": [
+                {
+                    "name": "GET /api/schedules (list)",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/schedules?page=1&pageSize=10&groupId={{groupId}}&centerId={{centerId}}",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "schedules"
+                            ],
+                            "query": [
+                                {
+                                    "key": "page",
+                                    "value": "1",
+                                    "description": "optional"
+                                },
+                                {
+                                    "key": "pageSize",
+                                    "value": "10",
+                                    "description": "optional, max 100"
+                                },
+                                {
+                                    "key": "groupId",
+                                    "value": "{{groupId}}",
+                                    "description": "optional"
+                                },
+                                {
+                                    "key": "dayOfWeek",
+                                    "value": "MONDAY",
+                                    "description": "optional"
+                                },
+                                {
+                                    "key": "centerId",
+                                    "value": "{{centerId}}",
+                                    "description": "optional; ignored for non-SUPERADMINs"
+                                }
+                            ]
+                        },
+                        "description": "Requires Bearer token. Returns paginated group schedules."
+                    },
+                    "response": []
+                },
+                {
+                    "name": "GET /api/schedules/:id",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/schedules/{{scheduleId}}?centerId={{centerId}}",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "schedules",
+                                "{{scheduleId}}"
+                            ],
+                            "query": [
+                                {
+                                    "key": "centerId",
+                                    "value": "{{centerId}}",
+                                    "description": "required for SUPERADMINs"
+                                }
+                            ]
+                        },
+                        "description": "Returns a single schedule."
+                    },
+                    "response": []
+                },
+                {
+                    "name": "POST /api/schedules (create)",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"groupId\": 1,\n  \"dayOfWeek\": \"MONDAY\",\n  \"startTime\": \"16:00\",\n  \"endTime\": \"17:30\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/schedules?centerId={{centerId}}",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "schedules"
+                            ],
+                            "query": [
+                                {
+                                    "key": "centerId",
+                                    "value": "{{centerId}}",
+                                    "description": "required for SUPERADMINs"
+                                }
+                            ]
+                        },
+                        "description": "Requires manageSchedules permission. The schedule group must belong to the selected center."
+                    },
+                    "response": [],
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "const json = pm.response.json();",
+                                    "if (pm.response.code === 201 && json.id) {",
+                                    "  pm.collectionVariables.set('scheduleId', String(json.id));",
+                                    "}"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "PATCH /api/schedules/:id",
+                    "request": {
+                        "method": "PATCH",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"startTime\": \"16:30\",\n  \"endTime\": \"18:00\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/schedules/{{scheduleId}}?centerId={{centerId}}",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "schedules",
+                                "{{scheduleId}}"
+                            ],
+                            "query": [
+                                {
+                                    "key": "centerId",
+                                    "value": "{{centerId}}",
+                                    "description": "required for SUPERADMINs"
+                                }
+                            ]
+                        },
+                        "description": "Requires manageSchedules permission."
+                    },
+                    "response": []
+                },
+                {
+                    "name": "DELETE /api/schedules/:id",
+                    "request": {
+                        "method": "DELETE",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/schedules/{{scheduleId}}?centerId={{centerId}}",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "schedules",
+                                "{{scheduleId}}"
+                            ],
+                            "query": [
+                                {
+                                    "key": "centerId",
+                                    "value": "{{centerId}}",
+                                    "description": "required for SUPERADMINs"
+                                }
+                            ]
+                        },
+                        "description": "Requires manageSchedules permission. Schedules with recorded sessions cannot be deleted."
+                    },
+                    "response": []
+                }
+            ]
+        },
+        {
+            "name": "Sessions and Attendance",
+            "item": [
+                {
+                    "name": "GET /api/sessions (list)",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/sessions?page=1&pageSize=10&groupId={{groupId}}&completed=false&centerId={{centerId}}",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "sessions"
+                            ],
+                            "query": [
+                                {
+                                    "key": "page",
+                                    "value": "1",
+                                    "description": "optional"
+                                },
+                                {
+                                    "key": "pageSize",
+                                    "value": "10",
+                                    "description": "optional, max 100"
+                                },
+                                {
+                                    "key": "groupId",
+                                    "value": "{{groupId}}",
+                                    "description": "optional"
+                                },
+                                {
+                                    "key": "scheduleId",
+                                    "value": "{{scheduleId}}",
+                                    "description": "optional"
+                                },
+                                {
+                                    "key": "completed",
+                                    "value": "false",
+                                    "description": "optional: true|false"
+                                },
+                                {
+                                    "key": "from",
+                                    "value": "2026-08-01",
+                                    "description": "optional YYYY-MM-DD"
+                                },
+                                {
+                                    "key": "to",
+                                    "value": "2026-08-31",
+                                    "description": "optional YYYY-MM-DD"
+                                },
+                                {
+                                    "key": "centerId",
+                                    "value": "{{centerId}}",
+                                    "description": "optional; ignored for non-SUPERADMINs"
+                                }
+                            ]
+                        },
+                        "description": "Requires Bearer token. Returns paginated sessions."
+                    },
+                    "response": []
+                },
+                {
+                    "name": "GET /api/sessions/:id",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/sessions/{{sessionId}}?centerId={{centerId}}",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "sessions",
+                                "{{sessionId}}"
+                            ],
+                            "query": [
+                                {
+                                    "key": "centerId",
+                                    "value": "{{centerId}}",
+                                    "description": "required for SUPERADMINs"
+                                }
+                            ]
+                        },
+                        "description": "Returns a single session."
+                    },
+                    "response": []
+                },
+                {
+                    "name": "POST /api/sessions (create)",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"groupId\": 1,\n  \"scheduleId\": 1,\n  \"sessionDate\": \"2026-08-24\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/sessions?centerId={{centerId}}",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "sessions"
+                            ],
+                            "query": [
+                                {
+                                    "key": "centerId",
+                                    "value": "{{centerId}}",
+                                    "description": "required for SUPERADMINs"
+                                }
+                            ]
+                        },
+                        "description": "Requires manageSessions permission. The session date must match the schedule weekday."
+                    },
+                    "response": [],
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "const json = pm.response.json();",
+                                    "if (pm.response.code === 201 && json.id) {",
+                                    "  pm.collectionVariables.set('sessionId', String(json.id));",
+                                    "}"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "PATCH /api/sessions/:id/complete",
+                    "request": {
+                        "method": "PATCH",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/sessions/{{sessionId}}/complete?centerId={{centerId}}",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "sessions",
+                                "{{sessionId}}",
+                                "complete"
+                            ],
+                            "query": [
+                                {
+                                    "key": "centerId",
+                                    "value": "{{centerId}}",
+                                    "description": "required for SUPERADMINs"
+                                }
+                            ]
+                        },
+                        "description": "Requires manageSessions permission. Marks the session completed."
+                    },
+                    "response": []
+                },
+                {
+                    "name": "GET /api/sessions/:id/attendance",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/sessions/{{sessionId}}/attendance?centerId={{centerId}}",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "sessions",
+                                "{{sessionId}}",
+                                "attendance"
+                            ],
+                            "query": [
+                                {
+                                    "key": "centerId",
+                                    "value": "{{centerId}}",
+                                    "description": "required for SUPERADMINs"
+                                }
+                            ]
+                        },
+                        "description": "Returns attendance records with student details."
+                    },
+                    "response": []
+                },
+                {
+                    "name": "PUT /api/sessions/:id/attendance",
+                    "request": {
+                        "method": "PUT",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"records\": [\n    {\n      \"enrollmentId\": 1,\n      \"status\": \"PRESENT\",\n      \"notes\": \"Arrived on time\"\n    },\n    {\n      \"enrollmentId\": 2,\n      \"status\": \"ABSENT\"\n    }\n  ]\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/sessions/{{sessionId}}/attendance?centerId={{centerId}}",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "sessions",
+                                "{{sessionId}}",
+                                "attendance"
+                            ],
+                            "query": [
+                                {
+                                    "key": "centerId",
+                                    "value": "{{centerId}}",
+                                    "description": "required for SUPERADMINs"
+                                }
+                            ]
+                        },
+                        "description": "Requires markAttendance permission. Replaces the complete attendance list transactionally; omitted records are removed."
                     },
                     "response": []
                 }

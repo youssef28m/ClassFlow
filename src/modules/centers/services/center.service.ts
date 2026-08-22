@@ -1,4 +1,4 @@
-import { Prisma, Role } from '../../../generated/prisma/client.js';
+import { Prisma } from '../../../generated/prisma/client.js';
 import { assertCanAccessCenter } from '../../../shared/authz/apply-center-scope.js';
 import { canManageUserAccount, resolveScope } from '../../../shared/authz/permissions.js';
 import { AppError } from '../../../shared/middleware/error-handler.js';
@@ -92,9 +92,11 @@ export class CenterService {
       throw new AppError('Center is deactivated', 400);
     }
 
-    // ADMINs may only create accounts below their own role; ADMIN/SUPERADMIN
-    // accounts require a SUPERADMIN actor.
-    const role = input.role ?? Role.ADMIN;
+    // Role is required by the schema (no silent default). ADMINs may only
+    // create accounts below their own role; ADMIN/SUPERADMIN targets require
+    // a SUPERADMIN actor. The schema also excludes SUPERADMIN entirely, so
+    // global-level accounts can never be minted through this endpoint.
+    const role = input.role;
     if (!canManageUserAccount(actor, role)) {
       throw new AppError('Forbidden: cannot manage accounts at or above your role', 403);
     }
