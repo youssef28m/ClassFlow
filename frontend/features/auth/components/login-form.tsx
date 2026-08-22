@@ -41,7 +41,7 @@ export function LoginForm() {
     setFormError(null);
     try {
       await login(toLoginCredentials(values));
-      router.push("/");
+      router.push("/dashboard");
     } catch (error) {
       if (error instanceof ApiError) {
         let hasFieldErrors = false;
