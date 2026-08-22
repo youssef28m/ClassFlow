@@ -9,6 +9,8 @@ import authRouter from './modules/auth/routes/auth.routes.js';
 import centerRouter from './modules/centers/routes/center.routes.js';
 import enrollmentRouter from './modules/enrollments/routes/enrollment.routes.js';
 import groupRouter from './modules/groups/routes/group.routes.js';
+import paymentRouter from './modules/payments/routes/payment.routes.js';
+import salaryRouter from './modules/payments/routes/salary.routes.js';
 import scheduleRouter from './modules/schedules/routes/schedule.routes.js';
 import sessionRouter from './modules/sessions/routes/session.routes.js';
 import studentRouter from './modules/students/routes/student.routes.js';
@@ -53,6 +55,8 @@ export function createApp(): Express {
     app.use('/api/users', userRouter);
     app.use('/api/schedules', scheduleRouter);
     app.use('/api/sessions', sessionRouter);
+    app.use('/api/payments', paymentRouter);
+    app.use('/api/teacher-salaries', salaryRouter);
 
     app.use(notFoundHandler);
     app.use(errorHandler);

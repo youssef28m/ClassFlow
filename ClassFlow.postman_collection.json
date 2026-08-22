@@ -36,6 +36,18 @@
         {
             "key": "sessionId",
             "value": "1"
+        },
+        {
+            "key": "enrollmentId",
+            "value": "1"
+        },
+        {
+            "key": "paymentId",
+            "value": "1"
+        },
+        {
+            "key": "salaryId",
+            "value": "1"
         }
     ],
     "item": [
@@ -1586,6 +1598,452 @@
                             ]
                         },
                         "description": "Requires markAttendance permission. Replaces the complete attendance list transactionally; omitted records are removed."
+                    },
+                    "response": []
+                }
+            ]
+        },
+        {
+            "name": "Payments",
+            "item": [
+                {
+                    "name": "GET /api/payments (list)",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/payments?page=1&pageSize=10&enrollmentId={{enrollmentId}}&centerId={{centerId}}",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "payments"
+                            ],
+                            "query": [
+                                {
+                                    "key": "page",
+                                    "value": "1",
+                                    "description": "optional"
+                                },
+                                {
+                                    "key": "pageSize",
+                                    "value": "10",
+                                    "description": "optional, max 100"
+                                },
+                                {
+                                    "key": "enrollmentId",
+                                    "value": "{{enrollmentId}}",
+                                    "description": "optional"
+                                },
+                                {
+                                    "key": "paymentMethod",
+                                    "value": "CASH",
+                                    "description": "optional: CASH|CARD"
+                                },
+                                {
+                                    "key": "from",
+                                    "value": "2026-08-01",
+                                    "description": "optional date"
+                                },
+                                {
+                                    "key": "to",
+                                    "value": "2026-08-31",
+                                    "description": "optional date"
+                                },
+                                {
+                                    "key": "centerId",
+                                    "value": "{{centerId}}",
+                                    "description": "optional; ignored for non-SUPERADMINs"
+                                }
+                            ]
+                        },
+                        "description": "Requires payments read permission."
+                    },
+                    "response": []
+                },
+                {
+                    "name": "GET /api/payments/:id",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/payments/{{paymentId}}?centerId={{centerId}}",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "payments",
+                                "{{paymentId}}"
+                            ],
+                            "query": [
+                                {
+                                    "key": "centerId",
+                                    "value": "{{centerId}}",
+                                    "description": "required for SUPERADMINs"
+                                }
+                            ]
+                        },
+                        "description": "Returns one student payment."
+                    },
+                    "response": []
+                },
+                {
+                    "name": "POST /api/payments (record)",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"enrollmentId\": 1,\n  \"amount\": 1500,\n  \"paymentDate\": \"2026-08-22\",\n  \"paymentMethod\": \"CASH\",\n  \"notes\": \"August payment\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/payments?centerId={{centerId}}",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "payments"
+                            ],
+                            "query": [
+                                {
+                                    "key": "centerId",
+                                    "value": "{{centerId}}",
+                                    "description": "required for SUPERADMINs"
+                                }
+                            ]
+                        },
+                        "description": "Records a payment for an active enrolled student. Requires logPayment or managePayments permission."
+                    },
+                    "response": [],
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "const json = pm.response.json();",
+                                    "if (pm.response.code === 201 && json.id) {",
+                                    "  pm.collectionVariables.set('paymentId', String(json.id));",
+                                    "}"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "PATCH /api/payments/:id",
+                    "request": {
+                        "method": "PATCH",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"amount\": 1600,\n  \"paymentMethod\": \"CARD\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/payments/{{paymentId}}?centerId={{centerId}}",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "payments",
+                                "{{paymentId}}"
+                            ],
+                            "query": [
+                                {
+                                    "key": "centerId",
+                                    "value": "{{centerId}}",
+                                    "description": "required for SUPERADMINs"
+                                }
+                            ]
+                        },
+                        "description": "Updates a payment. Requires logPayment or managePayments permission."
+                    },
+                    "response": []
+                },
+                {
+                    "name": "DELETE /api/payments/:id",
+                    "request": {
+                        "method": "DELETE",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/payments/{{paymentId}}?centerId={{centerId}}",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "payments",
+                                "{{paymentId}}"
+                            ],
+                            "query": [
+                                {
+                                    "key": "centerId",
+                                    "value": "{{centerId}}",
+                                    "description": "required for SUPERADMINs"
+                                }
+                            ]
+                        },
+                        "description": "Deletes a payment. Requires managePayments permission."
+                    },
+                    "response": []
+                }
+            ]
+        },
+        {
+            "name": "Teacher Salaries",
+            "item": [
+                {
+                    "name": "GET /api/teacher-salaries (list)",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/teacher-salaries?page=1&pageSize=10&teacherId={{teacherId}}&salaryMonth=8&salaryYear=2026&isPaid=false&centerId={{centerId}}",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "teacher-salaries"
+                            ],
+                            "query": [
+                                {
+                                    "key": "page",
+                                    "value": "1",
+                                    "description": "optional"
+                                },
+                                {
+                                    "key": "pageSize",
+                                    "value": "10",
+                                    "description": "optional, max 100"
+                                },
+                                {
+                                    "key": "teacherId",
+                                    "value": "{{teacherId}}",
+                                    "description": "optional"
+                                },
+                                {
+                                    "key": "salaryMonth",
+                                    "value": "8",
+                                    "description": "optional: 1-12"
+                                },
+                                {
+                                    "key": "salaryYear",
+                                    "value": "2026",
+                                    "description": "optional"
+                                },
+                                {
+                                    "key": "isPaid",
+                                    "value": "false",
+                                    "description": "optional: true|false"
+                                },
+                                {
+                                    "key": "centerId",
+                                    "value": "{{centerId}}",
+                                    "description": "optional; ignored for non-SUPERADMINs"
+                                }
+                            ]
+                        },
+                        "description": "Requires manageSalaries permission."
+                    },
+                    "response": []
+                },
+                {
+                    "name": "GET /api/teacher-salaries/:id",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/teacher-salaries/{{salaryId}}?centerId={{centerId}}",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "teacher-salaries",
+                                "{{salaryId}}"
+                            ],
+                            "query": [
+                                {
+                                    "key": "centerId",
+                                    "value": "{{centerId}}",
+                                    "description": "required for SUPERADMINs"
+                                }
+                            ]
+                        },
+                        "description": "Returns one teacher salary record."
+                    },
+                    "response": []
+                },
+                {
+                    "name": "POST /api/teacher-salaries (record)",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"teacherId\": 1,\n  \"salaryMonth\": 8,\n  \"salaryYear\": 2026,\n  \"amount\": 8500,\n  \"paymentDate\": \"2026-08-31\",\n  \"isPaid\": true\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/teacher-salaries?centerId={{centerId}}",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "teacher-salaries"
+                            ],
+                            "query": [
+                                {
+                                    "key": "centerId",
+                                    "value": "{{centerId}}",
+                                    "description": "required for SUPERADMINs"
+                                }
+                            ]
+                        },
+                        "description": "Records a teacher salary. Only one record is allowed per teacher and salary month/year."
+                    },
+                    "response": [],
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "const json = pm.response.json();",
+                                    "if (pm.response.code === 201 && json.id) {",
+                                    "  pm.collectionVariables.set('salaryId', String(json.id));",
+                                    "}"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "PATCH /api/teacher-salaries/:id (mark paid)",
+                    "request": {
+                        "method": "PATCH",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"isPaid\": true,\n  \"paymentDate\": \"2026-08-31\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/teacher-salaries/{{salaryId}}?centerId={{centerId}}",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "teacher-salaries",
+                                "{{salaryId}}"
+                            ],
+                            "query": [
+                                {
+                                    "key": "centerId",
+                                    "value": "{{centerId}}",
+                                    "description": "required for SUPERADMINs"
+                                }
+                            ]
+                        },
+                        "description": "Marks or updates a teacher salary payment. Requires manageSalaries permission."
+                    },
+                    "response": []
+                },
+                {
+                    "name": "DELETE /api/teacher-salaries/:id",
+                    "request": {
+                        "method": "DELETE",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/teacher-salaries/{{salaryId}}?centerId={{centerId}}",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "teacher-salaries",
+                                "{{salaryId}}"
+                            ],
+                            "query": [
+                                {
+                                    "key": "centerId",
+                                    "value": "{{centerId}}",
+                                    "description": "required for SUPERADMINs"
+                                }
+                            ]
+                        },
+                        "description": "Deletes a teacher salary record. Requires manageSalaries permission."
                     },
                     "response": []
                 }
