@@ -9,6 +9,7 @@ import { useCreateEnrollment } from "@/features/enrollments/hooks";
 import { useStudentsQuery } from "@/features/students/hooks";
 import type { Student } from "@/features/students/types";
 import { ApiError } from "@/lib/api-client";
+import { useI18n } from "@/lib/i18n/provider";
 import { useDebouncedValue } from "@/lib/use-debounced-value";
 
 interface EnrollStudentDialogProps {
@@ -28,6 +29,7 @@ export function EnrollStudentDialog({
 }: EnrollStudentDialogProps) {
   const toast = useToast();
   const enroll = useCreateEnrollment();
+  const { t } = useI18n();
   const [query, setQuery] = useState("");
   const [selected, setSelected] = useState<Student | null>(null);
   const [rootError, setRootError] = useState<string | null>(null);
@@ -46,7 +48,7 @@ export function EnrollStudentDialog({
   async function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
     if (!selected) {
-      setRootError("Search for and select a student to enroll.");
+      setRootError(t("enrollDialog.selectFirst"));
       return;
     }
     setRootError(null);
@@ -55,11 +57,11 @@ export function EnrollStudentDialog({
         studentId: selected.id,
         groupId,
       });
-      toast.success(`${selected.fullName} enrolled`);
+      toast.success(t("groupDetail.enrolledToast", { name: selected.fullName }));
       onClose();
     } catch (error) {
       setRootError(
-        error instanceof ApiError ? error.message : "Failed to enroll student.",
+        error instanceof ApiError ? error.message : t("common.somethingWentWrong"),
       );
     }
   }
@@ -70,8 +72,8 @@ export function EnrollStudentDialog({
       onOpenChange={(nextOpen) => {
         if (!nextOpen) onClose();
       }}
-      title={`Add student to ${groupName}`}
-      description="Search by name, then select the student to enroll in this group."
+      title={t("enrollDialog.title", { group: groupName })}
+      description={t("enrollDialog.description")}
     >
       <form onSubmit={handleSubmit} className="space-y-4" noValidate>
         {rootError ? (
@@ -91,7 +93,7 @@ export function EnrollStudentDialog({
           <input
             id="enroll-student-search"
             type="search"
-            placeholder="Search students by name…"
+            placeholder={t("enrollDialog.searchPlaceholder")}
             value={query}
             onChange={(event) => {
               setQuery(event.target.value);
@@ -99,13 +101,13 @@ export function EnrollStudentDialog({
             }}
             autoComplete="off"
             className={`${inputClassName} pl-9`}
-            aria-label="Search students by name"
+            aria-label={t("enrollDialog.searchPlaceholder")}
           />
         </div>
 
         <div
           role="listbox"
-          aria-label="Search results"
+          aria-label={t("enrollDialog.searchResults")}
           className="scroll-slim max-h-64 space-y-1 overflow-y-auto rounded-xl border border-border bg-muted/30 p-1.5"
         >
           {students.isLoading ? (
@@ -120,10 +122,10 @@ export function EnrollStudentDialog({
           ) : results.length === 0 ? (
             <p className="rounded-lg px-3 py-6 text-sm text-muted-foreground">
               {search && !students.isFetching
-                ? "No matching students."
+                ? t("enrollDialog.noMatches")
                 : query !== search
-                  ? "Searching…"
-                  : "All students are already enrolled."}
+                  ? t("common.loading")
+                  : t("enrollDialog.allEnrolled")}
             </p>
           ) : (
             results.map((student) => {
@@ -154,8 +156,10 @@ export function EnrollStudentDialog({
 
         <p className="text-xs text-muted-foreground">
           {selected
-            ? `Selected: ${selected.fullName}`
-            : `${results.length}${students.data && students.data.meta.total > 10 ? "+" : ""} available`}
+            ? t("enrollDialog.selected", { name: selected.fullName })
+            : t("enrollDialog.availableCount", {
+              count: `${results.length}${students.data && students.data.meta.total > 10 ? "+" : ""}`,
+            })}
         </p>
 
         <div className="flex justify-end gap-2 pt-2">
@@ -165,7 +169,7 @@ export function EnrollStudentDialog({
             disabled={enroll.isPending}
             className="h-10 rounded-lg border border-border px-4 text-sm font-medium text-card-foreground transition-colors hover:bg-muted disabled:pointer-events-none disabled:opacity-60"
           >
-            Cancel
+            {t("common.cancel")}
           </button>
           <button
             type="submit"
@@ -175,7 +179,7 @@ export function EnrollStudentDialog({
             {enroll.isPending ? (
               <Loader2 className="size-4 animate-spin" aria-hidden />
             ) : null}
-            Enroll student
+            {t("enrollDialog.submit")}
           </button>
         </div>
       </form>

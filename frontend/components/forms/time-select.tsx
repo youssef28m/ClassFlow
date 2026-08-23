@@ -1,5 +1,7 @@
 "use client";
 
+import { useI18n } from "@/lib/i18n/provider";
+
 const HOURS = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12"];
 const MINUTES = Array.from({ length: 12 }, (_, index) => String(index * 5).padStart(2, "0"));
 const PERIODS = ["AM", "PM"] as const;
@@ -27,6 +29,7 @@ const segmentClassName =
   "h-10 min-w-0 cursor-pointer appearance-none border-0 bg-transparent px-2.5 text-sm font-medium text-card-foreground focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-ring disabled:cursor-not-allowed disabled:opacity-60";
 
 export function TimeSelect({ id, value, onChange, disabled }: TimeSelectProps) {
+  const { t } = useI18n();
   const { hour, minute, period } = splitValue(value);
 
   function emit(nextHour: string, nextMinute: string, nextPeriod: string) {
@@ -38,7 +41,7 @@ export function TimeSelect({ id, value, onChange, disabled }: TimeSelectProps) {
   return (
     <div className="inline-flex h-10 items-center overflow-hidden rounded-lg border border-border bg-card shadow-xs">
       <select
-        aria-label={`${id ?? "time"} hour`}
+        aria-label={`${id ?? t("time.fallback")} ${t("time.hour")}`}
         value={hour}
         onChange={(event) => emit(event.target.value, minute, period)}
         disabled={disabled}
@@ -54,7 +57,7 @@ export function TimeSelect({ id, value, onChange, disabled }: TimeSelectProps) {
         :
       </span>
       <select
-        aria-label={`${id ?? "time"} minutes`}
+        aria-label={`${id ?? t("time.fallback")} ${t("time.minutes")}`}
         value={minute}
         onChange={(event) => emit(hour, event.target.value, period)}
         disabled={disabled}
@@ -67,11 +70,11 @@ export function TimeSelect({ id, value, onChange, disabled }: TimeSelectProps) {
         ))}
       </select>
       <select
-        aria-label={`${id ?? "time"} AM or PM`}
+        aria-label={`${id ?? t("time.fallback")} ${t("time.period")}`}
         value={period}
         onChange={(event) => emit(hour, minute, event.target.value)}
         disabled={disabled}
-        className={`${segmentClassName} border-l border-border`}
+        className={`${segmentClassName} border-s border-border`}
       >
         {PERIODS.map((option) => (
           <option key={option} value={option}>

@@ -1,14 +1,18 @@
-const dateFormatter = new Intl.DateTimeFormat("en-GB", {
-  day: "numeric",
-  month: "short",
-  year: "numeric",
-  timeZone: "UTC",
-});
+let formatterLocale = "en-GB";
+
+export function setFormatterLocale(locale: string): void {
+  formatterLocale = locale === "ar" ? "ar-EG" : "en-GB";
+}
 
 export function formatDate(value: string | Date): string {
   const date = typeof value === "string" ? new Date(value) : value;
   if (Number.isNaN(date.getTime())) return "—";
-  return dateFormatter.format(date);
+  return new Intl.DateTimeFormat(formatterLocale, {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+    timeZone: "UTC",
+  }).format(date);
 }
 
 export function formatSlotTime(value: string): string {

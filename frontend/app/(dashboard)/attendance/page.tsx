@@ -18,11 +18,13 @@ import type { ClassSession } from "@/features/attendance/types";
 import { scheduleLabel } from "@/features/schedules/components/schedule-manager";
 import { useSchedulesQuery } from "@/features/schedules/hooks";
 import { useGroupsQuery } from "@/features/groups/hooks";
+import { useI18n } from "@/lib/i18n/provider";
 import { formatDate } from "@/lib/formatters";
 
 const PAGE_SIZE = 10;
 
 export default function AttendancePage() {
+  const { t, tEnum } = useI18n();
   const [groupFilter, setGroupFilter] = useState<"ALL" | number>("ALL");
   const [statusFilter, setStatusFilter] = useState<"ALL" | "UPCOMING" | "COMPLETED">("ALL");
   const [page, setPage] = useState(1);
@@ -52,10 +54,10 @@ export default function AttendancePage() {
       new Map(
         (schedules.data?.items ?? []).map((schedule) => [
           schedule.id,
-          scheduleLabel(schedule),
+          scheduleLabel(schedule, tEnum),
         ]),
       ),
-    [schedules.data],
+    [schedules.data, tEnum],
   );
 
   const items = useMemo(
@@ -74,7 +76,7 @@ export default function AttendancePage() {
   const columns: DataTableColumn<ClassSession>[] = [
     {
       key: "sessionDate",
-      header: "Date",
+      header: t("common.date"),
       render: (item) => (
         <Link
           href={`/attendance/${item.id}`}
@@ -86,42 +88,43 @@ export default function AttendancePage() {
     },
     {
       key: "groupId",
-      header: "Group",
+      header: t("nav.groups"),
       render: (item) => (
         <Link
           href={`/groups/${item.groupId}`}
           className="text-card-foreground hover:text-primary"
         >
-          {groupNames.get(item.groupId) ?? `Group #${item.groupId}`}
+          {groupNames.get(item.groupId) ?? t("groups.fallbackId", { id: item.groupId })}
         </Link>
       ),
     },
     {
       key: "scheduleId",
-      header: "Slot",
+      header: t("schedules.slotColumn"),
       className: "hidden md:table-cell",
-      render: (item) => slotLabels.get(item.scheduleId) ?? `Slot #${item.scheduleId}`,
+      render: (item) => slotLabels.get(item.scheduleId) ??
+        t("schedules.slotFallbackId", { id: item.scheduleId }),
     },
     {
       key: "completed",
-      header: "Status",
+      header: t("common.status"),
       render: (item) => (
         <StatusBadge tone={item.completed ? "success" : "warning"}>
-          {item.completed ? "Completed" : "Upcoming"}
+          {item.completed ? t("enum.COMPLETED") : t("enum.UPCOMING")}
         </StatusBadge>
       ),
     },
     {
       key: "actions",
       header: "",
-      className: "w-44 text-right",
+      className: "w-44 text-end",
       render: (item) => (
         <Link
           href={`/attendance/${item.id}`}
           className="inline-flex items-center gap-1.5 rounded-lg border border-border px-2.5 py-1.5 text-xs font-medium text-card-foreground transition-colors hover:bg-muted"
         >
           <ClipboardCheck className="size-4" aria-hidden />
-          Take attendance
+          {t("attendance.takeAttendance")}
         </Link>
       ),
     },
@@ -130,15 +133,15 @@ export default function AttendancePage() {
   return (
     <>
       <PageHeader
-        title="Attendance"
-        description="Every booked session across your groups. Open one to record who attended."
+        title={t("nav.attendance")}
+        description={t("attendance.description")}
       />
 
       <PermissionGate resource="groupsAndSessions" action="read">
         <FilterBar>
           <select
             id="attendance-group-filter"
-            aria-label="Filter by group"
+            aria-label={t("schedules.filterGroup")}
             value={groupFilter === "ALL" ? "ALL" : String(groupFilter)}
             onChange={(event) =>
               updateFilters(() => {
@@ -148,7 +151,7 @@ export default function AttendancePage() {
             }
             className={`${inputClassName} w-auto`}
           >
-            <option value="ALL">All groups</option>
+            <option value="ALL">{t("schedules.allGroups")}</option>
             {(groups.data?.items ?? []).map((group) => (
               <option key={group.id} value={group.id}>
                 {group.name}
@@ -166,9 +169,9 @@ export default function AttendancePage() {
             }
             className={`${inputClassName} w-auto`}
           >
-            <option value="ALL">All statuses</option>
-            <option value="UPCOMING">Upcoming</option>
-            <option value="COMPLETED">Completed</option>
+            <option value="ALL">{t("attendance.allStatuses")}</option>
+            <option value="UPCOMING">{t("enum.UPCOMING")}</option>
+            <option value="COMPLETED">{t("enum.COMPLETED")}</option>
           </select>
         </FilterBar>
 
@@ -181,10 +184,10 @@ export default function AttendancePage() {
           onRetry={() => void sessions.refetch()}
           emptyTitle={
             groupFilter !== "ALL" || statusFilter !== "ALL"
-              ? "No sessions match your filters"
-              : "No sessions booked yet"
+              ? t("sessions.emptyFiltered")
+              : t("sessions.empty")
           }
-          emptyDescription="Open a group to add a weekly slot and book its first session."
+          emptyDescription={t("sessions.emptyDescription")}
         />
 
         {sessions.data && sessions.data.meta.totalPages > 0 ? (

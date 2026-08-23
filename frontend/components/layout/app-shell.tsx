@@ -1,15 +1,34 @@
 "use client";
 
-import { CalendarDays, LogOut, Menu, X } from "lucide-react";
+import { CalendarDays, Languages, LogOut, Menu, X } from "lucide-react";
 import { usePathname } from "next/navigation";
 import { useEffect, useState, type ReactNode } from "react";
 import { ROLE_TONE_CLASSES, NAV_ITEMS } from "@/components/navigation/nav-config";
 import { hasPermission, resolveScope } from "@/lib/permissions";
 import { useAuth } from "@/lib/auth-store";
+import { useI18n } from "@/lib/i18n/provider";
+import type { Locale } from "@/lib/i18n/dictionary";
+
+function LanguageToggle() {
+  const { locale, setLocale } = useI18n();
+  const next: Locale = locale === "ar" ? "en" : "ar";
+  return (
+    <button
+      type="button"
+      onClick={() => setLocale(next)}
+      title={locale === "ar" ? "Switch to English" : "التبديل إلى العربية"}
+      className="flex items-center gap-1.5 rounded-lg px-2 py-1.5 text-xs font-semibold text-muted-foreground transition-colors hover:bg-muted hover:text-card-foreground"
+    >
+      <Languages className="size-3.5" aria-hidden />
+      {locale === "ar" ? "EN" : "عربي"}
+    </button>
+  );
+}
 
 function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
   const pathname = usePathname();
   const { user, logout } = useAuth();
+  const { t, tEnum } = useI18n();
 
   const visibleItems = NAV_ITEMS.filter(
     (item) =>
@@ -29,7 +48,7 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
         </span>
       </div>
 
-      <nav aria-label="Main navigation" className="flex-1 space-y-1 overflow-y-auto p-3">
+      <nav aria-label={t("nav.mainNavigation")} className="flex-1 space-y-1 overflow-y-auto p-3">
         {visibleItems.map((item) => {
           const active =
             item.href === "/dashboard"
@@ -48,7 +67,7 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
               }`}
             >
               <item.icon className="size-4 shrink-0" aria-hidden />
-              {item.label}
+              {t(item.labelKey)}
             </a>
           );
         })}
@@ -66,10 +85,10 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
               </p>
               <p className="text-xs text-muted-foreground">
                 {resolveScope(user) === "all"
-                  ? "All centers"
+                  ? t("dashboard.allCenters")
                   : user.centerId != null
-                    ? `Center ${user.centerId}`
-                    : "No center"}
+                    ? t("dashboard.center", { id: user.centerId })
+                    : t("dashboard.noCenter")}
               </p>
             </div>
           </div>
@@ -77,8 +96,9 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
             <span
               className={`rounded-full px-2 py-0.5 text-[11px] font-medium ${ROLE_TONE_CLASSES[user.role] ?? ""}`}
             >
-              {user.role}
+              {tEnum(user.role)}
             </span>
+            <LanguageToggle />
             <button
               type="button"
               onClick={() => {
@@ -88,7 +108,7 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
               className="flex items-center gap-1.5 rounded-lg px-2 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:bg-red-500/10 hover:text-red-600 dark:hover:text-red-400"
             >
               <LogOut className="size-3.5" aria-hidden />
-              Sign out
+              {t("common.signOut")}
             </button>
           </div>
         </div>
@@ -101,6 +121,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const pathname = usePathname();
   const { user } = useAuth();
+  const { t } = useI18n();
 
   const [lastPathname, setLastPathname] = useState(pathname);
   if (lastPathname !== pathname) {
@@ -126,7 +147,7 @@ export function AppShell({ children }: { children: ReactNode }) {
 
   return (
     <div className="flex min-h-dvh">
-      <aside className="sticky top-0 hidden h-dvh w-64 shrink-0 border-r border-border bg-card lg:block">
+      <aside className="sticky top-0 hidden h-dvh w-64 shrink-0 border-e border-border bg-card lg:block">
         <SidebarContent />
       </aside>
 
@@ -138,12 +159,12 @@ export function AppShell({ children }: { children: ReactNode }) {
             onClick={() => setDrawerOpen(false)}
             className="absolute inset-0 cursor-default bg-black/50 backdrop-blur-sm"
           />
-          <div className="absolute inset-y-0 left-0 w-72 max-w-[85vw] border-r border-border bg-card shadow-xl">
+          <div className="absolute inset-y-0 start-0 w-72 max-w-[85vw] border-e border-border bg-card shadow-xl">
             <button
               type="button"
               onClick={() => setDrawerOpen(false)}
-              aria-label="Close navigation"
-              className="absolute right-3 top-4 z-10 rounded-lg p-1.5 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+              aria-label={t("common.close")}
+              className="absolute end-3 top-4 z-10 rounded-lg p-1.5 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
             >
               <X className="size-4" aria-hidden />
             </button>
@@ -157,7 +178,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           <button
             type="button"
             onClick={() => setDrawerOpen(true)}
-            aria-label="Open navigation"
+            aria-label={t("nav.openNavigation")}
             aria-expanded={drawerOpen}
             className="rounded-lg p-2 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
           >
@@ -167,7 +188,8 @@ export function AppShell({ children }: { children: ReactNode }) {
             ClassFlow
           </span>
           {user ? (
-            <span className="ml-auto text-xs text-muted-foreground">
+            <span className="ms-auto flex items-center gap-2 text-xs text-muted-foreground">
+              <LanguageToggle />
               {user.username}
             </span>
           ) : null}

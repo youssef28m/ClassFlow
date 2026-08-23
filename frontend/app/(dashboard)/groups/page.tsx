@@ -21,7 +21,7 @@ import { PAYMENT_TYPES, type Group, type PaymentType } from "@/features/groups/t
 import { useTeachersQuery } from "@/features/teachers/hooks";
 import { ApiError } from "@/lib/api-client";
 import { useAuth } from "@/lib/auth-store";
-import { humanizeEnum } from "@/lib/formatters";
+import { useI18n } from "@/lib/i18n/provider";
 import { can } from "@/lib/permissions";
 import { useDebouncedValue } from "@/lib/use-debounced-value";
 
@@ -30,6 +30,7 @@ const PAGE_SIZE = 10;
 export default function GroupsPage() {
   const { user } = useAuth();
   const toast = useToast();
+  const { t, tEnum } = useI18n();
   const [searchText, setSearchText] = useState("");
   const [paymentTypeFilter, setPaymentTypeFilter] = useState<"ALL" | PaymentType>("ALL");
   const [page, setPage] = useState(1);
@@ -70,13 +71,13 @@ export default function GroupsPage() {
     if (!deletingGroup) return;
     try {
       await deleteGroup.mutateAsync(deletingGroup.id);
-      toast.success("Group deleted");
+      toast.success(t("groups.deleted"));
       setDeletingGroup(null);
     } catch (deleteError) {
       toast.error(
         deleteError instanceof ApiError
           ? deleteError.message
-          : "Failed to delete group",
+          : t("common.somethingWentWrong"),
       );
       setDeletingGroup(null);
     }
@@ -85,7 +86,7 @@ export default function GroupsPage() {
   const columns: DataTableColumn<Group>[] = [
     {
       key: "name",
-      header: "Name",
+      header: t("groups.columnName"),
       render: (group) => (
         <Link
           href={`/groups/${group.id}`}
@@ -97,50 +98,51 @@ export default function GroupsPage() {
     },
     {
       key: "subject",
-      header: "Subject",
+      header: t("groups.columnSubject"),
       className: "hidden sm:table-cell",
     },
     {
       key: "teacherId",
-      header: "Teacher",
+      header: t("common.teacher"),
       render: (group) =>
-        teacherNames.get(group.teacherId) ?? `Teacher #${group.teacherId}`,
+        teacherNames.get(group.teacherId) ??
+        t("teachers.fallbackId", { id: group.teacherId }),
     },
     {
       key: "room",
-      header: "Room",
+      header: t("groups.columnRoom"),
       className: "hidden md:table-cell",
     },
     {
       key: "fee",
-      header: "Fee",
+      header: t("groups.columnFee"),
       render: (group) => (
         <span className="whitespace-nowrap tabular-nums">{group.fee}</span>
       ),
     },
     {
       key: "paymentType",
-      header: "Payment type",
+      header: t("groups.columnPaymentType"),
       className: "hidden lg:table-cell",
       render: (group) => (
-        <StatusBadge tone="neutral">{humanizeEnum(group.paymentType)}</StatusBadge>
+        <StatusBadge tone="neutral">{tEnum(group.paymentType)}</StatusBadge>
       ),
     },
     {
       key: "maxStudents",
-      header: "Capacity",
+      header: t("groups.columnCapacity"),
       className: "hidden xl:table-cell",
     },
     {
       key: "actions",
       header: "",
-      className: "w-24 text-right",
+      className: "w-24 text-end",
       render: (group) => (
         <div className="flex justify-end gap-1">
           {can(user, "groupsAndSessions", "manageGroups") ? (
             <button
               type="button"
-              aria-label={`Edit ${group.name}`}
+              aria-label={t("common.edit")}
               onClick={() => {
                 setEditingGroup(group);
                 setFormOpen(true);
@@ -153,7 +155,7 @@ export default function GroupsPage() {
           {can(user, "groupsAndSessions", "manageGroups") ? (
             <button
               type="button"
-              aria-label={`Delete ${group.name}`}
+              aria-label={t("common.delete")}
               onClick={() => setDeletingGroup(group)}
               className="rounded-lg p-2 text-muted-foreground transition-colors hover:bg-red-500/10 hover:text-red-600 dark:hover:text-red-400"
             >
@@ -168,8 +170,8 @@ export default function GroupsPage() {
   return (
     <>
       <PageHeader
-        title="Groups"
-        description="Teaching groups, fees, and capacity."
+        title={t("nav.groups")}
+        description={t("groups.description")}
         actions={
           <PermissionGate resource="groupsAndSessions" action="manageGroups">
             <button
@@ -181,7 +183,7 @@ export default function GroupsPage() {
               className="flex h-10 items-center gap-2 rounded-lg bg-primary px-4 text-sm font-medium text-primary-foreground transition-opacity hover:opacity-90"
             >
               <Plus className="size-4" aria-hidden />
-              Add group
+              {t("groups.add")}
             </button>
           </PermissionGate>
         }
@@ -191,13 +193,13 @@ export default function GroupsPage() {
         <FilterBar>
           <div className="relative w-full max-w-xs">
             <Search
-              className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground"
+              className="pointer-events-none absolute start-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground"
               aria-hidden
             />
             <input
               id="group-search"
               type="search"
-              placeholder="Search name, subject, room…"
+              placeholder={t("groups.searchPlaceholder")}
               value={searchText}
               onChange={(event) =>
                 updateFilters(() => setSearchText(event.target.value))
@@ -207,7 +209,7 @@ export default function GroupsPage() {
           </div>
           <select
             id="group-payment-type-filter"
-            aria-label="Filter by payment type"
+            aria-label={t("groups.filterPaymentType")}
             value={paymentTypeFilter}
             onChange={(event) =>
               updateFilters(() => {
@@ -216,10 +218,10 @@ export default function GroupsPage() {
             }
             className={`${inputClassName} w-auto`}
           >
-            <option value="ALL">All payment types</option>
+            <option value="ALL">{t("groups.allPaymentTypes")}</option>
             {PAYMENT_TYPES.map((paymentType) => (
               <option key={paymentType} value={paymentType}>
-                {humanizeEnum(paymentType)}
+                {tEnum(paymentType)}
               </option>
             ))}
           </select>
@@ -234,10 +236,10 @@ export default function GroupsPage() {
           onRetry={() => void refetch()}
           emptyTitle={
             search || paymentTypeFilter !== "ALL"
-              ? "No groups match your filters"
-              : "No groups yet"
+              ? t("groups.emptyFiltered")
+              : t("groups.empty")
           }
-          emptyDescription="Create a group to start enrolling students and scheduling sessions."
+          emptyDescription={t("groups.emptyDescription")}
         />
 
         {data && data.meta.totalPages > 0 ? (
@@ -264,9 +266,9 @@ export default function GroupsPage() {
         open={Boolean(deletingGroup)}
         onCancel={() => setDeletingGroup(null)}
         onConfirm={() => void handleConfirmDelete()}
-        title={`Delete ${deletingGroup?.name ?? "group"}?`}
-        message="Groups with enrolled students cannot be deleted. Remove their enrollments first."
-        confirmLabel="Delete group"
+        title={deletingGroup ? t("groups.deleteTitle", { name: deletingGroup.name }) : t("groups.deleteTitle", { name: "" })}
+        message={t("groups.deleteMessage")}
+        confirmLabel={t("common.delete")}
         tone="danger"
         isLoading={deleteGroup.isPending}
       />

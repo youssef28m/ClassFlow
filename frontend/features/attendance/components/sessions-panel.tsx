@@ -20,6 +20,7 @@ import type { ClassSession } from "@/features/attendance/types";
 import type { Schedule } from "@/features/schedules/types";
 import { scheduleLabel } from "@/features/schedules/components/schedule-manager";
 import { ApiError } from "@/lib/api-client";
+import { useI18n } from "@/lib/i18n/provider";
 import { formatDate } from "@/lib/formatters";
 
 interface SessionsPanelProps {
@@ -34,6 +35,7 @@ export function SessionsPanel({
   canManageSessions,
 }: SessionsPanelProps) {
   const toast = useToast();
+  const { t, tEnum } = useI18n();
   const sessions = useSessionsQuery({ groupId, pageSize: 100 }, true);
   const completeSession = useCompleteSession();
   const createSession = useCreateSession();
@@ -43,8 +45,8 @@ export function SessionsPanel({
   const [deletingSession, setDeletingSession] = useState<ClassSession | null>(null);
 
   const scheduleById = useMemo(
-    () => new Map(schedules.map((schedule) => [schedule.id, scheduleLabel(schedule)])),
-    [schedules],
+    () => new Map(schedules.map((schedule) => [schedule.id, scheduleLabel(schedule, tEnum)])),
+    [schedules, tEnum],
   );
 
   const items = useMemo(
@@ -58,10 +60,10 @@ export function SessionsPanel({
   async function handleComplete(session: ClassSession) {
     try {
       await completeSession.mutateAsync(session.id);
-      toast.success("Session marked as completed");
+      toast.success(t("sessions.markedCompleted"));
     } catch (error) {
       toast.error(
-        error instanceof ApiError ? error.message : "Failed to update session.",
+        error instanceof ApiError ? error.message : t("common.somethingWentWrong"),
       );
     }
   }
@@ -70,10 +72,10 @@ export function SessionsPanel({
     if (!deletingSession) return;
     try {
       await deleteSession.mutateAsync(deletingSession.id);
-      toast.success("Session deleted");
+      toast.success(t("sessions.deletedToast"));
     } catch (error) {
       toast.error(
-        error instanceof ApiError ? error.message : "Failed to delete session.",
+        error instanceof ApiError ? error.message : t("common.somethingWentWrong"),
       );
     } finally {
       setDeletingSession(null);
@@ -99,7 +101,7 @@ export function SessionsPanel({
       }
     }
     if (!best) {
-      toast.error("Every upcoming slot already has a session booked.");
+      toast.error(t("sessions.allBooked"));
       return;
     }
     try {
@@ -108,10 +110,10 @@ export function SessionsPanel({
         scheduleId: best.schedule.id,
         sessionDate: best.date,
       });
-      toast.success(`Session booked for ${formatDate(best.date)}`);
+      toast.success(t("sessions.bookedFor", { date: formatDate(best.date) }));
     } catch (error) {
       toast.error(
-        error instanceof ApiError ? error.message : "Failed to book session.",
+        error instanceof ApiError ? error.message : t("common.somethingWentWrong"),
       );
     }
   }
@@ -120,9 +122,9 @@ export function SessionsPanel({
     <section className="rounded-xl border border-border bg-card p-5">
       <div className="flex items-center justify-between gap-3">
         <div>
-          <h2 className="text-sm font-semibold text-card-foreground">Sessions</h2>
+          <h2 className="text-sm font-semibold text-card-foreground">{t("attendance.sessionsTitle")}</h2>
           <p className="mt-1 text-xs text-muted-foreground">
-            Booked occurrences of the weekly slots. Open a session to record who attended.
+            {t("attendance.sessionsSubtitle")}
           </p>
         </div>
         {canManageSessions ? (
@@ -133,35 +135,34 @@ export function SessionsPanel({
               disabled={schedules.length === 0 || createSession.isPending}
               title={
                 schedules.length === 0
-                  ? "Add a weekly slot first"
-                  : "Books the next free date from your weekly slots"
+                  ? t("schedules.addSlotFirst")
+                  : t("sessions.quickBookHint")
               }
               className="flex h-9 items-center gap-2 rounded-lg bg-primary px-3 text-sm font-medium text-primary-foreground transition-opacity hover:opacity-90 disabled:pointer-events-none disabled:opacity-60"
             >
               <CalendarPlus className="size-4" aria-hidden />
-              Quick book
+              {t("sessions.quickBook")}
             </button>
             <button
               type="button"
               onClick={() => setNewSessionOpen(true)}
               disabled={schedules.length === 0}
-              title={schedules.length === 0 ? "Add a weekly slot first" : undefined}
+              title={schedules.length === 0 ? t("schedules.addSlotFirst") : undefined}
               className="flex h-9 items-center gap-2 rounded-lg border border-border px-3 text-sm font-medium text-card-foreground transition-colors hover:bg-muted disabled:pointer-events-none disabled:opacity-60"
             >
-              Pick date…
+              {t("sessions.pickDate")}
             </button>
           </div>
         ) : null}
       </div>
 
       {sessions.isLoading ? (
-        <p className="mt-4 text-sm text-muted-foreground">Loading…</p>
+        <p className="mt-4 text-sm text-muted-foreground">{t("common.loading")}</p>
       ) : items.length === 0 ? (
         <p className="mt-4 text-sm text-muted-foreground">
-          No sessions booked yet. Use{" "}
-          <span className="font-medium text-card-foreground">Quick book</span>{" "}
-          to schedule the next date from your weekly slots, then take attendance
-          from here or the Attendance page.
+          {t("sessions.emptyPrefix")}{" "}
+          <span className="font-medium text-card-foreground">{t("sessions.quickBook")}</span>{" "}
+          {t("sessions.emptySuffix")}
         </p>
       ) : (
         <ul className="mt-4 divide-y divide-border rounded-xl border border-border">
@@ -172,12 +173,12 @@ export function SessionsPanel({
                   {formatDate(session.sessionDate)}
                 </p>
                 <p className="text-xs text-muted-foreground">
-                  {scheduleById.get(session.scheduleId) ?? `Slot #${session.scheduleId}`}
+                  {scheduleById.get(session.scheduleId) ?? t("schedules.slotFallbackId", { id: session.scheduleId })}
                 </p>
               </div>
               <div className="flex shrink-0 items-center gap-2">
                 <StatusBadge tone={session.completed ? "success" : "warning"}>
-                  {session.completed ? "Completed" : "Upcoming"}
+                  {session.completed ? t("enum.COMPLETED") : t("enum.UPCOMING")}
                 </StatusBadge>
                 <Link
                   href={`/attendance/${session.id}`}
@@ -189,7 +190,7 @@ export function SessionsPanel({
                 {canManageSessions && !session.completed ? (
                   <button
                     type="button"
-                    aria-label={`Mark ${formatDate(session.sessionDate)} completed`}
+                    aria-label={t("sessions.markCompletedAria", { date: formatDate(session.sessionDate) })}
                     onClick={() => void handleComplete(session)}
                     disabled={completeSession.isPending}
                     className="rounded-lg p-2 text-muted-foreground transition-colors hover:bg-emerald-500/10 hover:text-emerald-600 disabled:opacity-50 dark:hover:text-emerald-400"
@@ -200,7 +201,7 @@ export function SessionsPanel({
                 {canManageSessions ? (
                   <button
                     type="button"
-                    aria-label={`Delete session on ${formatDate(session.sessionDate)}`}
+                    aria-label={t("sessions.deleteAria", { date: formatDate(session.sessionDate) })}
                     onClick={() => setDeletingSession(session)}
                     className="rounded-lg p-2 text-muted-foreground transition-colors hover:bg-red-500/10 hover:text-red-600 disabled:opacity-50 dark:hover:text-red-400"
                   >
@@ -225,9 +226,11 @@ export function SessionsPanel({
         open={Boolean(deletingSession)}
         onCancel={() => setDeletingSession(null)}
         onConfirm={() => void handleConfirmDelete()}
-        title={`Delete the session on ${deletingSession ? formatDate(deletingSession.sessionDate) : ""}?`}
-        message="The session and all attendance recorded for it will be removed. This cannot be undone."
-        confirmLabel="Delete session"
+        title={t("sessions.deleteTitle", {
+          date: deletingSession ? formatDate(deletingSession.sessionDate) : "",
+        })}
+        message={t("sessions.deleteMessage")}
+        confirmLabel={t("common.delete")}
         tone="danger"
         isLoading={deleteSession.isPending}
       />

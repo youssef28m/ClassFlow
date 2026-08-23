@@ -48,6 +48,10 @@ body {
   font-family: var(--font-sans), Arial, Helvetica, sans-serif;
 }
 
+[dir="rtl"] body {
+  font-family: var(--font-cairo), var(--font-sans), Arial, Helvetica, sans-serif;
+}
+
 select option {
   background-color: var(--card);
   color: var(--card-foreground);

@@ -12,12 +12,16 @@ import {
 } from "@/features/schedules/hooks";
 import { DAY_OF_WEEK, type DayOfWeek, type Schedule } from "@/features/schedules/types";
 import { ApiError } from "@/lib/api-client";
+import { useI18n } from "@/lib/i18n/provider";
 import { formatSlotTime, humanizeEnum } from "@/lib/formatters";
 
 const TIME_PATTERN = /^([01]\d|2[0-3]):[0-5]\d$/;
 
-export function scheduleLabel(schedule: Schedule): string {
-  return `${humanizeEnum(schedule.dayOfWeek)} ${formatSlotTime(schedule.startTime)}–${formatSlotTime(schedule.endTime)}`;
+export function scheduleLabel(
+  schedule: Schedule,
+  translateDay: (day: string) => string = humanizeEnum,
+): string {
+  return `${translateDay(schedule.dayOfWeek)} ${formatSlotTime(schedule.startTime)}–${formatSlotTime(schedule.endTime)}`;
 }
 
 interface ScheduleManagerProps {
@@ -36,6 +40,7 @@ function sortSchedules(items: Schedule[]): Schedule[] {
 
 export function ScheduleManager({ groupId, canManage }: ScheduleManagerProps) {
   const toast = useToast();
+  const { t, tEnum } = useI18n();
   const schedules = useSchedulesQuery({ groupId, pageSize: 100 });
   const createSchedule = useCreateSchedule();
   const deleteSchedule = useDeleteSchedule();
@@ -48,7 +53,7 @@ export function ScheduleManager({ groupId, canManage }: ScheduleManagerProps) {
   async function handleAdd(event: React.FormEvent) {
     event.preventDefault();
     if (!TIME_PATTERN.test(startTime) || !TIME_PATTERN.test(endTime)) {
-      setFormError("Choose both a start and an end time.");
+      setFormError(t("schedules.timeRequired"));
       return;
     }
     setFormError(null);
@@ -59,12 +64,12 @@ export function ScheduleManager({ groupId, canManage }: ScheduleManagerProps) {
         startTime,
         endTime,
       });
-      toast.success("Slot added to weekly schedule");
+      toast.success(t("schedules.slotAdded"));
       setStartTime("");
       setEndTime("");
     } catch (error) {
       toast.error(
-        error instanceof ApiError ? error.message : "Failed to add slot.",
+        error instanceof ApiError ? error.message : t("common.somethingWentWrong"),
       );
     }
   }
@@ -72,12 +77,12 @@ export function ScheduleManager({ groupId, canManage }: ScheduleManagerProps) {
   async function handleDelete(schedule: Schedule) {
     try {
       await deleteSchedule.mutateAsync(schedule.id);
-      toast.success("Slot removed");
+      toast.success(t("schedules.slotRemoved"));
     } catch (error) {
       toast.error(
         error instanceof ApiError
           ? error.message
-          : "Failed to remove slot.",
+          : t("common.somethingWentWrong"),
       );
     }
   }
@@ -86,16 +91,16 @@ export function ScheduleManager({ groupId, canManage }: ScheduleManagerProps) {
 
   return (
     <section className="rounded-xl border border-border bg-card p-5">
-      <h2 className="text-sm font-semibold text-card-foreground">Weekly schedule</h2>
+      <h2 className="text-sm font-semibold text-card-foreground">{t("schedules.weeklyTitle")}</h2>
       <p className="mt-1 text-xs text-muted-foreground">
-        Recurring time slots for this group. Sessions are booked against these slots.
+        {t("schedules.weeklySubtitle")}
       </p>
 
       {schedules.isLoading ? (
-        <p className="mt-4 text-sm text-muted-foreground">Loading…</p>
+        <p className="mt-4 text-sm text-muted-foreground">{t("common.loading")}</p>
       ) : items.length === 0 ? (
         <p className="mt-4 text-sm text-muted-foreground">
-          No slots yet. Add at least one slot to book sessions.
+          {t("schedules.noSlotsYet")}
         </p>
       ) : (
         <ul className="mt-4 flex flex-wrap gap-2">
@@ -104,11 +109,11 @@ export function ScheduleManager({ groupId, canManage }: ScheduleManagerProps) {
               key={schedule.id}
               className="flex items-center gap-2 rounded-lg border border-border px-3 py-1.5 text-sm"
             >
-              <span className="text-card-foreground">{scheduleLabel(schedule)}</span>
+              <span className="text-card-foreground">{scheduleLabel(schedule, tEnum)}</span>
               {canManage ? (
                 <button
                   type="button"
-                  aria-label={`Remove ${scheduleLabel(schedule)}`}
+                  aria-label={`${t("common.remove")} ${scheduleLabel(schedule, tEnum)}`}
                   onClick={() => void handleDelete(schedule)}
                   disabled={deleteSchedule.isPending}
                   className="rounded-md p-1 text-muted-foreground transition-colors hover:bg-red-500/10 hover:text-red-600 disabled:opacity-50 dark:hover:text-red-400"
@@ -124,7 +129,7 @@ export function ScheduleManager({ groupId, canManage }: ScheduleManagerProps) {
       {canManage ? (
         <form onSubmit={handleAdd} className="mt-4 flex flex-wrap items-end gap-2">
           <label className="sr-only" htmlFor="schedule-day">
-            Day of week
+            {t("schedules.day")}
           </label>
           <select
             id="schedule-day"
@@ -134,12 +139,12 @@ export function ScheduleManager({ groupId, canManage }: ScheduleManagerProps) {
           >
             {DAY_OF_WEEK.map((dayOption) => (
               <option key={dayOption} value={dayOption}>
-                {humanizeEnum(dayOption)}
+                {tEnum(dayOption)}
               </option>
             ))}
           </select>
           <label className="sr-only" htmlFor="schedule-start">
-            Start time
+            {t("time.start")}
           </label>
           <TimeSelect
             id="schedule-start"
@@ -147,7 +152,7 @@ export function ScheduleManager({ groupId, canManage }: ScheduleManagerProps) {
             onChange={setStartTime}
           />
           <label className="sr-only" htmlFor="schedule-end">
-            End time
+            {t("time.end")}
           </label>
           <TimeSelect
             id="schedule-end"
@@ -164,7 +169,7 @@ export function ScheduleManager({ groupId, canManage }: ScheduleManagerProps) {
             ) : (
               <Plus className="size-4" aria-hidden />
             )}
-            Add slot
+            {t("schedules.addSlot")}
           </button>
           {formError ? (
             <p role="alert" className="w-full text-sm text-red-600 dark:text-red-400">
@@ -176,7 +181,7 @@ export function ScheduleManager({ groupId, canManage }: ScheduleManagerProps) {
 
       {schedules.error ? (
         <p role="alert" className="mt-4 text-sm text-red-600 dark:text-red-400">
-          Could not load the weekly schedule
+          {t("schedules.loadErrorFull")}
           {schedules.error instanceof ApiError ? `: ${schedules.error.message}` : "."}
         </p>
       ) : null}

@@ -12,10 +12,11 @@ import {
   Wallet,
   type LucideIcon,
 } from "lucide-react";
+import type { TranslationKey } from "@/lib/i18n/dictionary";
 import type { Resource } from "@/lib/permissions";
 
 export interface NavItem {
-  label: string;
+  labelKey: TranslationKey;
   href: string;
   icon: LucideIcon;
   resource?: Resource;
@@ -23,72 +24,72 @@ export interface NavItem {
 }
 
 export const NAV_ITEMS: NavItem[] = [
-  { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
+  { labelKey: "nav.dashboard", href: "/dashboard", icon: LayoutDashboard },
   {
-    label: "Students",
+    labelKey: "nav.students",
     href: "/students",
     icon: GraduationCap,
     resource: "students",
     action: "read",
   },
   {
-    label: "Enrollments",
+    labelKey: "nav.enrollments",
     href: "/enrollments",
     icon: ClipboardList,
     resource: "groupsAndSessions",
     action: "read",
   },
   {
-    label: "Teachers",
+    labelKey: "nav.teachers",
     href: "/teachers",
     icon: Users,
     resource: "teachersAndSalaries",
     action: "readTeachers",
   },
   {
-    label: "Groups",
+    labelKey: "nav.groups",
     href: "/groups",
     icon: Layers,
     resource: "groupsAndSessions",
     action: "read",
   },
   {
-    label: "Schedules",
+    labelKey: "nav.schedules",
     href: "/schedules",
     icon: CalendarRange,
     resource: "groupsAndSessions",
     action: "read",
   },
   {
-    label: "Attendance",
+    labelKey: "nav.attendance",
     href: "/attendance",
     icon: CalendarCheck,
     resource: "groupsAndSessions",
     action: "read",
   },
   {
-    label: "Payments",
+    labelKey: "nav.payments",
     href: "/payments",
     icon: Banknote,
     resource: "paymentsAndExpenses",
     action: "read",
   },
   {
-    label: "Salaries",
+    labelKey: "nav.salaries",
     href: "/salaries",
     icon: Wallet,
     resource: "teachersAndSalaries",
     action: "manageSalaries",
   },
   {
-    label: "Expenses",
+    labelKey: "nav.expenses",
     href: "/expenses",
     icon: Receipt,
     resource: "paymentsAndExpenses",
     action: "createExpense",
   },
   {
-    label: "Users",
+    labelKey: "nav.users",
     href: "/users",
     icon: ShieldCheck,
     resource: "users",

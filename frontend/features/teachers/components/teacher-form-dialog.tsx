@@ -16,6 +16,7 @@ import {
 import type { Teacher } from "@/features/teachers/types";
 import { useCreateTeacher, useUpdateTeacher } from "@/features/teachers/hooks";
 import { ApiError } from "@/lib/api-client";
+import { useI18n } from "@/lib/i18n/provider";
 
 interface TeacherFormDialogProps {
   open: boolean;
@@ -30,6 +31,7 @@ function defaultValues(): TeacherFormValues {
 export function TeacherFormDialog({ open, onClose, teacher }: TeacherFormDialogProps) {
   const toast = useToast();
   const createTeacher = useCreateTeacher();
+  const { t } = useI18n();
   const updateTeacher = useUpdateTeacher();
   const [rootError, setRootError] = useState<string | null>(null);
   const initialValues = useMemo(
@@ -46,10 +48,10 @@ export function TeacherFormDialog({ open, onClose, teacher }: TeacherFormDialogP
     try {
       if (teacher) {
         await updateTeacher.mutateAsync({ id: teacher.id, payload: toTeacherPayload(values) });
-        toast.success("Teacher updated");
+        toast.success(t("teachers.updated"));
       } else {
         await createTeacher.mutateAsync(toTeacherPayload(values));
-        toast.success("Teacher added");
+        toast.success(t("teachers.added"));
       }
       onClose();
     } catch (error) {
@@ -64,35 +66,35 @@ export function TeacherFormDialog({ open, onClose, teacher }: TeacherFormDialogP
         }
         if (!hasFieldErrors) setRootError(error.message);
       } else {
-        setRootError("Something went wrong. Please try again.");
+        setRootError(t("common.somethingWentWrong"));
       }
     }
   });
   const isSaving = createTeacher.isPending || updateTeacher.isPending;
 
   return (
-    <FormDialog open={open} onOpenChange={(nextOpen) => !nextOpen && onClose()} title={teacher ? `Edit ${teacher.fullName}` : "Add teacher"} description="Manage the teacher's contact details and specialization.">
+    <FormDialog open={open} onOpenChange={(nextOpen) => !nextOpen && onClose()} title={teacher ? t("teachers.editTitle", { name: teacher.fullName }) : t("teachers.formAddTitle")} description={t("teachers.formDescription")}>
       <form onSubmit={onSubmit} className="space-y-4" noValidate>
         {rootError ? <p role="alert" className="rounded-lg bg-red-500/10 px-3 py-2 text-sm text-red-600 dark:text-red-400">{rootError}</p> : null}
-        <Field label="Full name" htmlFor="teacher-full-name" error={errors.fullName?.message}>
+        <Field label={t("students.fieldName")} htmlFor="teacher-full-name" error={errors.fullName?.message}>
           <input id="teacher-full-name" type="text" autoComplete="name" className={inputClassName} aria-invalid={Boolean(errors.fullName)} {...register("fullName")} />
         </Field>
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <Field label="Phone" htmlFor="teacher-phone" error={errors.phone?.message}>
+          <Field label={t("students.fieldPhone")} htmlFor="teacher-phone" error={errors.phone?.message}>
             <input id="teacher-phone" type="tel" autoComplete="tel" className={inputClassName} aria-invalid={Boolean(errors.phone)} {...register("phone")} />
           </Field>
-          <Field label="Specialization" htmlFor="teacher-specialization" error={errors.specialization?.message}>
+          <Field label={t("teachers.specialization")} htmlFor="teacher-specialization" error={errors.specialization?.message}>
             <input id="teacher-specialization" type="text" className={inputClassName} aria-invalid={Boolean(errors.specialization)} {...register("specialization")} />
           </Field>
         </div>
         <label className="flex items-center gap-2 text-sm text-card-foreground">
           <input type="checkbox" className="size-4 accent-primary" {...register("active")} />
-          Active teacher
+          {t("teachers.activeTeacher")}
         </label>
         <div className="flex justify-end gap-2 pt-2">
-          <button type="button" onClick={onClose} disabled={isSaving} className="h-10 rounded-lg border border-border px-4 text-sm font-medium text-card-foreground hover:bg-muted disabled:pointer-events-none disabled:opacity-60">Cancel</button>
+          <button type="button" onClick={onClose} disabled={isSaving} className="h-10 rounded-lg border border-border px-4 text-sm font-medium text-card-foreground hover:bg-muted disabled:pointer-events-none disabled:opacity-60">{t("common.cancel")}</button>
           <button type="submit" disabled={isSaving} className="flex h-10 items-center justify-center gap-2 rounded-lg bg-primary px-5 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:pointer-events-none disabled:opacity-60">
-            {isSaving ? <Loader2 className="size-4 animate-spin" aria-hidden /> : null}{teacher ? "Save changes" : "Add teacher"}
+            {isSaving ? <Loader2 className="size-4 animate-spin" aria-hidden /> : null}{teacher ? t("common.saveChanges") : t("teachers.add")}
           </button>
         </div>
       </form>

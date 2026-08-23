@@ -1,6 +1,7 @@
 "use client";
 
 import { ChevronLeft, ChevronRight } from "lucide-react";
+import { useI18n } from "@/lib/i18n/provider";
 
 interface TablePaginationProps {
   page: number;
@@ -15,23 +16,24 @@ export function TablePagination({
   total,
   onPageChange,
 }: TablePaginationProps) {
+  const { t } = useI18n();
   return (
     <nav
-      aria-label="Table pagination"
+      aria-label={t("table.pagination")}
       className="mt-4 flex items-center justify-between"
     >
       <p className="text-sm text-muted-foreground">
-        {total} record{total === 1 ? "" : "s"}
+        {t("table.totalCount", { count: total })}
       </p>
       <div className="flex items-center gap-2">
         <span className="text-sm text-muted-foreground">
-          Page {page} of {Math.max(totalPages, 1)}
+          {t("table.pageOf", { page, totalPages: Math.max(totalPages, 1) })}
         </span>
         <button
           type="button"
           onClick={() => onPageChange(page - 1)}
           disabled={page <= 1}
-          aria-label="Previous page"
+          aria-label={t("table.prev")}
           className="rounded-lg border border-border p-1.5 text-card-foreground transition-colors hover:bg-muted disabled:pointer-events-none disabled:opacity-40"
         >
           <ChevronLeft className="size-4" aria-hidden />
@@ -40,7 +42,7 @@ export function TablePagination({
           type="button"
           onClick={() => onPageChange(page + 1)}
           disabled={page >= totalPages}
-          aria-label="Next page"
+          aria-label={t("table.next")}
           className="rounded-lg border border-border p-1.5 text-card-foreground transition-colors hover:bg-muted disabled:pointer-events-none disabled:opacity-40"
         >
           <ChevronRight className="size-4" aria-hidden />

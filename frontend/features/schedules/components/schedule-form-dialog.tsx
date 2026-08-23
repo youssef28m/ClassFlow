@@ -13,7 +13,7 @@ import { useCreateSchedule, useUpdateSchedule } from "@/features/schedules/hooks
 import { DAYS_OF_WEEK, type Schedule } from "@/features/schedules/types";
 import { scheduleFormSchema, toScheduleFormValues, toSchedulePayload, type ScheduleFormValues } from "@/features/schedules/schema";
 import { ApiError } from "@/lib/api-client";
-import { humanizeEnum } from "@/lib/formatters";
+import { useI18n } from "@/lib/i18n/provider";
 
 interface ScheduleFormDialogProps { open: boolean; onClose: () => void; schedule?: Schedule | null; }
 const SCHEDULE_FORM_FIELDS = new Set<keyof ScheduleFormValues>(["groupId", "dayOfWeek", "startTime", "endTime"]);
@@ -23,6 +23,7 @@ function defaultValues(): ScheduleFormValues { return { groupId: "", dayOfWeek: 
 export function ScheduleFormDialog({ open, onClose, schedule }: ScheduleFormDialogProps) {
   const toast = useToast();
   const groups = useGroupsQuery({ pageSize: 100 });
+  const { t, tEnum } = useI18n();
   const createSchedule = useCreateSchedule();
   const updateSchedule = useUpdateSchedule();
   const [rootError, setRootError] = useState<string | null>(null);
@@ -42,10 +43,10 @@ export function ScheduleFormDialog({ open, onClose, schedule }: ScheduleFormDial
             endTime: payload.endTime,
           },
         });
-        toast.success("Schedule updated");
+        toast.success(t("schedules.updated"));
       } else {
         await createSchedule.mutateAsync(payload);
-        toast.success("Schedule added");
+        toast.success(t("schedules.added"));
       }
       onClose();
     } catch (error) {
@@ -56,24 +57,24 @@ export function ScheduleFormDialog({ open, onClose, schedule }: ScheduleFormDial
           if (message && SCHEDULE_FORM_FIELDS.has(field as keyof ScheduleFormValues)) { hasFieldErrors = true; setError(field as keyof ScheduleFormValues, { message }); }
         }
         if (!hasFieldErrors) setRootError(error.message);
-      } else setRootError("Something went wrong. Please try again.");
+      } else setRootError(t("common.somethingWentWrong"));
     }
   });
 
-  return <FormDialog open={open} onOpenChange={(nextOpen) => !nextOpen && onClose()} title={schedule ? "Edit schedule" : "Add schedule"} description={schedule ? "Update this group's weekly time slot." : "Set a recurring weekly time slot for a group."}>
+  return <FormDialog open={open} onOpenChange={(nextOpen) => !nextOpen && onClose()} title={schedule ? t("schedules.editTitle") : t("schedules.addTitle")} description={schedule ? t("schedules.editDescription") : t("schedules.addDescription")}>
     <form onSubmit={onSubmit} className="space-y-4" noValidate>
       {rootError ? <p role="alert" className="rounded-lg bg-red-500/10 px-3 py-2 text-sm text-red-600 dark:text-red-400">{rootError}</p> : null}
-      <Field label="Group" htmlFor="schedule-group" error={errors.groupId?.message}><select id="schedule-group" className={inputClassName} aria-invalid={Boolean(errors.groupId)} disabled={Boolean(schedule)} {...register("groupId")}><option value="">{groups.isLoading ? "Loading groups…" : "Select a group…"}</option>{(groups.data?.items ?? []).map((group) => <option key={group.id} value={group.id}>{group.name} — {group.subject}</option>)}</select></Field>
-      <Field label="Day" htmlFor="schedule-day" error={errors.dayOfWeek?.message}><select id="schedule-day" className={inputClassName} {...register("dayOfWeek")}>{DAYS_OF_WEEK.map((day) => <option key={day} value={day}>{humanizeEnum(day)}</option>)}</select></Field>
+      <Field label={t("nav.groups")} htmlFor="schedule-group" error={errors.groupId?.message}><select id="schedule-group" className={inputClassName} aria-invalid={Boolean(errors.groupId)} disabled={Boolean(schedule)} {...register("groupId")}><option value="">{groups.isLoading ? t("common.loading") : t("schedules.selectGroupPlaceholder")}</option>{(groups.data?.items ?? []).map((group) => <option key={group.id} value={group.id}>{group.name} — {group.subject}</option>)}</select></Field>
+      <Field label={t("schedules.day")} htmlFor="schedule-day" error={errors.dayOfWeek?.message}><select id="schedule-day" className={inputClassName} {...register("dayOfWeek")}>{DAYS_OF_WEEK.map((day) => <option key={day} value={day}>{tEnum(day)}</option>)}</select></Field>
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-        <Field label="Start time" htmlFor="schedule-start" error={errors.startTime?.message}>
+        <Field label={t("time.start")} htmlFor="schedule-start" error={errors.startTime?.message}>
           <Controller control={control} name="startTime" render={({ field }) => <span id="schedule-start"><TimeSelect value={field.value} onChange={field.onChange} /></span>} />
         </Field>
-        <Field label="End time" htmlFor="schedule-end" error={errors.endTime?.message}>
+        <Field label={t("time.end")} htmlFor="schedule-end" error={errors.endTime?.message}>
           <Controller control={control} name="endTime" render={({ field }) => <span id="schedule-end"><TimeSelect value={field.value} onChange={field.onChange} /></span>} />
         </Field>
       </div>
-      <div className="flex justify-end gap-2 pt-2"><button type="button" onClick={onClose} disabled={isSaving} className="h-10 rounded-lg border border-border px-4 text-sm font-medium hover:bg-muted disabled:pointer-events-none disabled:opacity-60">Cancel</button><button type="submit" disabled={isSaving || groups.isLoading} className="flex h-10 items-center justify-center gap-2 rounded-lg bg-primary px-5 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:pointer-events-none disabled:opacity-60">{isSaving ? <Loader2 className="size-4 animate-spin" aria-hidden /> : null}{schedule ? "Save changes" : "Add schedule"}</button></div>
+      <div className="flex justify-end gap-2 pt-2"><button type="button" onClick={onClose} disabled={isSaving} className="h-10 rounded-lg border border-border px-4 text-sm font-medium hover:bg-muted disabled:pointer-events-none disabled:opacity-60">{t("common.cancel")}</button><button type="submit" disabled={isSaving || groups.isLoading} className="flex h-10 items-center justify-center gap-2 rounded-lg bg-primary px-5 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:pointer-events-none disabled:opacity-60">{isSaving ? <Loader2 className="size-4 animate-spin" aria-hidden /> : null}{schedule ? t("common.saveChanges") : t("schedules.add")}</button></div>
     </form>
   </FormDialog>;
 }

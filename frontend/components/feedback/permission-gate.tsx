@@ -3,6 +3,7 @@
 import { Loader2, ShieldAlert } from "lucide-react";
 import type { ReactNode } from "react";
 import { EmptyState } from "@/components/feedback/empty-state";
+import { useI18n } from "@/lib/i18n/provider";
 import { can, type ActionsOf, type Resource } from "@/lib/permissions";
 import { useAuth } from "@/lib/auth-store";
 
@@ -20,6 +21,7 @@ export function PermissionGate<R extends Resource>({
   fallback,
 }: PermissionGateProps<R>) {
   const { user, status } = useAuth();
+  const { t } = useI18n();
 
   if (status === "loading") {
     return (
@@ -34,8 +36,8 @@ export function PermissionGate<R extends Resource>({
       fallback ?? (
         <EmptyState
           icon={ShieldAlert}
-          title="No access to this area"
-          description="Your role does not include permission for this section. Contact an administrator if you believe this is a mistake."
+          title={t("placeholder.noAccessTitle")}
+          description={t("placeholder.noAccessDescription")}
         />
       )
     );

@@ -19,7 +19,7 @@ import {
 import type { Student } from "@/features/students/types";
 import { STUDENT_STATUSES } from "@/features/students/types";
 import { ApiError } from "@/lib/api-client";
-import { humanizeEnum } from "@/lib/formatters";
+import { useI18n } from "@/lib/i18n/provider";
 import {
   useCreateStudent,
   useUpdateStudent,
@@ -51,6 +51,7 @@ export function StudentFormDialog({
 }: StudentFormDialogProps) {
   const isEdit = Boolean(student);
   const toast = useToast();
+  const { t, tEnum } = useI18n();
   const createStudent = useCreateStudent();
   const updateStudent = useUpdateStudent();
   const [rootError, setRootError] = useState<string | null>(null);
@@ -76,10 +77,10 @@ export function StudentFormDialog({
     try {
       if (student) {
         await updateStudent.mutateAsync({ id: student.id, payload });
-        toast.success("Student updated");
+        toast.success(t("students.updated"));
       } else {
         await createStudent.mutateAsync(payload);
-        toast.success("Student added");
+        toast.success(t("students.added"));
       }
       onClose();
     } catch (error) {
@@ -94,7 +95,7 @@ export function StudentFormDialog({
         }
         if (!hasFieldErrors) setRootError(error.message);
       } else {
-        setRootError("Something went wrong. Please try again.");
+        setRootError(t("common.somethingWentWrong"));
       }
     }
   });
@@ -107,11 +108,11 @@ export function StudentFormDialog({
       onOpenChange={(nextOpen) => {
         if (!nextOpen) onClose();
       }}
-      title={isEdit ? `Edit ${student?.fullName}` : "Add student"}
+      title={isEdit ? t("students.editTitle", { name: student?.fullName ?? "" }) : t("students.formAddTitle")}
       description={
         isEdit
-          ? "Update the student record. Changes apply immediately."
-          : "Create a new student record for your center."
+          ? t("students.formEditDescription")
+          : t("students.formAddDescription")
       }
     >
       <form onSubmit={onSubmit} className="space-y-4" noValidate>
@@ -124,12 +125,12 @@ export function StudentFormDialog({
           </p>
         ) : null}
 
-        <Field label="Full name" htmlFor="fullName" error={errors.fullName?.message}>
+        <Field label={t("students.fieldName")} htmlFor="fullName" error={errors.fullName?.message}>
           <input
             id="fullName"
             type="text"
             autoComplete="off"
-            placeholder="e.g. Ahmed Mohamed"
+            placeholder={t("students.namePlaceholder")}
             aria-invalid={Boolean(errors.fullName)}
             className={inputClassName}
             {...register("fullName")}
@@ -137,25 +138,25 @@ export function StudentFormDialog({
         </Field>
 
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <Field label="Phone" htmlFor="phone" error={errors.phone?.message}>
+          <Field label={t("students.fieldPhone")} htmlFor="phone" error={errors.phone?.message}>
             <input
               id="phone"
               type="tel"
-              placeholder="Optional"
+              placeholder={t("common.optional")}
               aria-invalid={Boolean(errors.phone)}
               className={inputClassName}
               {...register("phone")}
             />
           </Field>
           <Field
-            label="Parent phone"
+            label={t("students.fieldGuardian")}
             htmlFor="parentPhone"
             error={errors.parentPhone?.message}
           >
             <input
               id="parentPhone"
               type="tel"
-              placeholder="Optional"
+              placeholder={t("common.optional")}
               aria-invalid={Boolean(errors.parentPhone)}
               className={inputClassName}
               {...register("parentPhone")}
@@ -164,21 +165,21 @@ export function StudentFormDialog({
         </div>
 
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <Field label="Grade" htmlFor="grade" error={errors.grade?.message}>
+          <Field label={t("students.fieldGrade")} htmlFor="grade" error={errors.grade?.message}>
             <input
               id="grade"
               type="text"
-              placeholder="e.g. Grade 7"
+              placeholder={t("students.gradePlaceholder")}
               aria-invalid={Boolean(errors.grade)}
               className={inputClassName}
               {...register("grade")}
             />
           </Field>
-          <Field label="School" htmlFor="school" error={errors.school?.message}>
+          <Field label={t("students.fieldSchool")} htmlFor="school" error={errors.school?.message}>
             <input
               id="school"
               type="text"
-              placeholder="Optional"
+              placeholder={t("common.optional")}
               aria-invalid={Boolean(errors.school)}
               className={inputClassName}
               {...register("school")}
@@ -188,7 +189,7 @@ export function StudentFormDialog({
 
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <Field
-            label="Join date"
+            label={t("students.fieldJoinDate")}
             htmlFor="joinDate"
             error={errors.joinDate?.message}
           >
@@ -201,7 +202,7 @@ export function StudentFormDialog({
             />
           </Field>
           <Field
-            label="Status"
+            label={t("common.status")}
             htmlFor="status"
             error={errors.status?.message}
           >
@@ -213,18 +214,18 @@ export function StudentFormDialog({
             >
               {STUDENT_STATUSES.map((status) => (
                 <option key={status} value={status}>
-                  {humanizeEnum(status)}
+                  {tEnum(status)}
                 </option>
               ))}
             </select>
           </Field>
         </div>
 
-        <Field label="Notes" htmlFor="notes" error={errors.notes?.message}>
+        <Field label={t("students.fieldNotes")} htmlFor="notes" error={errors.notes?.message}>
           <textarea
             id="notes"
             rows={3}
-            placeholder="Optional"
+            placeholder={t("common.optional")}
             aria-invalid={Boolean(errors.notes)}
             className={`${inputClassName} h-auto py-2`}
             {...register("notes")}
@@ -238,7 +239,7 @@ export function StudentFormDialog({
             disabled={isSaving}
             className="h-10 rounded-lg border border-border px-4 text-sm font-medium text-card-foreground transition-colors hover:bg-muted disabled:pointer-events-none disabled:opacity-60"
           >
-            Cancel
+            {t("common.cancel")}
           </button>
           <button
             type="submit"
@@ -248,7 +249,7 @@ export function StudentFormDialog({
             {isSaving ? (
               <Loader2 className="size-4 animate-spin" aria-hidden />
             ) : null}
-            {isEdit ? "Save changes" : "Add student"}
+            {isEdit ? t("common.saveChanges") : t("students.submitAdd")}
           </button>
         </div>
       </form>

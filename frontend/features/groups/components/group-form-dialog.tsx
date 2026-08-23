@@ -18,7 +18,7 @@ import { PAYMENT_TYPES } from "@/features/groups/types";
 import { useCreateGroup, useUpdateGroup } from "@/features/groups/hooks";
 import { useTeachersQuery } from "@/features/teachers/hooks";
 import { ApiError } from "@/lib/api-client";
-import { humanizeEnum } from "@/lib/formatters";
+import { useI18n } from "@/lib/i18n/provider";
 
 interface GroupFormDialogProps {
   open: boolean;
@@ -41,6 +41,7 @@ function defaultValues(): GroupFormValues {
 export function GroupFormDialog({ open, onClose, group }: GroupFormDialogProps) {
   const isEdit = Boolean(group);
   const toast = useToast();
+  const { t, tEnum } = useI18n();
   const createGroup = useCreateGroup();
   const updateGroup = useUpdateGroup();
   const [rootError, setRootError] = useState<string | null>(null);
@@ -67,10 +68,10 @@ export function GroupFormDialog({ open, onClose, group }: GroupFormDialogProps) 
     try {
       if (group) {
         await updateGroup.mutateAsync({ id: group.id, payload });
-        toast.success("Group updated");
+        toast.success(t("groups.updated"));
       } else {
         await createGroup.mutateAsync(payload);
-        toast.success("Group created");
+        toast.success(t("groups.created"));
       }
       onClose();
     } catch (error) {
@@ -85,7 +86,7 @@ export function GroupFormDialog({ open, onClose, group }: GroupFormDialogProps) 
         }
         if (!hasFieldErrors) setRootError(error.message);
       } else {
-        setRootError("Something went wrong. Please try again.");
+        setRootError(t("common.somethingWentWrong"));
       }
     }
   });
@@ -98,11 +99,11 @@ export function GroupFormDialog({ open, onClose, group }: GroupFormDialogProps) 
       onOpenChange={(nextOpen) => {
         if (!nextOpen) onClose();
       }}
-      title={isEdit ? `Edit ${group?.name}` : "Add group"}
+      title={isEdit ? t("groups.editTitle", { name: group?.name ?? "" }) : t("groups.addTitle")}
       description={
         isEdit
-          ? "Update the group details. Changes apply immediately."
-          : "Create a new teaching group for your center."
+          ? t("groups.formEditDescription")
+          : t("groups.formAddDescription")
       }
     >
       <form onSubmit={onSubmit} className="space-y-4" noValidate>
@@ -115,7 +116,7 @@ export function GroupFormDialog({ open, onClose, group }: GroupFormDialogProps) 
           </p>
         ) : null}
 
-        <Field label="Teacher" htmlFor="teacherId" error={errors.teacherId?.message}>
+        <Field label={t("common.teacher")} htmlFor="teacherId" error={errors.teacherId?.message}>
           <select
             id="teacherId"
             aria-invalid={Boolean(errors.teacherId)}
@@ -123,35 +124,35 @@ export function GroupFormDialog({ open, onClose, group }: GroupFormDialogProps) 
             {...register("teacherId")}
           >
             <option value="">
-              {teachers.isLoading ? "Loading teachers…" : "Select a teacher…"}
+              {teachers.isLoading ? t("common.loading") : t("groups.selectTeacherPlaceholder")}
             </option>
             {(teachers.data?.items ?? []).map((teacher) => (
               <option key={teacher.id} value={teacher.id}>
                 {teacher.fullName}
-                {teacher.active ? "" : " (inactive)"}
+                {teacher.active ? "" : ` (${t("enum.INACTIVE").toLowerCase()})`}
               </option>
             ))}
           </select>
         </Field>
 
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <Field label="Name" htmlFor="name" error={errors.name?.message}>
+          <Field label={t("students.columnName")} htmlFor="name" error={errors.name?.message}>
             <input
               id="name"
               type="text"
               autoComplete="off"
-              placeholder="e.g. Physics A"
+              placeholder={t("groups.namePlaceholder")}
               aria-invalid={Boolean(errors.name)}
               className={inputClassName}
               {...register("name")}
             />
           </Field>
-          <Field label="Subject" htmlFor="subject" error={errors.subject?.message}>
+          <Field label={t("groups.columnSubject")} htmlFor="subject" error={errors.subject?.message}>
             <input
               id="subject"
               type="text"
               autoComplete="off"
-              placeholder="e.g. Physics"
+              placeholder={t("groups.subjectPlaceholder")}
               aria-invalid={Boolean(errors.subject)}
               className={inputClassName}
               {...register("subject")}
@@ -160,19 +161,19 @@ export function GroupFormDialog({ open, onClose, group }: GroupFormDialogProps) 
         </div>
 
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <Field label="Room" htmlFor="room" error={errors.room?.message}>
+          <Field label={t("groups.columnRoom")} htmlFor="room" error={errors.room?.message}>
             <input
               id="room"
               type="text"
               autoComplete="off"
-              placeholder="e.g. Room 2"
+              placeholder={t("groups.roomPlaceholder")}
               aria-invalid={Boolean(errors.room)}
               className={inputClassName}
               {...register("room")}
             />
           </Field>
           <Field
-            label="Max students"
+            label={t("groups.fieldMaxStudents")}
             htmlFor="maxStudents"
             error={errors.maxStudents?.message}
           >
@@ -189,20 +190,20 @@ export function GroupFormDialog({ open, onClose, group }: GroupFormDialogProps) 
         </div>
 
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <Field label="Fee" htmlFor="fee" error={errors.fee?.message}>
+          <Field label={t("groups.columnFee")} htmlFor="fee" error={errors.fee?.message}>
             <input
               id="fee"
               type="text"
               inputMode="decimal"
               autoComplete="off"
-              placeholder="e.g. 150 or 150.50"
+              placeholder={t("groups.feePlaceholder")}
               aria-invalid={Boolean(errors.fee)}
               className={inputClassName}
               {...register("fee")}
             />
           </Field>
           <Field
-            label="Payment type"
+            label={t("groups.columnPaymentType")}
             htmlFor="paymentType"
             error={errors.paymentType?.message}
           >
@@ -214,7 +215,7 @@ export function GroupFormDialog({ open, onClose, group }: GroupFormDialogProps) 
             >
               {PAYMENT_TYPES.map((paymentType) => (
                 <option key={paymentType} value={paymentType}>
-                  {humanizeEnum(paymentType)}
+                  {tEnum(paymentType)}
                 </option>
               ))}
             </select>
@@ -228,7 +229,7 @@ export function GroupFormDialog({ open, onClose, group }: GroupFormDialogProps) 
             disabled={isSaving}
             className="h-10 rounded-lg border border-border px-4 text-sm font-medium text-card-foreground transition-colors hover:bg-muted disabled:pointer-events-none disabled:opacity-60"
           >
-            Cancel
+            {t("common.cancel")}
           </button>
           <button
             type="submit"
@@ -238,7 +239,7 @@ export function GroupFormDialog({ open, onClose, group }: GroupFormDialogProps) 
             {isSaving ? (
               <Loader2 className="size-4 animate-spin" aria-hidden />
             ) : null}
-            {isEdit ? "Save changes" : "Add group"}
+            {isEdit ? t("common.saveChanges") : t("groups.add")}
           </button>
         </div>
       </form>

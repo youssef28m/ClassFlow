@@ -4,15 +4,17 @@ import { CalendarDays } from "lucide-react";
 import { PageHeader } from "@/components/layout/page-header";
 import { ROLE_TONE_CLASSES } from "@/components/navigation/nav-config";
 import { useAuth } from "@/lib/auth-store";
+import { useI18n } from "@/lib/i18n/provider";
 
 export default function DashboardPage() {
   const { user } = useAuth();
+  const { t } = useI18n();
 
   return (
     <>
       <PageHeader
-        title={`Welcome back, ${user?.username ?? ""}`}
-        description="Operational summaries arrive in a later phase."
+        title={t("dashboard.welcome", { name: user?.username ?? "" })}
+        description={t("dashboard.description")}
       />
       {user ? (
         <div className="flex flex-wrap items-center gap-3 rounded-2xl border border-border bg-card px-6 py-5">
@@ -22,7 +24,7 @@ export default function DashboardPage() {
           <div>
             <p className="font-medium text-card-foreground">{user.username}</p>
             <p className="text-sm text-muted-foreground">
-              {resolveCenterLabel(user.centerId)}
+              {resolveCenterLabel(user.centerId, t)}
             </p>
           </div>
           <span
@@ -36,7 +38,10 @@ export default function DashboardPage() {
   );
 }
 
-function resolveCenterLabel(centerId: number | null): string {
-  if (centerId == null) return "Global access — all centers";
-  return `Working in center #${centerId}`;
+function resolveCenterLabel(
+  centerId: number | null,
+  t: ReturnType<typeof useI18n>["t"],
+): string {
+  if (centerId == null) return t("dashboard.globalAccess");
+  return t("dashboard.workingInCenter", { id: centerId });
 }

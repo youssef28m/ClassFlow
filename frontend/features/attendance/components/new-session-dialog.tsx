@@ -9,7 +9,7 @@ import { useCreateSession } from "@/features/attendance/hooks";
 import type { Schedule } from "@/features/schedules/types";
 import { scheduleLabel } from "@/features/schedules/components/schedule-manager";
 import { ApiError } from "@/lib/api-client";
-import { humanizeEnum } from "@/lib/formatters";
+import { useI18n } from "@/lib/i18n/provider";
 
 const UTC_DAYS = ["SUNDAY", "MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY", "SATURDAY"] as const;
 
@@ -45,6 +45,7 @@ export function NewSessionDialog({
 }: NewSessionDialogProps) {
   const toast = useToast();
   const createSession = useCreateSession();
+  const { t, tEnum } = useI18n();
   const [scheduleId, setScheduleId] = useState("");
   const [sessionDate, setSessionDate] = useState(() => nextOccurrence("SUNDAY"));
   const [rootError, setRootError] = useState<string | null>(null);
@@ -65,12 +66,12 @@ export function NewSessionDialog({
     event.preventDefault();
     const selected = schedules.find((schedule) => schedule.id === Number(scheduleId));
     if (!selected) {
-      setRootError("Select the weekly slot this session belongs to.");
+      setRootError(t("newSession.selectSlotError"));
       return;
     }
     if (weekdayOf(sessionDate) !== selected.dayOfWeek) {
       setRootError(
-        `That slot runs on ${humanizeEnum(selected.dayOfWeek)}s — pick a ${humanizeEnum(selected.dayOfWeek).toLowerCase()} date.`,
+        t("newSession.wrongDayError", { day: tEnum(selected.dayOfWeek) }),
       );
       return;
     }
@@ -81,12 +82,12 @@ export function NewSessionDialog({
         scheduleId: selected.id,
         sessionDate,
       });
-      toast.success("Session created");
+      toast.success(t("newSession.created"));
       setScheduleId("");
       onClose();
     } catch (error) {
       setRootError(
-        error instanceof ApiError ? error.message : "Failed to create session.",
+        error instanceof ApiError ? error.message : t("newSession.failed"),
       );
     }
   }
@@ -97,8 +98,8 @@ export function NewSessionDialog({
       onOpenChange={(nextOpen) => {
         if (!nextOpen) onClose();
       }}
-      title="Book a session"
-      description="Pick a weekly slot and the date it actually takes place. You can then record attendance for it."
+      title={t("newSession.title")}
+      description={t("newSession.description")}
     >
       <form onSubmit={handleSubmit} className="space-y-4" noValidate>
         {rootError ? (
@@ -110,7 +111,7 @@ export function NewSessionDialog({
           </p>
         ) : null}
 
-        <Field label="Weekly slot" htmlFor="session-schedule">
+        <Field label={t("schedules.weeklySlot")} htmlFor="session-schedule">
           <select
             id="session-schedule"
             value={scheduleId}
@@ -119,8 +120,8 @@ export function NewSessionDialog({
           >
             <option value="">
               {schedules.length === 0
-                ? "No slots defined yet"
-                : "Select a slot…"}
+                ? t("schedules.noSlots")
+                : t("schedules.selectSlotPlaceholder")}
             </option>
             {schedules.map((schedule) => (
               <option key={schedule.id} value={schedule.id}>
@@ -130,7 +131,7 @@ export function NewSessionDialog({
           </select>
         </Field>
 
-        <Field label="Date" htmlFor="session-date">
+        <Field label={t("common.date")} htmlFor="session-date">
           <input
             id="session-date"
             type="date"
@@ -140,7 +141,7 @@ export function NewSessionDialog({
           />
           {selectedSchedule ? (
             <p className="mt-1 text-xs text-muted-foreground">
-              This slot runs on {humanizeEnum(selectedSchedule.dayOfWeek)}s — the date must match.
+              {t("newSession.slotRunsOn", { day: tEnum(selectedSchedule.dayOfWeek) })}
             </p>
           ) : null}
         </Field>
@@ -152,7 +153,7 @@ export function NewSessionDialog({
             disabled={createSession.isPending}
             className="h-10 rounded-lg border border-border px-4 text-sm font-medium text-card-foreground transition-colors hover:bg-muted disabled:pointer-events-none disabled:opacity-60"
           >
-            Cancel
+            {t("common.cancel")}
           </button>
           <button
             type="submit"
@@ -162,7 +163,7 @@ export function NewSessionDialog({
             {createSession.isPending ? (
               <Loader2 className="size-4 animate-spin" aria-hidden />
             ) : null}
-            Create session
+            {t("newSession.submit")}
           </button>
         </div>
       </form>

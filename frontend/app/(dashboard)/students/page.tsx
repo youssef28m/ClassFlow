@@ -22,7 +22,8 @@ import {
 import { STUDENT_STATUSES, type Student, type StudentStatus } from "@/features/students/types";
 import { ApiError } from "@/lib/api-client";
 import { useAuth } from "@/lib/auth-store";
-import { formatDate, humanizeEnum } from "@/lib/formatters";
+import { useI18n } from "@/lib/i18n/provider";
+import { formatDate } from "@/lib/formatters";
 import { can } from "@/lib/permissions";
 import { useDebouncedValue } from "@/lib/use-debounced-value";
 
@@ -37,6 +38,7 @@ const PAGE_SIZE = 10;
 export default function StudentsPage() {
   const { user } = useAuth();
   const toast = useToast();
+  const { t, tEnum } = useI18n();
   const [searchText, setSearchText] = useState("");
   const [statusFilter, setStatusFilter] = useState<"ALL" | StudentStatus>("ALL");
   const [page, setPage] = useState(1);
@@ -68,13 +70,13 @@ export default function StudentsPage() {
     if (!deletingStudent) return;
     try {
       await deleteStudent.mutateAsync(deletingStudent.id);
-      toast.success("Student deleted");
+      toast.success(t("students.deleted"));
       setDeletingStudent(null);
     } catch (deleteError) {
       toast.error(
         deleteError instanceof ApiError
           ? deleteError.message
-          : "Failed to delete student",
+          : t("common.somethingWentWrong"),
       );
       setDeletingStudent(null);
     }
@@ -83,58 +85,58 @@ export default function StudentsPage() {
   const columns: DataTableColumn<Student>[] = [
     {
       key: "fullName",
-      header: "Name",
+      header: t("students.columnName"),
       render: (student) => (
         <span className="font-medium">{student.fullName}</span>
       ),
     },
     {
       key: "phone",
-      header: "Phone",
+      header: t("students.columnPhone"),
       render: (student) => student.phone ?? "—",
     },
     {
       key: "parentPhone",
-      header: "Parent phone",
+      header: t("students.columnGuardian"),
       className: "hidden md:table-cell",
       render: (student) => student.parentPhone ?? "—",
     },
     {
       key: "grade",
-      header: "Grade",
+      header: t("students.columnGrade"),
       className: "hidden sm:table-cell",
     },
     {
       key: "school",
-      header: "School",
+      header: t("students.columnSchool"),
       className: "hidden lg:table-cell",
       render: (student) => student.school ?? "—",
     },
     {
       key: "joinDate",
-      header: "Joined",
+      header: t("students.columnJoinDate"),
       className: "hidden xl:table-cell whitespace-nowrap",
       render: (student) => formatDate(student.joinDate),
     },
     {
       key: "status",
-      header: "Status",
+      header: t("common.status"),
       render: (student) => (
         <StatusBadge tone={STATUS_TONES[student.status]}>
-          {humanizeEnum(student.status)}
+          {tEnum(student.status)}
         </StatusBadge>
       ),
     },
     {
       key: "actions",
       header: "",
-      className: "w-24 text-right",
+      className: "w-24 text-end",
       render: (student) => (
         <div className="flex justify-end gap-1">
           {can(user, "students", "update") ? (
             <button
               type="button"
-              aria-label={`Edit ${student.fullName}`}
+              aria-label={t("common.edit")}
               onClick={() => {
                 setEditingStudent(student);
                 setFormOpen(true);
@@ -147,7 +149,7 @@ export default function StudentsPage() {
           {can(user, "students", "delete") ? (
             <button
               type="button"
-              aria-label={`Delete ${student.fullName}`}
+              aria-label={t("common.delete")}
               onClick={() => setDeletingStudent(student)}
               className="rounded-lg p-2 text-muted-foreground transition-colors hover:bg-red-500/10 hover:text-red-600 dark:hover:text-red-400"
             >
@@ -162,8 +164,8 @@ export default function StudentsPage() {
   return (
     <>
       <PageHeader
-        title="Students"
-        description="Search, filter, and manage center students."
+        title={t("students.title")}
+        description={t("students.description")}
         actions={
           <PermissionGate resource="students" action="create">
             <button
@@ -175,7 +177,7 @@ export default function StudentsPage() {
               className="flex h-10 items-center gap-2 rounded-lg bg-primary px-4 text-sm font-medium text-primary-foreground transition-opacity hover:opacity-90"
             >
               <Plus className="size-4" aria-hidden />
-              Add student
+              {t("students.add")}
             </button>
           </PermissionGate>
         }
@@ -185,23 +187,23 @@ export default function StudentsPage() {
         <FilterBar>
           <div className="relative w-full max-w-xs">
             <Search
-              className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground"
+              className="pointer-events-none absolute start-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground"
               aria-hidden
             />
             <input
               id="student-search"
               type="search"
-              placeholder="Search name, phone, school…"
+              placeholder={t("students.searchPlaceholder")}
               value={searchText}
               onChange={(event) =>
                 updateFilters(() => setSearchText(event.target.value))
               }
-              className={`${inputClassName} pl-9`}
+              className={`${inputClassName} ps-9`}
             />
           </div>
           <select
             id="student-status-filter"
-            aria-label="Filter by status"
+            aria-label={t("attendance.filterStatus")}
             value={statusFilter}
             onChange={(event) =>
               updateFilters(() => {
@@ -210,10 +212,10 @@ export default function StudentsPage() {
             }
             className={`${inputClassName} w-auto`}
           >
-            <option value="ALL">All statuses</option>
+            <option value="ALL">{t("attendance.allStatuses")}</option>
             {STUDENT_STATUSES.map((status) => (
               <option key={status} value={status}>
-                {humanizeEnum(status)}
+                {tEnum(status)}
               </option>
             ))}
           </select>
@@ -228,10 +230,10 @@ export default function StudentsPage() {
           onRetry={() => void refetch()}
           emptyTitle={
             search || statusFilter !== "ALL"
-              ? "No students match your filters"
-              : "No students yet"
+              ? t("students.emptyFiltered")
+              : t("students.empty")
           }
-          emptyDescription="Add your first student to start tracking enrollments and attendance."
+          emptyDescription={t("students.emptyDescription")}
         />
 
         {data && data.meta.totalPages > 0 ? (
@@ -258,9 +260,9 @@ export default function StudentsPage() {
         open={Boolean(deletingStudent)}
         onCancel={() => setDeletingStudent(null)}
         onConfirm={() => void handleConfirmDelete()}
-        title={`Delete ${deletingStudent?.fullName ?? "student"}?`}
-        message="This permanently removes the student along with their enrollments, payments, and attendance records. This cannot be undone."
-        confirmLabel="Delete student"
+        title={deletingStudent ? t("students.deleteTitle", { name: deletingStudent.fullName }) : t("students.deleteTitle", { name: "" })}
+        message={t("students.deleteMessage")}
+        confirmLabel={t("common.delete")}
         tone="danger"
         isLoading={deleteStudent.isPending}
       />

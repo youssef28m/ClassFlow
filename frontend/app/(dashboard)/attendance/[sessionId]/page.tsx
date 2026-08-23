@@ -17,6 +17,7 @@ import { scheduleLabel } from "@/features/schedules/components/schedule-manager"
 import { useSchedulesQuery } from "@/features/schedules/hooks";
 import { useGroupsQuery } from "@/features/groups/hooks";
 import { ApiError } from "@/lib/api-client";
+import { useI18n } from "@/lib/i18n/provider";
 import { formatDate } from "@/lib/formatters";
 import { can } from "@/lib/permissions";
 import { useAuth } from "@/lib/auth-store";
@@ -27,6 +28,7 @@ export default function SessionAttendancePage() {
   const validId = Number.isInteger(sessionId) && sessionId > 0;
 
   const { user } = useAuth();
+  const { t, tEnum } = useI18n();
   const canMark = can(user, "groupsAndSessions", "markAttendance");
 
   const sessionQ = useSessionQuery(validId ? sessionId : null);
@@ -35,8 +37,8 @@ export default function SessionAttendancePage() {
 
   const groups = useGroupsQuery({ pageSize: 100 });
   const groupName = useMemo(
-    () => (groups.data?.items ?? []).find((group) => group.id === groupId)?.name ?? `Group #${groupId}`,
-    [groups.data, groupId],
+    () => (groups.data?.items ?? []).find((group) => group.id === groupId)?.name ?? t("groups.fallbackId", { id: groupId }),
+    [groups.data, groupId, t],
   );
   const schedules = useSchedulesQuery({ groupId: validId ? groupId : -1, pageSize: 100 });
   const slotLabel = useMemo(() => {
@@ -44,8 +46,8 @@ export default function SessionAttendancePage() {
     const match = (schedules.data?.items ?? []).find(
       (schedule) => schedule.id === session.scheduleId,
     );
-    return match ? ` · ${scheduleLabel(match)}` : "";
-  }, [schedules.data, session]);
+    return match ? ` · ${scheduleLabel(match, tEnum)}` : "";
+  }, [schedules.data, session, tEnum]);
 
   const rosterQ = useEnrollmentsQuery({ groupId, active: true, pageSize: 100 });
   const roster = rosterQ.data?.items ?? [];
@@ -90,7 +92,7 @@ export default function SessionAttendancePage() {
       setOverrides({});
     } catch (error) {
       setRootError(
-        error instanceof ApiError ? error.message : "Failed to save attendance.",
+        error instanceof ApiError ? error.message : t("common.somethingWentWrong"),
       );
     }
   }
@@ -101,8 +103,8 @@ export default function SessionAttendancePage() {
   if (!validId) {
     return (
       <>
-        <PageHeader title="Attendance" description="Invalid session id." />
-        <BackLink href="/attendance" label="All sessions" />
+        <PageHeader title={t("nav.attendance")} description={t("sessionDetail.invalidId")} />
+        <BackLink href="/attendance" label={t("sessionDetail.allSessions")} />
       </>
     );
   }
@@ -110,7 +112,7 @@ export default function SessionAttendancePage() {
   return (
     <>
       <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
-        <BackLink href="/groups" label="Groups" />
+        <BackLink href="/groups" label={t("nav.groups")} />
         <span className="text-muted-foreground">·</span>
         <Link
           href={`/groups/${groupId}`}
@@ -122,12 +124,12 @@ export default function SessionAttendancePage() {
 
       <div className="mt-3">
         <PageHeader
-          title={session ? formatDate(session.sessionDate) : "Loading…"}
+          title={session ? formatDate(session.sessionDate) : t("common.loading")}
           description={session ? `${groupName}${slotLabel}` : undefined}
           actions={
             session ? (
               <StatusBadge tone={session.completed ? "success" : "warning"}>
-                {session.completed ? "Completed" : "Upcoming"}
+                {session.completed ? t("enum.COMPLETED") : t("enum.UPCOMING")}
               </StatusBadge>
             ) : null
           }
@@ -136,21 +138,21 @@ export default function SessionAttendancePage() {
 
       {canMark ? (
         <p className="mb-4 text-xs text-muted-foreground">
-          Mark each student, then save. Saving replaces all recorded marks for this session.
+          {t("sessionDetail.canMarkHint")}
         </p>
       ) : (
         <p className="mb-4 text-xs text-muted-foreground">
-          You have view-only access to attendance.
+          {t("sessionDetail.viewOnlyHint")}
         </p>
       )}
 
       {recordsQ.isLoading || sessionQ.isLoading || rosterQ.isLoading ? (
-        <p className="text-sm text-muted-foreground">Loading…</p>
+        <p className="text-sm text-muted-foreground">{t("common.loading")}</p>
       ) : roster.length === 0 ? (
         <p className="text-sm text-muted-foreground">
-          No active students in this group.{" "}
+          {t("sessionDetail.noStudents")}{" "}
           <Link href={`/groups/${groupId}`} className="text-primary hover:underline">
-            Enroll students first
+            {t("sessionDetail.enrollFirst")}
           </Link>
           .
         </p>
@@ -164,12 +166,12 @@ export default function SessionAttendancePage() {
               {rootError}
             </p>
           ) : null}
-          <table className="w-full text-left text-sm">
+          <table className="w-full text-start text-sm">
             <thead>
               <tr className="border-b border-border text-xs uppercase tracking-wide text-muted-foreground">
-                <th scope="col" className="px-5 py-3 font-medium">Student</th>
-                <th scope="col" className="hidden px-5 py-3 font-medium sm:table-cell">Grade</th>
-                <th scope="col" className="px-5 py-3 text-right font-medium">Attendance</th>
+                <th scope="col" className="px-5 py-3 font-medium">{t("students.columnName")}</th>
+                <th scope="col" className="hidden px-5 py-3 font-medium sm:table-cell">{t("students.columnGrade")}</th>
+                <th scope="col" className="px-5 py-3 text-end font-medium">{t("nav.attendance")}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
@@ -189,7 +191,7 @@ export default function SessionAttendancePage() {
                           type="button"
                           disabled={!canMark}
                           aria-pressed={row === "PRESENT"}
-                          aria-label={`${enrollment.student.fullName} attended`}
+                          aria-label={`${enrollment.student.fullName} — ${t("history.attended")}`}
                           onClick={() => toggle(enrollment.id, "PRESENT")}
                           className={`flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-xs font-medium transition-colors disabled:pointer-events-none disabled:opacity-50 ${
                             row === "PRESENT"
@@ -198,13 +200,13 @@ export default function SessionAttendancePage() {
                           }`}
                         >
                           <CheckCircle2 className="size-4" aria-hidden />
-                          Attended
+                          {t("history.attended")}
                         </button>
                         <button
                           type="button"
                           disabled={!canMark}
                           aria-pressed={row === "ABSENT"}
-                          aria-label={`${enrollment.student.fullName} absent`}
+                          aria-label={`${enrollment.student.fullName} — ${t("history.absent")}`}
                           onClick={() => toggle(enrollment.id, "ABSENT")}
                           className={`flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-xs font-medium transition-colors disabled:pointer-events-none disabled:opacity-50 ${
                             row === "ABSENT"
@@ -213,7 +215,7 @@ export default function SessionAttendancePage() {
                           }`}
                         >
                           <XCircle className="size-4" aria-hidden />
-                          Absent
+                          {t("history.absent")}
                         </button>
                       </div>
                     </td>
@@ -226,8 +228,11 @@ export default function SessionAttendancePage() {
           {canMark ? (
             <div className="flex items-center justify-between gap-2 border-t border-border px-5 py-4">
               <span className="text-xs text-muted-foreground tabular-nums">
-                {presentCount} attended · {absentCount} absent ·{" "}
-                {roster.length - presentCount - absentCount} unmarked
+                {t("sessionDetail.tally", {
+                  present: presentCount,
+                  absent: absentCount,
+                  unmarked: roster.length - presentCount - absentCount,
+                })}
               </span>
               <button
                 type="button"
@@ -238,7 +243,7 @@ export default function SessionAttendancePage() {
                 {saveAttendance.isPending ? (
                   <Loader2 className="size-4 animate-spin" aria-hidden />
                 ) : null}
-                Save attendance
+                {t("sessionDetail.save")}
               </button>
             </div>
           ) : null}

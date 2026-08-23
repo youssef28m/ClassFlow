@@ -19,11 +19,13 @@ import {
   type LoginFormValues,
 } from "@/features/auth/schema";
 import { ApiError } from "@/lib/api-client";
+import { useI18n } from "@/lib/i18n/provider";
 import { useAuth } from "@/lib/auth-store";
 
 export function LoginForm() {
   const router = useRouter();
   const { login } = useAuth();
+  const { t } = useI18n();
   const [formError, setFormError] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false);
 
@@ -54,7 +56,7 @@ export function LoginForm() {
         }
         if (!hasFieldErrors) setFormError(error.message);
       } else {
-        setFormError("Something went wrong. Please try again.");
+        setFormError(t("common.somethingWentWrong"));
       }
     }
   });
@@ -67,10 +69,10 @@ export function LoginForm() {
     >
       <div className="space-y-1 text-center">
         <h1 className="text-2xl font-bold tracking-tight text-card-foreground">
-          Sign in
+          {t("login.title")}
         </h1>
         <p className="text-sm text-muted-foreground">
-          Use your ClassFlow account credentials
+          {t("login.subtitle")}
         </p>
       </div>
 
@@ -88,7 +90,7 @@ export function LoginForm() {
           htmlFor="username"
           className="block text-sm font-medium text-card-foreground"
         >
-          Username
+          {t("login.username")}
         </label>
         <div className="flex items-center gap-2 rounded-lg border border-border bg-background px-3 transition-colors focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/20">
           <User className="size-4 shrink-0 text-muted-foreground" aria-hidden />
@@ -96,7 +98,7 @@ export function LoginForm() {
             id="username"
             type="text"
             autoComplete="username"
-            placeholder="e.g. receptionist1"
+            placeholder={t("login.usernamePlaceholder")}
             aria-invalid={Boolean(errors.username)}
             className="h-10 w-full bg-transparent text-sm outline-none placeholder:text-muted-foreground/60"
             {...register("username")}
@@ -112,7 +114,7 @@ export function LoginForm() {
           htmlFor="password"
           className="block text-sm font-medium text-card-foreground"
         >
-          Password
+          {t("login.password")}
         </label>
         <div className="flex items-center gap-2 rounded-lg border border-border bg-background px-3 transition-colors focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/20">
           <Lock className="size-4 shrink-0 text-muted-foreground" aria-hidden />
@@ -128,7 +130,7 @@ export function LoginForm() {
           <button
             type="button"
             onClick={() => setShowPassword((visible) => !visible)}
-            aria-label={showPassword ? "Hide password" : "Show password"}
+            aria-label={showPassword ? t("login.hidePassword") : t("login.showPassword")}
             className="shrink-0 text-muted-foreground transition-colors hover:text-foreground"
           >
             {showPassword ? (
@@ -148,8 +150,8 @@ export function LoginForm() {
           htmlFor="centerId"
           className="block text-sm font-medium text-card-foreground"
         >
-          Center ID{" "}
-          <span className="font-normal text-muted-foreground">(optional)</span>
+          {t("login.centerId")}{" "}
+          <span className="font-normal text-muted-foreground">{t("common.optional")}</span>
         </label>
         <div className="flex items-center gap-2 rounded-lg border border-border bg-background px-3 transition-colors focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/20">
           <Building2
@@ -160,7 +162,7 @@ export function LoginForm() {
             id="centerId"
             type="text"
             inputMode="numeric"
-            placeholder="Only needed for multi-center staff"
+            placeholder={t("login.centerIdPlaceholder")}
             aria-invalid={Boolean(errors.centerId)}
             className="h-10 w-full bg-transparent text-sm outline-none placeholder:text-muted-foreground/60"
             {...register("centerId")}
@@ -181,7 +183,7 @@ export function LoginForm() {
         ) : (
           <LogIn className="size-4" aria-hidden />
         )}
-        Sign in
+        {t("common.signIn")}
       </button>
     </form>
   );

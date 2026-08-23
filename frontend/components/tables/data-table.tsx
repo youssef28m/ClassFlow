@@ -1,7 +1,10 @@
+"use client";
+
 import type { ReactNode } from "react";
 import { EmptyState } from "@/components/feedback/empty-state";
 import { ErrorState } from "@/components/feedback/error-state";
 import { SkeletonTable } from "@/components/tables/skeleton-table";
+import { useI18n } from "@/lib/i18n/provider";
 
 export interface DataTableColumn<T> {
   key: string;
@@ -33,6 +36,9 @@ export function DataTable<T>({
   emptyDescription,
   emptyAction,
 }: DataTableProps<T>) {
+  const { t } = useI18n();
+  const resolvedEmptyTitle = emptyTitle ?? t("table.emptyTitle");
+
   if (isLoading) {
     return <SkeletonTable columns={columns.length} />;
   }
@@ -44,7 +50,7 @@ export function DataTable<T>({
   if (!rows || rows.length === 0) {
     return (
       <EmptyState
-        title={emptyTitle}
+        title={resolvedEmptyTitle}
         description={emptyDescription}
         action={emptyAction}
       />
@@ -60,7 +66,7 @@ export function DataTable<T>({
               <th
                 key={column.key}
                 scope="col"
-                className={`px-4 py-3 text-left font-medium text-muted-foreground ${column.className ?? ""}`}
+                className={`px-4 py-3 text-start font-medium text-muted-foreground ${column.className ?? ""}`}
               >
                 {column.header}
               </th>

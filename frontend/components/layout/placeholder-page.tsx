@@ -4,6 +4,7 @@ import { Construction, Loader2, ShieldAlert } from "lucide-react";
 import { EmptyState } from "@/components/feedback/empty-state";
 import { PageHeader } from "@/components/layout/page-header";
 import { useAuth } from "@/lib/auth-store";
+import { useI18n } from "@/lib/i18n/provider";
 import { hasPermission, type Resource } from "@/lib/permissions";
 
 interface PlaceholderPageProps {
@@ -20,6 +21,7 @@ export function PlaceholderPage({
   action,
 }: PlaceholderPageProps) {
   const { user, status } = useAuth();
+  const { t } = useI18n();
 
   const gated = Boolean(resource && action);
   const allowed = !gated || hasPermission(user, resource!, action!);
@@ -27,8 +29,8 @@ export function PlaceholderPage({
   let body = (
     <EmptyState
       icon={Construction}
-      title="Under construction"
-      description={`The ${title.toLowerCase()} workspace arrives with the next delivery phase. Navigation, permissions, and layout are already wired up.`}
+      title={t("placeholder.title")}
+      description={t("placeholder.description")}
     />
   );
 
@@ -43,8 +45,8 @@ export function PlaceholderPage({
       body = (
         <EmptyState
           icon={ShieldAlert}
-          title="No access to this area"
-          description="Your role does not include permission for this section. Contact an administrator if you believe this is a mistake."
+          title={t("placeholder.noAccessTitle")}
+          description={t("placeholder.noAccessDescription")}
         />
       );
     }
