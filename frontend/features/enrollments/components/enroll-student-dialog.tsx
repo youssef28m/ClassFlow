@@ -1,13 +1,15 @@
 "use client";
 
-import { Loader2 } from "lucide-react";
+import { Loader2, Search } from "lucide-react";
 import { useMemo, useState } from "react";
-import { Field, inputClassName } from "@/components/forms/field";
 import { FormDialog } from "@/components/forms/form-dialog";
+import { inputClassName } from "@/components/forms/field";
 import { useToast } from "@/components/feedback/toast";
 import { useCreateEnrollment } from "@/features/enrollments/hooks";
 import { useStudentsQuery } from "@/features/students/hooks";
+import type { Student } from "@/features/students/types";
 import { ApiError } from "@/lib/api-client";
+import { useDebouncedValue } from "@/lib/use-debounced-value";
 
 interface EnrollStudentDialogProps {
   open: boolean;
@@ -26,11 +28,14 @@ export function EnrollStudentDialog({
 }: EnrollStudentDialogProps) {
   const toast = useToast();
   const enroll = useCreateEnrollment();
-  const students = useStudentsQuery({ pageSize: 100 });
-  const [studentId, setStudentId] = useState("");
+  const [query, setQuery] = useState("");
+  const [selected, setSelected] = useState<Student | null>(null);
   const [rootError, setRootError] = useState<string | null>(null);
+  const search = useDebouncedValue(query);
 
-  const available = useMemo(
+  const students = useStudentsQuery({ search: search || undefined, pageSize: 10 });
+
+  const results = useMemo(
     () =>
       (students.data?.items ?? []).filter(
         (student) => !enrolledStudentIds.includes(student.id),
@@ -40,18 +45,17 @@ export function EnrollStudentDialog({
 
   async function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
-    if (!studentId) {
-      setRootError("Select a student to enroll.");
+    if (!selected) {
+      setRootError("Search for and select a student to enroll.");
       return;
     }
     setRootError(null);
     try {
       await enroll.mutateAsync({
-        studentId: Number(studentId),
+        studentId: selected.id,
         groupId,
       });
-      toast.success("Student enrolled");
-      setStudentId("");
+      toast.success(`${selected.fullName} enrolled`);
       onClose();
     } catch (error) {
       setRootError(
@@ -67,7 +71,7 @@ export function EnrollStudentDialog({
         if (!nextOpen) onClose();
       }}
       title={`Add student to ${groupName}`}
-      description="Pick a student from your center to enroll in this group."
+      description="Search by name, then select the student to enroll in this group."
     >
       <form onSubmit={handleSubmit} className="space-y-4" noValidate>
         {rootError ? (
@@ -79,28 +83,78 @@ export function EnrollStudentDialog({
           </p>
         ) : null}
 
-        <Field label="Student" htmlFor="enroll-student">
-          <select
-            id="enroll-student"
-            value={studentId}
-            onChange={(event) => setStudentId(event.target.value)}
-            className={inputClassName}
-          >
-            <option value="">
-              {students.isLoading
-                ? "Loading students…"
-                : available.length === 0
-                  ? "All students are already enrolled"
-                  : "Select a student…"}
-            </option>
-            {available.map((student) => (
-              <option key={student.id} value={student.id}>
-                {student.fullName}
-                {student.grade ? ` — ${student.grade}` : ""}
-              </option>
-            ))}
-          </select>
-        </Field>
+        <div className="relative">
+          <Search
+            className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground"
+            aria-hidden
+          />
+          <input
+            id="enroll-student-search"
+            type="search"
+            placeholder="Search students by name…"
+            value={query}
+            onChange={(event) => {
+              setQuery(event.target.value);
+              setSelected(null);
+            }}
+            autoComplete="off"
+            className={`${inputClassName} pl-9`}
+            aria-label="Search students by name"
+          />
+        </div>
+
+        <div
+          role="listbox"
+          aria-label="Search results"
+          className="max-h-64 divide-y divide-border overflow-y-auto rounded-xl border border-border"
+        >
+          {students.isLoading ? (
+            <p className="flex items-center gap-2 px-4 py-6 text-sm text-muted-foreground">
+              <Loader2 className="size-4 animate-spin" aria-hidden />
+              Searching…
+            </p>
+          ) : students.error ? (
+            <p role="alert" className="px-4 py-6 text-sm text-red-600 dark:text-red-400">
+              Could not load students. Try again.
+            </p>
+          ) : results.length === 0 ? (
+            <p className="px-4 py-6 text-sm text-muted-foreground">
+              {search && !students.isFetching
+                ? "No matching students."
+                : query !== search
+                  ? "Searching…"
+                  : "All students are already enrolled."}
+            </p>
+          ) : (
+            results.map((student) => (
+              <button
+                key={student.id}
+                type="button"
+                role="option"
+                aria-selected={selected?.id === student.id}
+                onClick={() => setSelected(student)}
+                className={`flex w-full items-center justify-between gap-3 px-4 py-2.5 text-left transition-colors hover:bg-muted ${
+                  selected?.id === student.id ? "bg-primary/10" : ""
+                }`}
+              >
+                <span className="truncate text-sm font-medium text-card-foreground">
+                  {student.fullName}
+                </span>
+                {student.grade ? (
+                  <span className="shrink-0 text-xs text-muted-foreground">
+                    {student.grade}
+                  </span>
+                ) : null}
+              </button>
+            ))
+          )}
+        </div>
+
+        <p className="text-xs text-muted-foreground">
+          {selected
+            ? `Selected: ${selected.fullName}`
+            : `${results.length}${students.data && students.data.meta.total > 10 ? "+" : ""} available`}
+        </p>
 
         <div className="flex justify-end gap-2 pt-2">
           <button
@@ -113,7 +167,7 @@ export function EnrollStudentDialog({
           </button>
           <button
             type="submit"
-            disabled={enroll.isPending || available.length === 0}
+            disabled={enroll.isPending || !selected}
             className="flex h-10 items-center justify-center gap-2 rounded-lg bg-primary px-5 text-sm font-medium text-primary-foreground transition-opacity hover:opacity-90 disabled:pointer-events-none disabled:opacity-60"
           >
             {enroll.isPending ? (
