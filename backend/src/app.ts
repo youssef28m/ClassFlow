@@ -7,6 +7,7 @@ import { env, parseCorsOrigins } from './config/env.js';
 import { logger } from './config/logger.js';
 import authRouter from './modules/auth/routes/auth.routes.js';
 import centerRouter from './modules/centers/routes/center.routes.js';
+import dashboardRouter from './modules/dashboard/routes/dashboard.routes.js';
 import enrollmentRouter from './modules/enrollments/routes/enrollment.routes.js';
 import expenseRouter from './modules/finance/routes/expense.routes.js';
 import paymentRouter from './modules/finance/routes/payment.routes.js';
@@ -56,6 +57,7 @@ export function createApp(): Express {
   app.use('/api/users', userRouter);
   app.use('/api/schedules', scheduleRouter);
   app.use('/api/sessions', sessionRouter);
+  app.use('/api/dashboard', dashboardRouter);
   app.use('/api/payments', paymentRouter);
   app.use('/api/expenses', expenseRouter);
   app.use('/api/teacher-salaries', salaryRouter);

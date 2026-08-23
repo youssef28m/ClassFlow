@@ -23,8 +23,20 @@ export class PaymentRepository {
     return prisma.payment.create({ data });
   }
 
-  findById(id: number, centerId: number): Promise<Payment | null> {
-    return prisma.payment.findFirst({ where: { id, enrollment: { student: { centerId } } } });
+  findById(
+    id: number,
+    centerId: number,
+  ): Promise<
+    (Payment & { enrollment: { student: { fullName: string }; group: { name: string } } }) | null
+  > {
+    return prisma.payment.findFirst({
+      where: { id, enrollment: { student: { centerId } } },
+      include: {
+        enrollment: {
+          select: { student: { select: { fullName: true } }, group: { select: { name: true } } },
+        },
+      },
+    });
   }
 
   async update(
@@ -66,6 +78,11 @@ export class PaymentRepository {
         orderBy: { paymentDate: 'desc' },
         skip: params.skip,
         take: params.take,
+        include: {
+          enrollment: {
+            select: { student: { select: { fullName: true } }, group: { select: { name: true } } },
+          },
+        },
       }),
       prisma.payment.count({ where }),
     ]);

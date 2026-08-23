@@ -1,4 +1,9 @@
-import { DayOfWeek, PaymentType, StudentStatus } from '../src/generated/prisma/client.js';
+import {
+  DayOfWeek,
+  PaymentMethod,
+  PaymentType,
+  StudentStatus,
+} from '../src/generated/prisma/client.js';
 import { prisma } from '../src/shared/prisma/prisma-client.js';
 
 const FIRST_NAMES = [
@@ -266,6 +271,40 @@ async function main(): Promise<void> {
     enrollmentsByGroup.set(enrollment.groupId, list);
   }
 
+  const groupsById = new Map(createdGroups.map((group) => [group.id, group]));
+  const now = new Date();
+  let paymentCount = 0;
+  for (const [index, enrollment] of enrollments.entries()) {
+    if (!enrollment.active) continue;
+    const group = groupsById.get(enrollment.groupId);
+    if (!group) continue;
+    const monthsAgo =
+      group.paymentType === PaymentType.MONTHLY
+        ? 1
+        : group.paymentType === PaymentType.TERMLY
+          ? 2
+          : group.paymentType === PaymentType.YEARLY
+            ? 4
+            : null;
+    const dates: Date[] = [];
+    if (monthsAgo !== null) {
+      dates.push(new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - monthsAgo, 5)));
+    } else if (random() > 0.4) {
+      dates.push(new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 3)));
+    }
+    for (const paymentDate of dates) {
+      await prisma.payment.create({
+        data: {
+          enrollmentId: enrollment.id,
+          amount: group.fee,
+          paymentDate,
+          paymentMethod: index % 3 === 0 ? PaymentMethod.CARD : PaymentMethod.CASH,
+        },
+      });
+      paymentCount += 1;
+    }
+  }
+
   let sessionCount = 0;
   let recordCount = 0;
   for (const group of createdGroups) {
@@ -303,6 +342,7 @@ async function main(): Promise<void> {
       `Students: ${students.length} (${activeStudents.length} active)`,
       `Groups: ${createdGroups.length}`,
       `Enrollments: ${enrollments.length}`,
+      `Payments: ${paymentCount}`,
       `Sessions: ${sessionCount}`,
       `Attendance records: ${recordCount}`,
     ].join('\n'),
