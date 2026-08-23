@@ -16,14 +16,10 @@ import { useDeleteSchedule, useSchedulesQuery } from "@/features/schedules/hooks
 import { DAYS_OF_WEEK, type DayOfWeek, type Schedule } from "@/features/schedules/types";
 import { ApiError } from "@/lib/api-client";
 import { useAuth } from "@/lib/auth-store";
-import { humanizeEnum } from "@/lib/formatters";
+import { humanizeEnum, formatSlotTime } from "@/lib/formatters";
 import { can } from "@/lib/permissions";
 
 const PAGE_SIZE = 10;
-
-function formatTime(value: string): string {
-  return new Intl.DateTimeFormat(undefined, { hour: "numeric", minute: "2-digit" }).format(new Date(value));
-}
 
 export default function SchedulesPage() {
   const { user } = useAuth();
@@ -51,8 +47,8 @@ export default function SchedulesPage() {
   const columns: DataTableColumn<Schedule>[] = [
     { key: "groupId", header: "Group", render: (schedule) => <span className="font-medium">{groupNames.get(schedule.groupId) ?? `Group #${schedule.groupId}`}</span> },
     { key: "dayOfWeek", header: "Day", render: (schedule) => humanizeEnum(schedule.dayOfWeek) },
-    { key: "startTime", header: "Start", render: (schedule) => <span className="whitespace-nowrap tabular-nums">{formatTime(schedule.startTime)}</span> },
-    { key: "endTime", header: "End", render: (schedule) => <span className="whitespace-nowrap tabular-nums">{formatTime(schedule.endTime)}</span> },
+    { key: "startTime", header: "Start", render: (schedule) => <span className="whitespace-nowrap tabular-nums">{formatSlotTime(schedule.startTime)}</span> },
+    { key: "endTime", header: "End", render: (schedule) => <span className="whitespace-nowrap tabular-nums">{formatSlotTime(schedule.endTime)}</span> },
     { key: "actions", header: "", className: "w-24 text-right", render: (schedule) => canManage ? <div className="flex justify-end gap-1"><button type="button" aria-label={`Edit ${groupNames.get(schedule.groupId) ?? "schedule"} schedule`} onClick={() => { setEditingSchedule(schedule); setFormOpen(true); }} className="rounded-lg p-2 text-muted-foreground hover:bg-muted hover:text-card-foreground"><SquarePen className="size-4" aria-hidden /></button><button type="button" aria-label={`Delete ${groupNames.get(schedule.groupId) ?? "schedule"} schedule`} onClick={() => setDeletingSchedule(schedule)} className="rounded-lg p-2 text-muted-foreground hover:bg-red-500/10 hover:text-red-600"><Trash2 className="size-4" aria-hidden /></button></div> : null },
   ];
 

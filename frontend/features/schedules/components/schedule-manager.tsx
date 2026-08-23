@@ -11,12 +11,12 @@ import {
 } from "@/features/schedules/hooks";
 import { DAY_OF_WEEK, type DayOfWeek, type Schedule } from "@/features/schedules/types";
 import { ApiError } from "@/lib/api-client";
-import { humanizeEnum } from "@/lib/formatters";
+import { formatSlotTime, humanizeEnum } from "@/lib/formatters";
 
 const TIME_PATTERN = /^([01]\d|2[0-3]):[0-5]\d$/;
 
 export function scheduleLabel(schedule: Schedule): string {
-  return `${humanizeEnum(schedule.dayOfWeek)} ${schedule.startTime.slice(11, 16)}–${schedule.endTime.slice(11, 16)}`;
+  return `${humanizeEnum(schedule.dayOfWeek)} ${formatSlotTime(schedule.startTime)}–${formatSlotTime(schedule.endTime)}`;
 }
 
 interface ScheduleManagerProps {
