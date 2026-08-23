@@ -57,6 +57,12 @@ router.patch(
   requireResolvedCenterId,
   controller.complete,
 );
+router.delete(
+  '/:id',
+  requirePermission('groupsAndSessions', 'manageSessions'),
+  requireResolvedCenterId,
+  controller.delete,
+);
 router.get(
   '/:id/attendance',
   requirePermission('groupsAndSessions', 'read'),

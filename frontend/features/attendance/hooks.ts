@@ -7,6 +7,16 @@ export function useSessionQuery(id: number | null) { return useQuery({ queryKey:
 export function useAttendanceRecordsQuery(sessionId: number | null) { return useQuery({ queryKey: attendanceKeys.records(sessionId ?? 0), queryFn: () => attendanceApi.listRecords(sessionId as number), enabled: sessionId !== null }); }
 export function useCreateSession() { const queryClient = useQueryClient(); return useMutation({ mutationFn: (payload: { groupId: number; scheduleId: number; sessionDate: string }) => attendanceApi.createSession(payload), onSuccess: () => queryClient.invalidateQueries({ queryKey: [...attendanceKeys.all, "sessions"] }) }); }
 export function useCompleteSession() { const queryClient = useQueryClient(); return useMutation({ mutationFn: (id: number) => attendanceApi.completeSession(id), onSuccess: () => queryClient.invalidateQueries({ queryKey: [...attendanceKeys.all, "sessions"] }) }); }
+export function useDeleteSession() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: number) => attendanceApi.deleteSession(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [...attendanceKeys.all, "sessions"] });
+      queryClient.invalidateQueries({ queryKey: [...attendanceKeys.all, "summary"] });
+    },
+  });
+}
 export function useSaveAttendance() {
   const queryClient = useQueryClient();
   return useMutation({

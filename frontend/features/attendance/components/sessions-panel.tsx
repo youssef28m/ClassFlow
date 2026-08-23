@@ -1,13 +1,15 @@
 "use client";
 
-import { CalendarPlus, CheckCheck, ClipboardCheck } from "lucide-react";
+import { CalendarPlus, CheckCheck, ClipboardCheck, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { useMemo, useState } from "react";
+import { ConfirmDialog } from "@/components/feedback/confirm-dialog";
 import { StatusBadge } from "@/components/tables/status-badge";
 import { useToast } from "@/components/feedback/toast";
 import {
   useCompleteSession,
   useCreateSession,
+  useDeleteSession,
   useSessionsQuery,
 } from "@/features/attendance/hooks";
 import {
@@ -35,8 +37,10 @@ export function SessionsPanel({
   const sessions = useSessionsQuery({ groupId, pageSize: 100 }, true);
   const completeSession = useCompleteSession();
   const createSession = useCreateSession();
+  const deleteSession = useDeleteSession();
 
   const [newSessionOpen, setNewSessionOpen] = useState(false);
+  const [deletingSession, setDeletingSession] = useState<ClassSession | null>(null);
 
   const scheduleById = useMemo(
     () => new Map(schedules.map((schedule) => [schedule.id, scheduleLabel(schedule)])),
@@ -59,6 +63,20 @@ export function SessionsPanel({
       toast.error(
         error instanceof ApiError ? error.message : "Failed to update session.",
       );
+    }
+  }
+
+  async function handleConfirmDelete() {
+    if (!deletingSession) return;
+    try {
+      await deleteSession.mutateAsync(deletingSession.id);
+      toast.success("Session deleted");
+    } catch (error) {
+      toast.error(
+        error instanceof ApiError ? error.message : "Failed to delete session.",
+      );
+    } finally {
+      setDeletingSession(null);
     }
   }
 
@@ -179,6 +197,16 @@ export function SessionsPanel({
                     <CheckCheck className="size-4" aria-hidden />
                   </button>
                 ) : null}
+                {canManageSessions ? (
+                  <button
+                    type="button"
+                    aria-label={`Delete session on ${formatDate(session.sessionDate)}`}
+                    onClick={() => setDeletingSession(session)}
+                    className="rounded-lg p-2 text-muted-foreground transition-colors hover:bg-red-500/10 hover:text-red-600 disabled:opacity-50 dark:hover:text-red-400"
+                  >
+                    <Trash2 className="size-4" aria-hidden />
+                  </button>
+                ) : null}
               </div>
             </li>
           ))}
@@ -191,6 +219,17 @@ export function SessionsPanel({
         onClose={() => setNewSessionOpen(false)}
         groupId={groupId}
         schedules={schedules}
+      />
+
+      <ConfirmDialog
+        open={Boolean(deletingSession)}
+        onCancel={() => setDeletingSession(null)}
+        onConfirm={() => void handleConfirmDelete()}
+        title={`Delete the session on ${deletingSession ? formatDate(deletingSession.sessionDate) : ""}?`}
+        message="The session and all attendance recorded for it will be removed. This cannot be undone."
+        confirmLabel="Delete session"
+        tone="danger"
+        isLoading={deleteSession.isPending}
       />
     </section>
   );

@@ -6,6 +6,7 @@ export const attendanceApi = {
   getSession(id: number): Promise<ClassSession> { return apiClient.request<ClassSession>(`/sessions/${id}`); },
   createSession(payload: { groupId: number; scheduleId: number; sessionDate: string }): Promise<ClassSession> { return apiClient.request<ClassSession>("/sessions", { method: "POST", body: payload }); },
   completeSession(id: number): Promise<ClassSession> { return apiClient.request<ClassSession>(`/sessions/${id}/complete`, { method: "PATCH" }); },
+  deleteSession(id: number): Promise<void> { return apiClient.request<void>(`/sessions/${id}`, { method: "DELETE" }); },
   listRecords(sessionId: number): Promise<AttendanceRecord[]> { return apiClient.request<AttendanceRecord[]>(`/sessions/${sessionId}/attendance`); },
   saveRecords(sessionId: number, records: Array<{ enrollmentId: number; status: AttendanceStatus }>): Promise<AttendanceRecord[]> { return apiClient.request<AttendanceRecord[]>(`/sessions/${sessionId}/attendance`, { method: "PUT", body: { records } }); },
   summary(groupId: number): Promise<AttendanceSummaryEntry[]> { return apiClient.request<AttendanceSummaryEntry[]>("/sessions/attendance-summary", { params: { groupId } }); },

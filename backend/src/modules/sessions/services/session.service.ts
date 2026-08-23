@@ -67,6 +67,11 @@ export class SessionService {
     return toSessionDTO(session);
   }
 
+  async remove(id: RouteId, centerId: number): Promise<void> {
+    const deleted = await this.repository.delete(this.parseId(id), centerId);
+    if (!deleted) throw new AppError('Session not found', 404);
+  }
+
   async list(
     query: ListSessionsQuery,
     centerId: number | null,

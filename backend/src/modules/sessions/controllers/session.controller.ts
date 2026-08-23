@@ -21,6 +21,11 @@ export class SessionController {
     res.status(200).json(await this.service.complete(req.params.id, mustGetCenterId(req)));
   };
 
+  delete = async (req: Request, res: Response): Promise<void> => {
+    await this.service.remove(req.params.id, mustGetCenterId(req));
+    res.status(204).send();
+  };
+
   list = async (req: Request, res: Response): Promise<void> => {
     res
       .status(200)

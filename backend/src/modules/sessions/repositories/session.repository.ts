@@ -45,6 +45,13 @@ export class SessionRepository {
     return prisma.session.findUniqueOrThrow({ where: { id } });
   }
 
+  async delete(id: number, centerId: number): Promise<boolean> {
+    const result = await prisma.session.deleteMany({
+      where: { id, group: { centerId } },
+    });
+    return result.count > 0;
+  }
+
   findContext(id: number, centerId: number): Promise<SessionContext | null> {
     return prisma.session.findFirst({
       where: { id, group: { centerId } },
