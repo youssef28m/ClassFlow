@@ -204,7 +204,7 @@ export default function GroupsPage() {
               onChange={(event) =>
                 updateFilters(() => setSearchText(event.target.value))
               }
-              className={`${inputClassName} pl-9`}
+              className={`${inputClassName} ps-9`}
             />
           </div>
           <select

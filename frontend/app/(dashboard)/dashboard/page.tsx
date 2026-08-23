@@ -28,7 +28,7 @@ export default function DashboardPage() {
             </p>
           </div>
           <span
-            className={`ml-auto rounded-full px-3 py-1 text-xs font-medium ${ROLE_TONE_CLASSES[user.role] ?? ""}`}
+            className={`ms-auto rounded-full px-3 py-1 text-xs font-medium ${ROLE_TONE_CLASSES[user.role] ?? ""}`}
           >
             {user.role}
           </span>

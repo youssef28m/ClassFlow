@@ -82,7 +82,7 @@ export function EnrollmentFormDialog({ open, onClose }: EnrollmentFormDialogProp
                 setStudentSearch(`${student.fullName} — ${student.grade}`);
                 setSelectedStudentId(student.id);
                 setValue("studentId", String(student.id), { shouldValidate: true });
-              }}><span className="font-medium text-card-foreground">{student.fullName}</span><span className="ml-2 text-muted-foreground">{student.grade}{student.phone ? ` · ${student.phone}` : ""}</span></button>)}
+              }}><span className="font-medium text-card-foreground">{student.fullName}</span><span className="ms-2 text-muted-foreground">{student.grade}{student.phone ? ` · ${student.phone}` : ""}</span></button>)}
             </div>
           ) : null}
         </div>

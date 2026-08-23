@@ -87,7 +87,7 @@ export function EnrollStudentDialog({
 
         <div className="relative">
           <Search
-            className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground"
+            className="pointer-events-none absolute start-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground"
             aria-hidden
           />
           <input
@@ -100,7 +100,7 @@ export function EnrollStudentDialog({
               setSelected(null);
             }}
             autoComplete="off"
-            className={`${inputClassName} pl-9`}
+            className={`${inputClassName} ps-9`}
             aria-label={t("enrollDialog.searchPlaceholder")}
           />
         </div>
@@ -137,7 +137,7 @@ export function EnrollStudentDialog({
                   role="option"
                   aria-selected={isSelected}
                   onClick={() => setSelected(student)}
-                  className={`flex w-full items-center justify-between gap-3 rounded-lg px-3 py-2.5 text-left transition-colors ${
+                  className={`flex w-full items-center justify-between gap-3 rounded-lg px-3 py-2.5 text-start transition-colors ${
                     isSelected
                       ? "bg-primary/15 text-primary ring-1 ring-inset ring-primary/40"
                       : "text-card-foreground hover:bg-background"
