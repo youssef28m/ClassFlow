@@ -20,7 +20,9 @@
     "prisma:migrate": "prisma migrate dev",
     "prisma:deploy": "prisma migrate deploy",
     "prisma:studio": "prisma studio",
-    "create:superadmin": "tsx scripts/create-superadmin.ts"
+    "create:superadmin": "tsx scripts/create-superadmin.ts",
+    "seed:students": "tsx scripts/seed-demo-students.ts",
+    "seed:demo": "tsx scripts/seed-demo.ts"
   },
   "dependencies": {
     "@prisma/adapter-pg": "^7.0.0",
