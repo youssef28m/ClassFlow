@@ -39,7 +39,10 @@ export function TimeSelect({ id, value, onChange, disabled }: TimeSelectProps) {
   }
 
   return (
-    <div className="inline-flex h-10 items-center overflow-hidden rounded-lg border border-border bg-card shadow-xs">
+    <div
+      dir="ltr"
+      className="inline-flex h-10 items-center overflow-hidden rounded-lg border border-border bg-card shadow-xs"
+    >
       <select
         aria-label={`${id ?? t("time.fallback")} ${t("time.hour")}`}
         value={hour}
