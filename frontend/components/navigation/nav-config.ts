@@ -60,8 +60,8 @@ export const NAV_ITEMS: NavItem[] = [
     action: "read",
   },
   {
-    label: "Sessions",
-    href: "/sessions",
+    label: "Attendance",
+    href: "/attendance",
     icon: CalendarCheck,
     resource: "groupsAndSessions",
     action: "read",

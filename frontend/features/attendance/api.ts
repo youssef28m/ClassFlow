@@ -1,0 +1,12 @@
+import { apiClient, type QueryParams } from "@/lib/api-client";
+import type { AttendanceRecord, AttendanceStatus, ClassSession, SessionFilters, SessionListResponse } from "@/features/attendance/types";
+
+export const attendanceApi = {
+  listSessions(filters: SessionFilters): Promise<SessionListResponse> { return apiClient.request<SessionListResponse>("/sessions", { params: filters as QueryParams }); },
+  createSession(payload: { groupId: number; scheduleId: number; sessionDate: string }): Promise<ClassSession> { return apiClient.request<ClassSession>("/sessions", { method: "POST", body: payload }); },
+  completeSession(id: number): Promise<ClassSession> { return apiClient.request<ClassSession>(`/sessions/${id}/complete`, { method: "PATCH" }); },
+  listRecords(sessionId: number): Promise<AttendanceRecord[]> { return apiClient.request<AttendanceRecord[]>(`/sessions/${sessionId}/attendance`); },
+  saveRecords(sessionId: number, records: Array<{ enrollmentId: number; status: AttendanceStatus }>): Promise<AttendanceRecord[]> { return apiClient.request<AttendanceRecord[]>(`/sessions/${sessionId}/attendance`, { method: "PUT", body: { records } }); },
+};
+
+export const attendanceKeys = { all: ["attendance"] as const, sessions: (filters: SessionFilters) => [...attendanceKeys.all, "sessions", filters] as const, records: (sessionId: number) => [...attendanceKeys.all, "records", sessionId] as const };

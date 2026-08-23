@@ -12,16 +12,24 @@ import { enrollmentFormSchema, toEnrollmentPayload, type EnrollmentFormValues } 
 import { useGroupsQuery } from "@/features/groups/hooks";
 import { useStudentsQuery } from "@/features/students/hooks";
 import { ApiError } from "@/lib/api-client";
+import { useDebouncedValue } from "@/lib/use-debounced-value";
 
 interface EnrollmentFormDialogProps { open: boolean; onClose: () => void; }
 
 export function EnrollmentFormDialog({ open, onClose }: EnrollmentFormDialogProps) {
   const toast = useToast();
   const createEnrollment = useCreateEnrollment();
-  const students = useStudentsQuery({ pageSize: 100, status: "ACTIVE" });
+  const [studentSearch, setStudentSearch] = useState("");
+  const [selectedStudentId, setSelectedStudentId] = useState<number | null>(null);
+  const debouncedStudentSearch = useDebouncedValue(studentSearch.trim());
+  const students = useStudentsQuery({
+    pageSize: 10,
+    status: "ACTIVE",
+    search: debouncedStudentSearch || undefined,
+  });
   const groups = useGroupsQuery({ pageSize: 100 });
   const [rootError, setRootError] = useState<string | null>(null);
-  const { register, handleSubmit, setError, formState: { errors } } = useForm<EnrollmentFormValues>({
+  const { register, handleSubmit, setError, setValue, formState: { errors } } = useForm<EnrollmentFormValues>({
     resolver: zodResolver(enrollmentFormSchema),
     defaultValues: { studentId: "", groupId: "", enrollmentDate: new Date().toISOString().slice(0, 10) },
   });
@@ -43,10 +51,43 @@ export function EnrollmentFormDialog({ open, onClose }: EnrollmentFormDialogProp
   return <FormDialog open={open} onOpenChange={(nextOpen) => !nextOpen && onClose()} title="Enroll student" description="Add an active student to a teaching group.">
     <form onSubmit={onSubmit} className="space-y-4" noValidate>
       {rootError ? <p role="alert" className="rounded-lg bg-red-500/10 px-3 py-2 text-sm text-red-600 dark:text-red-400">{rootError}</p> : null}
-      <Field label="Student" htmlFor="enrollment-student" error={errors.studentId?.message}><select id="enrollment-student" className={inputClassName} aria-invalid={Boolean(errors.studentId)} {...register("studentId")}><option value="">{students.isLoading ? "Loading students…" : "Select an active student…"}</option>{(students.data?.items ?? []).map((student) => <option key={student.id} value={student.id}>{student.fullName} — {student.grade}</option>)}</select></Field>
+      <Field label="Student" htmlFor="enrollment-student" error={errors.studentId?.message} hint="Search by name">
+        <input type="hidden" {...register("studentId")} />
+        <div className="relative">
+          <input
+            id="enrollment-student"
+            type="search"
+            autoComplete="off"
+            placeholder="Start typing a student's name…"
+            value={studentSearch}
+            role="combobox"
+            aria-invalid={Boolean(errors.studentId)}
+            aria-autocomplete="list"
+            aria-expanded={Boolean(debouncedStudentSearch && !selectedStudentId)}
+            aria-controls="student-search-results"
+            className={inputClassName}
+            onChange={(event) => {
+              setStudentSearch(event.target.value);
+              setSelectedStudentId(null);
+              setValue("studentId", "", { shouldValidate: true });
+            }}
+          />
+          {debouncedStudentSearch && !selectedStudentId ? (
+            <div id="student-search-results" className="absolute z-10 mt-1 w-full overflow-hidden rounded-lg border border-border bg-card shadow-lg" role="listbox" aria-label="Matching students">
+              {students.isLoading ? <p className="px-3 py-2 text-sm text-muted-foreground">Searching students…</p> : null}
+              {!students.isLoading && (students.data?.items.length ?? 0) === 0 ? <p className="px-3 py-2 text-sm text-muted-foreground">No active students found.</p> : null}
+              {(students.data?.items ?? []).map((student) => <button key={student.id} type="button" role="option" aria-selected={false} className="block w-full px-3 py-2 text-left text-sm hover:bg-muted" onClick={() => {
+                setStudentSearch(`${student.fullName} — ${student.grade}`);
+                setSelectedStudentId(student.id);
+                setValue("studentId", String(student.id), { shouldValidate: true });
+              }}><span className="font-medium text-card-foreground">{student.fullName}</span><span className="ml-2 text-muted-foreground">{student.grade}{student.phone ? ` · ${student.phone}` : ""}</span></button>)}
+            </div>
+          ) : null}
+        </div>
+      </Field>
       <Field label="Group" htmlFor="enrollment-group" error={errors.groupId?.message}><select id="enrollment-group" className={inputClassName} aria-invalid={Boolean(errors.groupId)} {...register("groupId")}><option value="">{groups.isLoading ? "Loading groups…" : "Select a group…"}</option>{(groups.data?.items ?? []).map((group) => <option key={group.id} value={group.id}>{group.name} — {group.subject}</option>)}</select></Field>
       <Field label="Enrollment date" htmlFor="enrollment-date" error={errors.enrollmentDate?.message}><input id="enrollment-date" type="date" className={inputClassName} {...register("enrollmentDate")} /></Field>
-      <div className="flex justify-end gap-2 pt-2"><button type="button" onClick={onClose} disabled={createEnrollment.isPending} className="h-10 rounded-lg border border-border px-4 text-sm font-medium hover:bg-muted disabled:pointer-events-none disabled:opacity-60">Cancel</button><button type="submit" disabled={createEnrollment.isPending || students.isLoading || groups.isLoading} className="flex h-10 items-center justify-center gap-2 rounded-lg bg-primary px-5 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:pointer-events-none disabled:opacity-60">{createEnrollment.isPending ? <Loader2 className="size-4 animate-spin" aria-hidden /> : null}Enroll student</button></div>
+      <div className="flex justify-end gap-2 pt-2"><button type="button" onClick={onClose} disabled={createEnrollment.isPending} className="h-10 rounded-lg border border-border px-4 text-sm font-medium hover:bg-muted disabled:pointer-events-none disabled:opacity-60">Cancel</button><button type="submit" disabled={createEnrollment.isPending || groups.isLoading} className="flex h-10 items-center justify-center gap-2 rounded-lg bg-primary px-5 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:pointer-events-none disabled:opacity-60">{createEnrollment.isPending ? <Loader2 className="size-4 animate-spin" aria-hidden /> : null}Enroll student</button></div>
     </form>
   </FormDialog>;
 }
