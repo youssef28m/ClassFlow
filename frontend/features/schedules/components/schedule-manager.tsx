@@ -2,6 +2,7 @@
 
 import { Loader2, Plus, Trash2 } from "lucide-react";
 import { useState } from "react";
+import { TimeSelect } from "@/components/forms/time-select";
 import { inputClassName } from "@/components/forms/field";
 import { useToast } from "@/components/feedback/toast";
 import {
@@ -47,7 +48,7 @@ export function ScheduleManager({ groupId, canManage }: ScheduleManagerProps) {
   async function handleAdd(event: React.FormEvent) {
     event.preventDefault();
     if (!TIME_PATTERN.test(startTime) || !TIME_PATTERN.test(endTime)) {
-      setFormError("Enter both times as HH:mm.");
+      setFormError("Choose both a start and an end time.");
       return;
     }
     setFormError(null);
@@ -140,22 +141,18 @@ export function ScheduleManager({ groupId, canManage }: ScheduleManagerProps) {
           <label className="sr-only" htmlFor="schedule-start">
             Start time
           </label>
-          <input
+          <TimeSelect
             id="schedule-start"
-            type="time"
             value={startTime}
-            onChange={(event) => setStartTime(event.target.value)}
-            className={`${inputClassName} w-auto`}
+            onChange={setStartTime}
           />
           <label className="sr-only" htmlFor="schedule-end">
             End time
           </label>
-          <input
+          <TimeSelect
             id="schedule-end"
-            type="time"
             value={endTime}
-            onChange={(event) => setEndTime(event.target.value)}
-            className={`${inputClassName} w-auto`}
+            onChange={setEndTime}
           />
           <button
             type="submit"

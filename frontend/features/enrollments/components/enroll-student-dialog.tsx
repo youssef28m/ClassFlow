@@ -1,6 +1,6 @@
 "use client";
 
-import { Loader2, Search } from "lucide-react";
+import { Check, Loader2, Search } from "lucide-react";
 import { useMemo, useState } from "react";
 import { FormDialog } from "@/components/forms/form-dialog";
 import { inputClassName } from "@/components/forms/field";
@@ -106,19 +106,19 @@ export function EnrollStudentDialog({
         <div
           role="listbox"
           aria-label="Search results"
-          className="max-h-64 divide-y divide-border overflow-y-auto rounded-xl border border-border"
+          className="scroll-slim max-h-64 space-y-1 overflow-y-auto rounded-xl border border-border bg-muted/30 p-1.5"
         >
           {students.isLoading ? (
-            <p className="flex items-center gap-2 px-4 py-6 text-sm text-muted-foreground">
+            <p className="flex items-center gap-2 rounded-lg px-3 py-6 text-sm text-muted-foreground">
               <Loader2 className="size-4 animate-spin" aria-hidden />
               Searching…
             </p>
           ) : students.error ? (
-            <p role="alert" className="px-4 py-6 text-sm text-red-600 dark:text-red-400">
+            <p role="alert" className="rounded-lg px-3 py-6 text-sm text-red-600 dark:text-red-400">
               Could not load students. Try again.
             </p>
           ) : results.length === 0 ? (
-            <p className="px-4 py-6 text-sm text-muted-foreground">
+            <p className="rounded-lg px-3 py-6 text-sm text-muted-foreground">
               {search && !students.isFetching
                 ? "No matching students."
                 : query !== search
@@ -126,27 +126,29 @@ export function EnrollStudentDialog({
                   : "All students are already enrolled."}
             </p>
           ) : (
-            results.map((student) => (
-              <button
-                key={student.id}
-                type="button"
-                role="option"
-                aria-selected={selected?.id === student.id}
-                onClick={() => setSelected(student)}
-                className={`flex w-full items-center justify-between gap-3 px-4 py-2.5 text-left transition-colors hover:bg-muted ${
-                  selected?.id === student.id ? "bg-primary/10" : ""
-                }`}
-              >
-                <span className="truncate text-sm font-medium text-card-foreground">
-                  {student.fullName}
-                </span>
-                {student.grade ? (
-                  <span className="shrink-0 text-xs text-muted-foreground">
+            results.map((student) => {
+              const isSelected = selected?.id === student.id;
+              return (
+                <button
+                  key={student.id}
+                  type="button"
+                  role="option"
+                  aria-selected={isSelected}
+                  onClick={() => setSelected(student)}
+                  className={`flex w-full items-center justify-between gap-3 rounded-lg px-3 py-2.5 text-left transition-colors ${
+                    isSelected
+                      ? "bg-primary/15 text-primary ring-1 ring-inset ring-primary/40"
+                      : "text-card-foreground hover:bg-background"
+                  }`}
+                >
+                  <span className="truncate text-sm font-medium">{student.fullName}</span>
+                  <span className="flex shrink-0 items-center gap-2 text-xs text-muted-foreground">
                     {student.grade}
+                    {isSelected ? <Check className="size-4 text-primary" aria-hidden /> : null}
                   </span>
-                ) : null}
-              </button>
-            ))
+                </button>
+              );
+            })
           )}
         </div>
 
