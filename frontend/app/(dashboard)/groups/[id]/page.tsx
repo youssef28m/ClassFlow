@@ -124,6 +124,14 @@ export default function GroupDetailPage() {
             })}
           />
 
+          <div className="mt-5">
+            <SessionsPanel
+              groupId={groupId}
+              schedules={schedules}
+              canManageSessions={hasPermission(user, "groupsAndSessions", "manageSessions")}
+            />
+          </div>
+
           <section className="rounded-xl border border-border bg-card p-5">
             <div className="flex items-center justify-between gap-3">
               <div>
@@ -197,14 +205,6 @@ export default function GroupDetailPage() {
               </ul>
             )}
           </section>
-
-          <div className="mt-5">
-            <SessionsPanel
-              groupId={groupId}
-              schedules={schedules}
-              canManageSessions={hasPermission(user, "groupsAndSessions", "manageSessions")}
-            />
-          </div>
 
           <div className="mt-5">
             <ScheduleManager

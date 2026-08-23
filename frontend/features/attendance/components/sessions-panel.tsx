@@ -185,7 +185,7 @@ export function SessionsPanel({
                   className="flex items-center gap-1.5 rounded-lg border border-border px-2.5 py-1.5 text-xs font-medium text-card-foreground transition-colors hover:bg-muted"
                 >
                   <ClipboardCheck className="size-4" aria-hidden />
-                  Attendance
+                  {t("attendance.takeAttendance")}
                 </Link>
                 {canManageSessions && !session.completed ? (
                   <button

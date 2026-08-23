@@ -113,11 +113,11 @@ export function EnrollStudentDialog({
           {students.isLoading ? (
             <p className="flex items-center gap-2 rounded-lg px-3 py-6 text-sm text-muted-foreground">
               <Loader2 className="size-4 animate-spin" aria-hidden />
-              Searching…
+              {t("common.loading")}
             </p>
           ) : students.error ? (
             <p role="alert" className="rounded-lg px-3 py-6 text-sm text-red-600 dark:text-red-400">
-              Could not load students. Try again.
+              {t("enrollDialog.loadError")}
             </p>
           ) : results.length === 0 ? (
             <p className="rounded-lg px-3 py-6 text-sm text-muted-foreground">
