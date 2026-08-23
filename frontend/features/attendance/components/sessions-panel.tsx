@@ -1,58 +1,41 @@
 "use client";
 
 import { CalendarPlus, CheckCheck, ClipboardCheck } from "lucide-react";
+import Link from "next/link";
 import { useMemo, useState } from "react";
 import { StatusBadge } from "@/components/tables/status-badge";
 import { useToast } from "@/components/feedback/toast";
-import type { Enrollment } from "@/features/enrollments/types";
 import {
   useCompleteSession,
   useCreateSession,
   useSessionsQuery,
 } from "@/features/attendance/hooks";
-import { AttendanceDialog } from "@/features/attendance/components/attendance-dialog";
 import {
   NewSessionDialog,
   nextOccurrence,
 } from "@/features/attendance/components/new-session-dialog";
 import type { ClassSession } from "@/features/attendance/types";
-import { scheduleLabel } from "@/features/schedules/components/schedule-manager";
 import type { Schedule } from "@/features/schedules/types";
+import { scheduleLabel } from "@/features/schedules/components/schedule-manager";
 import { ApiError } from "@/lib/api-client";
 import { formatDate } from "@/lib/formatters";
 
 interface SessionsPanelProps {
   groupId: number;
   schedules: Schedule[];
-  enrollments: Enrollment[];
   canManageSessions: boolean;
-  canMarkAttendance: boolean;
-}
-
-function sessionLabel(
-  session: ClassSession,
-  scheduleById: Map<number, string>,
-): string {
-  return `${formatDate(session.sessionDate)}${
-    scheduleById.get(session.scheduleId)
-      ? ` · ${scheduleById.get(session.scheduleId)}`
-      : ""
-  }`;
 }
 
 export function SessionsPanel({
   groupId,
   schedules,
-  enrollments,
   canManageSessions,
-  canMarkAttendance,
 }: SessionsPanelProps) {
   const toast = useToast();
   const sessions = useSessionsQuery({ groupId, pageSize: 100 }, true);
   const completeSession = useCompleteSession();
   const createSession = useCreateSession();
 
-  const [attendanceSession, setAttendanceSession] = useState<ClassSession | null>(null);
   const [newSessionOpen, setNewSessionOpen] = useState(false);
 
   const scheduleById = useMemo(
@@ -178,16 +161,13 @@ export function SessionsPanel({
                 <StatusBadge tone={session.completed ? "success" : "warning"}>
                   {session.completed ? "Completed" : "Upcoming"}
                 </StatusBadge>
-                {canMarkAttendance ? (
-                  <button
-                    type="button"
-                    onClick={() => setAttendanceSession(session)}
-                    className="flex items-center gap-1.5 rounded-lg border border-border px-2.5 py-1.5 text-xs font-medium text-card-foreground transition-colors hover:bg-muted"
-                  >
-                    <ClipboardCheck className="size-4" aria-hidden />
-                    Take attendance
-                  </button>
-                ) : null}
+                <Link
+                  href={`/attendance/${session.id}`}
+                  className="flex items-center gap-1.5 rounded-lg border border-border px-2.5 py-1.5 text-xs font-medium text-card-foreground transition-colors hover:bg-muted"
+                >
+                  <ClipboardCheck className="size-4" aria-hidden />
+                  Attendance
+                </Link>
                 {canManageSessions && !session.completed ? (
                   <button
                     type="button"
@@ -211,19 +191,6 @@ export function SessionsPanel({
         onClose={() => setNewSessionOpen(false)}
         groupId={groupId}
         schedules={schedules}
-      />
-
-      <AttendanceDialog
-        key={`attendance-${attendanceSession?.id ?? "none"}`}
-        open={Boolean(attendanceSession)}
-        onClose={() => setAttendanceSession(null)}
-        sessionId={attendanceSession?.id ?? 0}
-        sessionLabel={
-          attendanceSession
-            ? sessionLabel(attendanceSession, scheduleById)
-            : ""
-        }
-        enrollments={enrollments}
       />
     </section>
   );

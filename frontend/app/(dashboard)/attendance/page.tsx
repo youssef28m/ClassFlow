@@ -13,27 +13,22 @@ import {
 import { StatusBadge } from "@/components/tables/status-badge";
 import { TablePagination } from "@/components/tables/table-pagination";
 import { inputClassName } from "@/components/forms/field";
-import { AttendanceDialog } from "@/features/attendance/components/attendance-dialog";
 import { useSessionsQuery } from "@/features/attendance/hooks";
 import type { ClassSession } from "@/features/attendance/types";
-import { useEnrollmentsQuery } from "@/features/enrollments/hooks";
 import { scheduleLabel } from "@/features/schedules/components/schedule-manager";
 import { useSchedulesQuery } from "@/features/schedules/hooks";
 import { useGroupsQuery } from "@/features/groups/hooks";
 import { formatDate } from "@/lib/formatters";
-import { can } from "@/lib/permissions";
-import { useAuth } from "@/lib/auth-store";
 
 const PAGE_SIZE = 10;
 
 export default function AttendancePage() {
-  const { user } = useAuth();
   const [groupFilter, setGroupFilter] = useState<"ALL" | number>("ALL");
   const [statusFilter, setStatusFilter] = useState<"ALL" | "UPCOMING" | "COMPLETED">("ALL");
   const [page, setPage] = useState(1);
 
   const groups = useGroupsQuery({ pageSize: 100 });
-  const schedules = useSchedulesQuery({ pageSize: 100 });
+  const schedules = useSchedulesQuery({ groupId: -1, pageSize: 100 });
 
   const filters = useMemo(
     () => ({
@@ -53,7 +48,13 @@ export default function AttendancePage() {
   );
 
   const slotLabels = useMemo(
-    () => new Map((schedules.data?.items ?? []).map((schedule) => [schedule.id, scheduleLabel(schedule)])),
+    () =>
+      new Map(
+        (schedules.data?.items ?? []).map((schedule) => [
+          schedule.id,
+          scheduleLabel(schedule),
+        ]),
+      ),
     [schedules.data],
   );
 
@@ -65,13 +66,6 @@ export default function AttendancePage() {
     [sessions.data],
   );
 
-  const [attendanceSession, setAttendanceSession] = useState<ClassSession | null>(null);
-  const roster = useEnrollmentsQuery({
-    groupId: attendanceSession?.groupId ?? -1,
-    active: true,
-    pageSize: 100,
-  });
-
   function updateFilters(update: () => void) {
     setPage(1);
     update();
@@ -82,9 +76,12 @@ export default function AttendancePage() {
       key: "sessionDate",
       header: "Date",
       render: (item) => (
-        <span className="whitespace-nowrap font-medium">
+        <Link
+          href={`/attendance/${item.id}`}
+          className="whitespace-nowrap font-medium text-primary hover:underline"
+        >
           {formatDate(item.sessionDate)}
-        </span>
+        </Link>
       ),
     },
     {
@@ -93,7 +90,7 @@ export default function AttendancePage() {
       render: (item) => (
         <Link
           href={`/groups/${item.groupId}`}
-          className="text-primary hover:underline"
+          className="text-card-foreground hover:text-primary"
         >
           {groupNames.get(item.groupId) ?? `Group #${item.groupId}`}
         </Link>
@@ -118,17 +115,15 @@ export default function AttendancePage() {
       key: "actions",
       header: "",
       className: "w-44 text-right",
-      render: (item) =>
-        can(user, "groupsAndSessions", "markAttendance") ? (
-          <button
-            type="button"
-            onClick={() => setAttendanceSession(item)}
-            className="flex items-center gap-1.5 rounded-lg border border-border px-2.5 py-1.5 text-xs font-medium text-card-foreground transition-colors hover:bg-muted"
-          >
-            <ClipboardCheck className="size-4" aria-hidden />
-            Take attendance
-          </button>
-        ) : null,
+      render: (item) => (
+        <Link
+          href={`/attendance/${item.id}`}
+          className="inline-flex items-center gap-1.5 rounded-lg border border-border px-2.5 py-1.5 text-xs font-medium text-card-foreground transition-colors hover:bg-muted"
+        >
+          <ClipboardCheck className="size-4" aria-hidden />
+          Take attendance
+        </Link>
+      ),
     },
   ];
 
@@ -143,23 +138,23 @@ export default function AttendancePage() {
         <FilterBar>
           <select
             id="attendance-group-filter"
-              aria-label="Filter by group"
-              value={groupFilter === "ALL" ? "ALL" : String(groupFilter)}
-              onChange={(event) =>
-                updateFilters(() => {
-                  const value = event.target.value;
-                  setGroupFilter(value === "ALL" ? "ALL" : Number(value));
-                })
-              }
-              className={`${inputClassName} w-auto`}
-            >
-              <option value="ALL">All groups</option>
-              {(groups.data?.items ?? []).map((group) => (
-                <option key={group.id} value={group.id}>
-                  {group.name}
-                </option>
-              ))}
-            </select>
+            aria-label="Filter by group"
+            value={groupFilter === "ALL" ? "ALL" : String(groupFilter)}
+            onChange={(event) =>
+              updateFilters(() => {
+                const value = event.target.value;
+                setGroupFilter(value === "ALL" ? "ALL" : Number(value));
+              })
+            }
+            className={`${inputClassName} w-auto`}
+          >
+            <option value="ALL">All groups</option>
+            {(groups.data?.items ?? []).map((group) => (
+              <option key={group.id} value={group.id}>
+                {group.name}
+              </option>
+            ))}
+          </select>
           <select
             id="attendance-status-filter"
             aria-label="Filter by status"
@@ -201,23 +196,6 @@ export default function AttendancePage() {
           />
         ) : null}
       </PermissionGate>
-
-      <AttendanceDialog
-        key={`page-attendance-${attendanceSession?.id ?? "none"}`}
-        open={Boolean(attendanceSession)}
-        onClose={() => setAttendanceSession(null)}
-        sessionId={attendanceSession?.id ?? 0}
-        sessionLabel={
-          attendanceSession
-            ? `${formatDate(attendanceSession.sessionDate)}${
-                groupNames.get(attendanceSession.groupId)
-                  ? ` · ${groupNames.get(attendanceSession.groupId)}`
-                  : ""
-              }`
-            : ""
-        }
-        enrollments={roster.data?.items ?? []}
-      />
     </>
   );
 }

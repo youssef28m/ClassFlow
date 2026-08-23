@@ -17,6 +17,7 @@ import { useGroupsQuery } from "@/features/groups/hooks";
 import { ScheduleManager } from "@/features/schedules/components/schedule-manager";
 import { useSchedulesQuery } from "@/features/schedules/hooks";
 import { SessionsPanel } from "@/features/attendance/components/sessions-panel";
+import { AttendanceHistory } from "@/features/attendance/components/attendance-history";
 import { ApiError } from "@/lib/api-client";
 import { formatDate, humanizeEnum } from "@/lib/formatters";
 import { can, hasPermission } from "@/lib/permissions";
@@ -194,10 +195,12 @@ export default function GroupDetailPage() {
             <SessionsPanel
               groupId={groupId}
               schedules={schedules}
-              enrollments={roster}
               canManageSessions={hasPermission(user, "groupsAndSessions", "manageSessions")}
-              canMarkAttendance={can(user, "groupsAndSessions", "markAttendance")}
             />
+          </div>
+
+          <div className="mt-5">
+            <AttendanceHistory groupId={groupId} roster={roster} />
           </div>
         </>
       )}
