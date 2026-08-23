@@ -48,6 +48,11 @@ body {
   font-family: var(--font-sans), Arial, Helvetica, sans-serif;
 }
 
+select option {
+  background-color: var(--card);
+  color: var(--card-foreground);
+}
+
 @layer utilities {
   .scroll-slim {
     scrollbar-width: thin;
