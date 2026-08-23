@@ -36,7 +36,7 @@ export function TablePagination({
           aria-label={t("table.prev")}
           className="rounded-lg border border-border p-1.5 text-card-foreground transition-colors hover:bg-muted disabled:pointer-events-none disabled:opacity-40"
         >
-          <ChevronLeft className="size-4" aria-hidden />
+          <ChevronLeft className="size-4 rtl-flip" aria-hidden />
         </button>
         <button
           type="button"
@@ -45,7 +45,7 @@ export function TablePagination({
           aria-label={t("table.next")}
           className="rounded-lg border border-border p-1.5 text-card-foreground transition-colors hover:bg-muted disabled:pointer-events-none disabled:opacity-40"
         >
-          <ChevronRight className="size-4" aria-hidden />
+          <ChevronRight className="size-4 rtl-flip" aria-hidden />
         </button>
       </div>
     </nav>

@@ -62,6 +62,10 @@ select option {
     scrollbar-width: thin;
     scrollbar-color: color-mix(in oklab, var(--border) 80%, transparent) transparent;
   }
+
+  [dir="rtl"] .rtl-flip {
+    transform: scaleX(-1);
+  }
   .scroll-slim::-webkit-scrollbar {
     width: 8px;
   }

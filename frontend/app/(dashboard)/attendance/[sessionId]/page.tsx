@@ -259,7 +259,7 @@ function BackLink({ href, label }: { href: string; label: string }) {
       href={href}
       className="inline-flex items-center gap-1.5 text-sm text-muted-foreground transition-colors hover:text-card-foreground"
     >
-      <ArrowLeft className="size-4" aria-hidden />
+      <ArrowLeft className="size-4 rtl-flip" aria-hidden />
       {label}
     </Link>
   );

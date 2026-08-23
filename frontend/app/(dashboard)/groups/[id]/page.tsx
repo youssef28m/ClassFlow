@@ -74,7 +74,7 @@ export default function GroupDetailPage() {
           href="/groups"
           className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-card-foreground"
         >
-          <ArrowLeft className="size-4" aria-hidden />
+          <ArrowLeft className="size-4 rtl-flip" aria-hidden />
           {t("groupDetail.backToGroups")}
         </Link>
       </>
@@ -98,7 +98,7 @@ export default function GroupDetailPage() {
         href="/groups"
         className="mb-3 inline-flex items-center gap-1.5 text-sm text-muted-foreground transition-colors hover:text-card-foreground"
       >
-        <ArrowLeft className="size-4" aria-hidden />
+        <ArrowLeft className="size-4 rtl-flip" aria-hidden />
         {t("groupDetail.allGroups")}
       </Link>
 
