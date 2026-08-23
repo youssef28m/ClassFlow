@@ -132,7 +132,7 @@ export default function GroupDetailPage() {
             />
           </div>
 
-          <section className="rounded-xl border border-border bg-card p-5">
+          <section className="mt-5 rounded-xl border border-border bg-card p-5">
             <div className="flex items-center justify-between gap-3">
               <div>
                 <h2 className="text-sm font-semibold text-card-foreground">
@@ -161,7 +161,7 @@ export default function GroupDetailPage() {
                 {t("groupDetail.noEnrollments")}
               </p>
             ) : (
-              <ul className="mt-4 divide-y divide-border rounded-xl border border-border">
+              <ul className="mt-4 max-h-96 divide-y divide-border overflow-y-auto rounded-xl border border-border scroll-slim">
                 {roster.map((enrollment) => (
                   <li
                     key={enrollment.id}

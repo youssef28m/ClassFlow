@@ -165,7 +165,7 @@ export function SessionsPanel({
           {t("sessions.emptySuffix")}
         </p>
       ) : (
-        <ul className="mt-4 divide-y divide-border rounded-xl border border-border">
+        <ul className="mt-4 max-h-96 divide-y divide-border overflow-y-auto rounded-xl border border-border scroll-slim">
           {items.map((session) => (
             <li key={session.id} className="flex items-center justify-between gap-3 px-4 py-3">
               <div className="min-w-0">
