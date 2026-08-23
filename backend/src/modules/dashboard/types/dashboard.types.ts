@@ -37,7 +37,13 @@ export interface OverdueStudentsDTO {
   total: number;
 }
 
+export interface MonthlyRevenuePointDTO {
+  month: string;
+  total: string;
+}
+
 export interface DashboardOverviewDTO {
+  monthlyRevenue: MonthlyRevenuePointDTO[] | null;
   todaySessions: TodaySessionDTO[];
   attendanceTrend: AttendanceTrendPointDTO[];
   monthCollected: MonthCollectedDTO | null;

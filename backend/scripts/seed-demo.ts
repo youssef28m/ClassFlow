@@ -257,10 +257,10 @@ async function main(): Promise<void> {
       if (existing) continue;
       // every 5th seat enrolled ~37 days ago so some billing periods have
       // already lapsed (drives OVERDUE/PENDING/PAID spread in the demo data)
-      const backdated =
-        seat % 5 === 0
-          ? new Date(Date.now() - 45 * 86_400_000)
-          : undefined;
+      let backdated: Date | undefined;
+      if (seat % 5 === 0) backdated = new Date(Date.now() - 45 * 86_400_000);
+      else if (seat % 7 === 2) backdated = new Date(Date.now() - 130 * 86_400_000);
+      else if (seat % 11 === 4) backdated = new Date(Date.now() - 230 * 86_400_000);
       enrollments.push(
         await prisma.enrollment.create({
           data: {
@@ -292,27 +292,51 @@ async function main(): Promise<void> {
     const periodMonths = PERIOD_MONTHS[group.paymentType];
     const isLongLapsed =
       now.getTime() - new Date(enrollment.enrollmentDate).getTime() > 40 * 86_400_000;
-    // every 4th recurring enrollment plus all long-lapsed ones stay unpaid
-    if (periodMonths !== null && (index % 4 === 0 || isLongLapsed)) continue;
-    let paymentDate: Date;
+    // every 4th recurring enrollment stays unpaid; of the long-lapsed ones,
+    // half stay unpaid (OVERDUE demo) and half pay their history
+    const isLapsedUnpaid = isLongLapsed && index % 2 === 0;
+    if (periodMonths !== null && (index % 4 === 0 || isLapsedUnpaid)) continue;
+
     if (periodMonths !== null) {
-      // pay right after the current billing window opens → counts as PAID
-      const cycle = computeBillingCycle(enrollment.enrollmentDate, periodMonths, now);
-      paymentDate = new Date(Math.min(cycle.periodStart.getTime() + 86_400_000, now.getTime()));
-    } else if (random() > 0.4) {
-      paymentDate = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 3));
+      // pay the current billing window plus a random stretch of earlier
+      // windows so monthly revenue history varies across the year
+      const cycle = computeBillingCycle(new Date(enrollment.enrollmentDate), periodMonths, now);
+      let windowStart = cycle.periodStart;
+      const pastWindows = Math.max(1, Math.floor(random() * 5));
+      for (let window = 0; window <= pastWindows; window += 1) {
+        if (windowStart < new Date(enrollment.enrollmentDate)) break;
+        const paymentDate = new Date(
+          Math.min(windowStart.getTime() + 86_400_000, now.getTime()),
+        );
+        await prisma.payment.create({
+          data: {
+            enrollmentId: enrollment.id,
+            amount: group.fee,
+            paymentDate,
+            paymentMethod: index % 3 === 0 ? PaymentMethod.CARD : PaymentMethod.CASH,
+          },
+        });
+        paymentCount += 1;
+        windowStart = new Date(
+          Date.UTC(
+            windowStart.getUTCFullYear(),
+            windowStart.getUTCMonth() - periodMonths,
+            Math.min(windowStart.getUTCDate(), 28),
+          ),
+        );
+      }
     } else {
-      continue;
+      if (random() <= 0.4) continue;
+      await prisma.payment.create({
+        data: {
+          enrollmentId: enrollment.id,
+          amount: group.fee,
+          paymentDate: new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 3)),
+          paymentMethod: index % 3 === 0 ? PaymentMethod.CARD : PaymentMethod.CASH,
+        },
+      });
+      paymentCount += 1;
     }
-    await prisma.payment.create({
-      data: {
-        enrollmentId: enrollment.id,
-        amount: group.fee,
-        paymentDate,
-        paymentMethod: index % 3 === 0 ? PaymentMethod.CARD : PaymentMethod.CASH,
-      },
-    });
-    paymentCount += 1;
   }
 
   let sessionCount = 0;

@@ -10,6 +10,8 @@ import {
   toTodaySessionDTO,
 } from '../types/dashboard.types.js';
 
+const REVENUE_MONTHS = 12;
+
 const OVERDUE_LIST_LIMIT = 10;
 
 export class DashboardService {
@@ -39,7 +41,11 @@ export class DashboardService {
       attendanceRecords: { select: { status: true } },
     } as const;
 
-    const [todaySessions, trendSessions, monthAggregate, recurringEnrollments, periodPayments] =
+    const revenueStart = new Date(
+      Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - (REVENUE_MONTHS - 1), 1),
+    );
+
+    const [todaySessions, trendSessions, monthAggregate, recurringEnrollments, periodPayments, revenuePayments] =
       await Promise.all([
         prisma.session.findMany({
           where: { group: { centerId }, sessionDate: { gte: todayStart, lt: tomorrowStart } },
@@ -81,6 +87,15 @@ export class DashboardService {
           ? prisma.payment.findMany({
               where: { enrollment: { active: true, student: { centerId } } },
               select: { enrollmentId: true, paymentDate: true },
+            })
+          : Promise.resolve([]),
+        canSeePayments
+          ? prisma.payment.findMany({
+              where: {
+                enrollment: { student: { centerId } },
+                paymentDate: { gte: revenueStart, lt: nextMonthStart },
+              },
+              select: { amount: true, paymentDate: true },
             })
           : Promise.resolve([]),
       ]);
@@ -127,7 +142,28 @@ export class DashboardService {
       overdueStudents = { items: overdue.slice(0, OVERDUE_LIST_LIMIT), total: overdue.length };
     }
 
+    let monthlyRevenue: DashboardOverviewDTO['monthlyRevenue'] = null;
+    if (canSeePayments) {
+      const buckets = new Map<string, number>();
+      for (let offset = REVENUE_MONTHS - 1; offset >= 0; offset -= 1) {
+        const date = new Date(
+          Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - offset, 1),
+        );
+        buckets.set(date.toISOString().slice(0, 7), 0);
+      }
+      for (const payment of revenuePayments) {
+        const key = payment.paymentDate.toISOString().slice(0, 7);
+        if (!buckets.has(key)) continue;
+        buckets.set(key, (buckets.get(key) ?? 0) + Number(payment.amount));
+      }
+      monthlyRevenue = [...buckets.entries()].map(([month, total]) => ({
+        month,
+        total: total.toFixed(2),
+      }));
+    }
+
     return {
+      monthlyRevenue,
       todaySessions: todaySessions
         .map(toTodaySessionDTO)
         .sort((a, b) => a.startTime.localeCompare(b.startTime)),

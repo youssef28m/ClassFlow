@@ -5,6 +5,7 @@ import {
   CalendarDays,
   Clock,
   MapPin,
+  TrendingUp,
   TriangleAlert,
   Wallet,
 } from "lucide-react";
@@ -32,6 +33,10 @@ export default function DashboardPage() {
     { present: 0, total: 0 },
   );
   const rate = totals.total > 0 ? Math.round((totals.present / totals.total) * 100) : null;
+  const annualTotal = (overview.data?.monthlyRevenue ?? []).reduce(
+    (accumulator, point) => accumulator + Number(point.total),
+    0,
+  );
   const collected = overview.data?.monthCollected ?? null;
 
   return (
@@ -66,7 +71,7 @@ export default function DashboardPage() {
         </div>
       ) : null}
 
-      <div className="mt-5 grid gap-4 lg:grid-cols-3">
+      <div className="mt-5 grid gap-4 sm:grid-cols-2">
         {/* Collected this month */}
         <section className="rounded-xl border border-border bg-card p-5">
           <div className="flex items-center gap-2">
@@ -112,75 +117,7 @@ export default function DashboardPage() {
           </p>
         </section>
 
-        {/* Trend mini chart */}
-        <section className="rounded-xl border border-border bg-card p-5">
-          <div className="flex items-center gap-2">
-            <CalendarCheck className="size-4 text-muted-foreground" aria-hidden />
-            <h2 className="text-sm font-semibold text-card-foreground">
-              {t("dashboard.trendTitle")}
-            </h2>
-          </div>
-          <TrendBars trend={trend} isLoading={overview.isLoading} />
-        </section>
       </div>
-
-      {/* Late payments */}
-      {overview.data?.overdueStudents ? (
-        <section className="mt-5 rounded-xl border border-border bg-card p-5">
-          <div className="flex items-center justify-between gap-3">
-            <div className="flex items-center gap-2">
-              <TriangleAlert className="size-4 text-amber-500" aria-hidden />
-              <h2 className="text-sm font-semibold text-card-foreground">
-                {t("dashboard.overdueTitle")}
-              </h2>
-            </div>
-            {overview.data.overdueStudents.total > 0 ? (
-              <span className="rounded-full bg-red-500/10 px-2.5 py-0.5 text-xs font-medium tabular-nums text-red-600 dark:text-red-400">
-                {overview.data.overdueStudents.total}
-              </span>
-            ) : null}
-          </div>
-
-          {(overview.data.overdueStudents.items.length ?? 0) === 0 ? (
-            <p className="mt-4 text-sm text-muted-foreground">{t("dashboard.overdueEmpty")}</p>
-          ) : (
-            <ul className="mt-3 divide-y divide-border">
-              {overview.data.overdueStudents.items.map((entry) => (
-                <li key={`${entry.studentId}-${entry.groupId}`}>
-                  <Link
-                    href={`/students/${entry.studentId}`}
-                    className="flex items-center gap-3 py-2.5 transition-colors hover:bg-muted/40"
-                  >
-                    <span className="min-w-0 flex-1 truncate text-sm font-medium text-card-foreground">
-                      {entry.studentName}
-                      <span className="ms-2 font-normal text-muted-foreground">
-                        {entry.groupName}
-                      </span>
-                    </span>
-                    <span className="shrink-0 text-sm tabular-nums text-muted-foreground">
-                      {Number(entry.fee).toLocaleString()} {t("payments.currency")}
-                    </span>
-                    <StatusBadge tone="danger">
-                      {t("studentDetail.statusOverdue")} ·{" "}
-                      {t("studentDetail.overdueDays", { count: entry.daysOverdue })}
-                    </StatusBadge>
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          )}
-          {overview.data.overdueStudents.total >
-          overview.data.overdueStudents.items.length ? (
-            <p className="mt-3 text-xs text-muted-foreground">
-              {t("dashboard.overdueMore", {
-                count:
-                  overview.data.overdueStudents.total -
-                  overview.data.overdueStudents.items.length,
-              })}
-            </p>
-          ) : null}
-        </section>
-      ) : null}
 
       {/* Today's sessions */}
       <section className="mt-5 rounded-xl border border-border bg-card p-5">
@@ -242,6 +179,82 @@ export default function DashboardPage() {
           </ul>
         )}
       </section>
+      {/* Revenue across the year */}
+      {overview.data?.monthlyRevenue ? (
+        <section className="mt-5 rounded-xl border border-border bg-card p-5">
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex items-center gap-2">
+              <TrendingUp className="size-4 text-muted-foreground" aria-hidden />
+              <h2 className="text-sm font-semibold text-card-foreground">
+                {t("dashboard.revenueTitle")}
+              </h2>
+            </div>
+            <span className="text-sm tabular-nums text-muted-foreground">
+              {Number(annualTotal).toLocaleString()} {t("payments.currency")}
+            </span>
+          </div>
+          <RevenueBars items={overview.data.monthlyRevenue} isLoading={overview.isLoading} />
+        </section>
+      ) : null}
+
+      {/* Late payments */}
+      {overview.data?.overdueStudents ? (
+        <section className="mt-5 rounded-xl border border-border bg-card p-5">
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex items-center gap-2">
+              <TriangleAlert className="size-4 text-amber-500" aria-hidden />
+              <h2 className="text-sm font-semibold text-card-foreground">
+                {t("dashboard.overdueTitle")}
+              </h2>
+            </div>
+            {overview.data.overdueStudents.total > 0 ? (
+              <span className="rounded-full bg-red-500/10 px-2.5 py-0.5 text-xs font-medium tabular-nums text-red-600 dark:text-red-400">
+                {overview.data.overdueStudents.total}
+              </span>
+            ) : null}
+          </div>
+
+          {(overview.data.overdueStudents.items.length ?? 0) === 0 ? (
+            <p className="mt-4 text-sm text-muted-foreground">{t("dashboard.overdueEmpty")}</p>
+          ) : (
+            <ul className="mt-3 divide-y divide-border">
+              {overview.data.overdueStudents.items.map((entry) => (
+                <li key={`${entry.studentId}-${entry.groupId}`}>
+                  <Link
+                    href={`/students/${entry.studentId}`}
+                    className="flex items-center gap-3 py-2.5 transition-colors hover:bg-muted/40"
+                  >
+                    <span className="min-w-0 flex-1 truncate text-sm font-medium text-card-foreground">
+                      {entry.studentName}
+                      <span className="ms-2 font-normal text-muted-foreground">
+                        {entry.groupName}
+                      </span>
+                    </span>
+                    <span className="shrink-0 text-sm tabular-nums text-muted-foreground">
+                      {Number(entry.fee).toLocaleString()} {t("payments.currency")}
+                    </span>
+                    <StatusBadge tone="danger">
+                      {t("studentDetail.statusOverdue")} ·{" "}
+                      {t("studentDetail.overdueDays", { count: entry.daysOverdue })}
+                    </StatusBadge>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          )}
+          {overview.data.overdueStudents.total >
+          overview.data.overdueStudents.items.length ? (
+            <p className="mt-3 text-xs text-muted-foreground">
+              {t("dashboard.overdueMore", {
+                count:
+                  overview.data.overdueStudents.total -
+                  overview.data.overdueStudents.items.length,
+              })}
+            </p>
+          ) : null}
+        </section>
+      ) : null}
+
     </>
   );
 }
@@ -255,35 +268,43 @@ function StatusDot({ completed }: { completed: boolean }) {
   );
 }
 
-function TrendBars({
-  trend,
+function RevenueBars({
+  items,
   isLoading,
 }: {
-  trend: Array<{ date: string; present: number; total: number }>;
+  items: Array<{ month: string; total: string }>;
   isLoading: boolean;
 }) {
   const { t, locale } = useI18n();
   if (isLoading) {
     return <p className="mt-3 text-sm text-muted-foreground">{t("common.loading")}</p>;
   }
+  const max = Math.max(...items.map((item) => Number(item.total)), 1);
+  const tag = locale === "ar" ? "ar-EG" : "en-US";
   return (
-    <div dir="ltr" className="mt-4 flex h-16 items-end gap-1" role="img" aria-label={t("dashboard.trendAria")}>
-      {trend.map((point) => {
-        const height =
-          point.total > 0 ? Math.max(8, Math.round((point.present / point.total) * 100)) : 4;
-        const label = new Date(`${point.date}T00:00:00Z`).toLocaleDateString(
-          locale === "ar" ? "ar-EG" : "en-GB",
-          { day: "numeric", month: "short" },
-        );
+    <div dir="ltr" className="mt-5 flex h-44 items-end gap-2 sm:gap-3">
+      {items.map((item) => {
+        const value = Number(item.total);
+        const height = value > 0 ? Math.max(6, Math.round((value / max) * 100)) : 3;
+        const label = new Date(`${item.month}-01T00:00:00Z`).toLocaleDateString(tag, {
+          month: "short",
+        });
+        const compact = new Intl.NumberFormat(tag, {
+          notation: "compact",
+          maximumFractionDigits: 1,
+        }).format(value);
         return (
-          <span
-            key={point.date}
-            title={`${label}: ${point.present}/${point.total}`}
-            style={{ height: `${height}%` }}
-            className={`min-w-1.5 flex-1 rounded-t-sm ${
-              point.total > 0 ? "bg-primary/70 hover:bg-primary" : "bg-muted"
-            }`}
-          />
+          <div key={item.month} className="flex h-full min-w-0 flex-1 flex-col items-center justify-end gap-1">
+            <span className="text-[10px] tabular-nums text-muted-foreground">
+              {value > 0 ? compact : ""}
+            </span>
+            <span
+              style={{ height: `${height}%` }}
+              title={`${label}: ${value.toLocaleString(tag)}`}
+              className={`w-full rounded-t-sm ${value > 0 ? "bg-primary/70 hover:bg-primary" : "bg-muted"}`}
+            />
+            <span className="text-[10px] text-muted-foreground">{label}</span>
+          </div>
         );
       })}
     </div>

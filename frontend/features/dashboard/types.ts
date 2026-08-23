@@ -37,7 +37,13 @@ export interface OverdueStudents {
   total: number;
 }
 
+export interface MonthlyRevenuePoint {
+  month: string;
+  total: string;
+}
+
 export interface DashboardOverview {
+  monthlyRevenue: MonthlyRevenuePoint[] | null;
   todaySessions: TodaySession[];
   attendanceTrend: AttendanceTrendPoint[];
   monthCollected: MonthCollected | null;
