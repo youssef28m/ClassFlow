@@ -6,35 +6,6 @@ import { attendanceApi, attendanceKeys } from "@/features/attendance/api";
 import type { Enrollment } from "@/features/enrollments/types";
 import { ApiError } from "@/lib/api-client";
 
-interface StudentTally {
-  enrollmentId: number;
-  name: string;
-  present: number;
-  absent: number;
-}
-
-async function fetchHistory(groupId: number): Promise<StudentTally[]> {
-  const sessions = await attendanceApi.listSessions({ groupId, pageSize: 100 });
-  const recordLists = await Promise.all(
-    sessions.items.map((session) => attendanceApi.listRecords(session.id)),
-  );
-  const tallies = new Map<number, StudentTally>();
-  for (const records of recordLists) {
-    for (const record of records) {
-      const tally = tallies.get(record.enrollmentId) ?? {
-        enrollmentId: record.enrollmentId,
-        name: record.student.fullName,
-        present: 0,
-        absent: 0,
-      };
-      if (record.status === "PRESENT") tally.present += 1;
-      else tally.absent += 1;
-      tallies.set(record.enrollmentId, tally);
-    }
-  }
-  return [...tallies.values()].sort((a, b) => a.name.localeCompare(b.name));
-}
-
 export function AttendanceHistory({
   groupId,
   roster,
@@ -43,8 +14,8 @@ export function AttendanceHistory({
   roster: Enrollment[];
 }) {
   const history = useQuery({
-    queryKey: [...attendanceKeys.all, "history", groupId],
-    queryFn: () => fetchHistory(groupId),
+    queryKey: attendanceKeys.summary(groupId),
+    queryFn: () => attendanceApi.summary(groupId),
   });
 
   const gradesById = useMemo(() => {
@@ -86,7 +57,7 @@ export function AttendanceHistory({
             {(history.data ?? []).map((tally) => (
               <tr key={tally.enrollmentId}>
                 <td className="py-2.5 pr-4">
-                  <span className="font-medium text-card-foreground">{tally.name}</span>
+                  <span className="font-medium text-card-foreground">{tally.fullName}</span>
                   {gradesById.get(tally.enrollmentId) ? (
                     <span className="ml-2 text-xs text-muted-foreground">
                       {gradesById.get(tally.enrollmentId)}

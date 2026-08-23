@@ -33,6 +33,14 @@ export interface AttendanceDTO {
   updatedAt: Date;
 }
 
+export interface AttendanceSummaryEntryDTO {
+  enrollmentId: number;
+  studentId: number;
+  fullName: string;
+  present: number;
+  absent: number;
+}
+
 export function toAttendanceDTO(attendance: {
   id: number;
   enrollmentId: number;

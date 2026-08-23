@@ -25,3 +25,10 @@ export interface AttendanceRecord {
 
 export interface SessionListResponse { items: ClassSession[]; meta: PaginationMeta; }
 export interface SessionFilters { page?: number; pageSize?: number; groupId?: number; scheduleId?: number; completed?: boolean; from?: string; to?: string; }
+export interface AttendanceSummaryEntry {
+  enrollmentId: number;
+  studentId: number;
+  fullName: string;
+  present: number;
+  absent: number;
+}

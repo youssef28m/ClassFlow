@@ -43,3 +43,9 @@ export const recordAttendanceSchema = z.object({
 });
 
 export type RecordAttendanceInput = z.infer<typeof recordAttendanceSchema>;
+
+export const attendanceSummaryQuerySchema = z.object({
+  groupId: z.coerce.number().int().positive('Group id must be a positive integer'),
+});
+
+export type AttendanceSummaryQuery = z.infer<typeof attendanceSummaryQuerySchema>;

@@ -2,9 +2,15 @@ import { DayOfWeek, Prisma } from '../../../generated/prisma/client.js';
 import { AppError } from '../../../shared/middleware/error-handler.js';
 import type { AttendanceRepository } from '../repositories/attendance.repository.js';
 import type { SessionRepository } from '../repositories/session.repository.js';
-import type { AttendanceDTO, PaginatedResponse, SessionDTO } from '../types/session.types.js';
+import type {
+  AttendanceDTO,
+  AttendanceSummaryEntryDTO,
+  PaginatedResponse,
+  SessionDTO,
+} from '../types/session.types.js';
 import { toAttendanceDTO, toSessionDTO } from '../types/session.types.js';
 import type {
+  AttendanceSummaryQuery,
   CreateSessionInput,
   ListSessionsQuery,
   RecordAttendanceInput,
@@ -88,6 +94,13 @@ export class SessionService {
     const context = await this.getContext(sessionId, centerId);
     const records = await this.attendanceRepository.findBySession(context.id, centerId);
     return records.map(toAttendanceDTO);
+  }
+
+  async attendanceSummary(
+    query: AttendanceSummaryQuery,
+    centerId: number,
+  ): Promise<AttendanceSummaryEntryDTO[]> {
+    return this.attendanceRepository.summarizeForGroup(query.groupId, centerId);
   }
 
   async recordAttendance(

@@ -11,6 +11,7 @@ import { AttendanceRepository } from '../repositories/attendance.repository.js';
 import { SessionRepository } from '../repositories/session.repository.js';
 import { SessionService } from '../services/session.service.js';
 import {
+  attendanceSummaryQuerySchema,
   createSessionSchema,
   listSessionsQuerySchema,
   recordAttendanceSchema,
@@ -24,6 +25,13 @@ const controller = new SessionController(service);
 const router = Router();
 router.use(authenticate, requireCenterScope);
 
+router.get(
+  '/attendance-summary',
+  requirePermission('groupsAndSessions', 'read'),
+  requireResolvedCenterId,
+  validateQuery(attendanceSummaryQuerySchema),
+  controller.attendanceSummary,
+);
 router.get(
   '/',
   requirePermission('groupsAndSessions', 'read'),
