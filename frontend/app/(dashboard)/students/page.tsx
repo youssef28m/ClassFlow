@@ -1,6 +1,7 @@
 "use client";
 
 import { Plus, Search, SquarePen, Trash2 } from "lucide-react";
+import Link from "next/link";
 import { useMemo, useState } from "react";
 import { ConfirmDialog } from "@/components/feedback/confirm-dialog";
 import { PermissionGate } from "@/components/feedback/permission-gate";
@@ -87,7 +88,12 @@ export default function StudentsPage() {
       key: "fullName",
       header: t("students.columnName"),
       render: (student) => (
-        <span className="font-medium">{student.fullName}</span>
+        <Link
+          href={`/students/${student.id}`}
+          className="font-medium text-card-foreground transition-colors hover:text-primary hover:underline"
+        >
+          {student.fullName}
+        </Link>
       ),
     },
     {

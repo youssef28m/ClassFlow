@@ -26,6 +26,15 @@ const router = Router();
 router.use(authenticate, requireCenterScope);
 
 router.get(
+  '/summary/:studentId',
+  requireAnyPermission(
+    { resource: 'paymentsAndExpenses', action: 'read' },
+    { resource: 'paymentsAndExpenses', action: 'logPayment' },
+  ),
+  requireResolvedCenterId,
+  controller.studentSummary,
+);
+router.get(
   '/',
   requirePermission('paymentsAndExpenses', 'read'),
   validateQuery(listPaymentsQuerySchema),

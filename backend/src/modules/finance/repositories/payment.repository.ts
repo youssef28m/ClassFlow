@@ -23,6 +23,40 @@ export class PaymentRepository {
     return prisma.payment.create({ data });
   }
 
+  findStudentInCenter(studentId: number, centerId: number) {
+    return prisma.student.findFirst({
+      where: { id: studentId, centerId },
+      select: {
+        id: true,
+        fullName: true,
+        grade: true,
+        school: true,
+        phone: true,
+        parentPhone: true,
+        joinDate: true,
+        status: true,
+      },
+    });
+  }
+
+  findEnrollmentsWithGroupForStudent(studentId: number) {
+    return prisma.enrollment.findMany({
+      where: { studentId },
+      orderBy: [{ active: 'desc' }, { id: 'asc' }],
+      include: {
+        group: { select: { id: true, name: true, subject: true, fee: true, paymentType: true } },
+      },
+    });
+  }
+
+  findPaymentsForStudent(studentId: number) {
+    return prisma.payment.findMany({
+      where: { enrollment: { studentId } },
+      orderBy: { paymentDate: 'desc' },
+      select: { enrollmentId: true, amount: true, paymentDate: true },
+    });
+  }
+
   findById(
     id: number,
     centerId: number,

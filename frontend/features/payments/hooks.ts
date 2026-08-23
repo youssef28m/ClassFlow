@@ -2,6 +2,14 @@ import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tansta
 import { paymentKeys, paymentsApi } from "@/features/payments/api";
 import type { PaymentFilters, PaymentPayload } from "@/features/payments/types";
 
+export function useStudentPaymentSummary(studentId: number | null) {
+  return useQuery({
+    queryKey: [...paymentKeys.all, "summary", studentId] as const,
+    queryFn: () => paymentsApi.studentSummary(studentId as number),
+    enabled: studentId !== null,
+  });
+}
+
 export function usePaymentsQuery(filters: PaymentFilters) {
   return useQuery({
     queryKey: paymentKeys.list(filters),

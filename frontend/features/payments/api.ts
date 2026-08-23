@@ -1,4 +1,5 @@
 import { apiClient, type QueryParams } from "@/lib/api-client";
+import type { StudentPaymentSummary } from "@/features/payments/payment-status";
 import type {
   PaymentFilters,
   PaymentListResponse,
@@ -10,6 +11,11 @@ export const paymentsApi = {
     return apiClient.request<PaymentListResponse>("/payments", {
       params: filters as QueryParams,
     });
+  },
+  studentSummary(studentId: number): Promise<StudentPaymentSummary> {
+    return apiClient.request<StudentPaymentSummary>(
+      `/payments/summary/${studentId}`,
+    );
   },
   create(payload: PaymentPayload): Promise<unknown> {
     return apiClient.request<unknown>("/payments", { method: "POST", body: payload });
