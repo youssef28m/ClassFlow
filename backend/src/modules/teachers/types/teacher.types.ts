@@ -5,7 +5,6 @@ export interface TeacherDTO {
   fullName: string;
   phone: string;
   specialization: string;
-  salary: string;
   active: boolean;
   createdAt: Date;
   updatedAt: Date;
@@ -29,7 +28,6 @@ export function toTeacherDTO(teacher: Teacher): TeacherDTO {
     fullName: teacher.fullName,
     phone: teacher.phone,
     specialization: teacher.specialization,
-    salary: teacher.salary.toString(),
     active: teacher.active,
     createdAt: teacher.createdAt,
     updatedAt: teacher.updatedAt,

@@ -40,10 +40,10 @@ const LAST_NAMES = [
 const SCHOOLS = ['Al Noor School', 'Future Language School', 'Modern Academy'];
 
 const TEACHERS = [
-  { fullName: 'Mona Abdelrahman', specialization: 'Mathematics', salary: '8500.00' },
-  { fullName: 'Sherif Kamal', specialization: 'Physics', salary: '9000.00' },
-  { fullName: 'Heba Farouk', specialization: 'Chemistry', salary: '8000.00' },
-  { fullName: 'Amr Elsayed', specialization: 'English', salary: '7500.00' },
+  { fullName: 'Mona Abdelrahman', specialization: 'Mathematics' },
+  { fullName: 'Sherif Kamal', specialization: 'Physics' },
+  { fullName: 'Heba Farouk', specialization: 'Chemistry' },
+  { fullName: 'Amr Elsayed', specialization: 'English' },
 ];
 
 const GROUPS = [

@@ -1,15 +1,5 @@
 import { z } from 'zod';
 
-export const salarySchema = z
-  .union([
-    z.number().positive().max(99_999_999.99, 'Salary is too large'),
-    z
-      .string()
-      .trim()
-      .regex(/^\d{1,8}(\.\d{1,2})?$/, 'Salary must be an amount with up to 2 decimal places'),
-  ])
-  .refine((value) => Number(value) > 0, 'Salary must be greater than 0');
-
 export const createTeacherSchema = z.object({
   fullName: z.string().trim().min(1, 'Full name is required').max(100, 'Full name is too long'),
   phone: z.string().trim().min(1, 'Phone is required').max(20, 'Phone is too long'),
@@ -18,7 +8,6 @@ export const createTeacherSchema = z.object({
     .trim()
     .min(1, 'Specialization is required')
     .max(100, 'Specialization is too long'),
-  salary: salarySchema,
   active: z.boolean().optional(),
 });
 

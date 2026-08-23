@@ -24,7 +24,7 @@ interface TeacherFormDialogProps {
 }
 
 function defaultValues(): TeacherFormValues {
-  return { fullName: "", phone: "", specialization: "", salary: "", active: true };
+  return { fullName: "", phone: "", specialization: "", active: true };
 }
 
 export function TeacherFormDialog({ open, onClose, teacher }: TeacherFormDialogProps) {
@@ -71,7 +71,7 @@ export function TeacherFormDialog({ open, onClose, teacher }: TeacherFormDialogP
   const isSaving = createTeacher.isPending || updateTeacher.isPending;
 
   return (
-    <FormDialog open={open} onOpenChange={(nextOpen) => !nextOpen && onClose()} title={teacher ? `Edit ${teacher.fullName}` : "Add teacher"} description="Manage the teacher's contact details, specialization, and salary.">
+    <FormDialog open={open} onOpenChange={(nextOpen) => !nextOpen && onClose()} title={teacher ? `Edit ${teacher.fullName}` : "Add teacher"} description="Manage the teacher's contact details and specialization.">
       <form onSubmit={onSubmit} className="space-y-4" noValidate>
         {rootError ? <p role="alert" className="rounded-lg bg-red-500/10 px-3 py-2 text-sm text-red-600 dark:text-red-400">{rootError}</p> : null}
         <Field label="Full name" htmlFor="teacher-full-name" error={errors.fullName?.message}>
@@ -85,9 +85,6 @@ export function TeacherFormDialog({ open, onClose, teacher }: TeacherFormDialogP
             <input id="teacher-specialization" type="text" className={inputClassName} aria-invalid={Boolean(errors.specialization)} {...register("specialization")} />
           </Field>
         </div>
-        <Field label="Monthly salary" htmlFor="teacher-salary" error={errors.salary?.message}>
-          <input id="teacher-salary" type="text" inputMode="decimal" placeholder="e.g. 5000 or 5000.50" className={inputClassName} aria-invalid={Boolean(errors.salary)} {...register("salary")} />
-        </Field>
         <label className="flex items-center gap-2 text-sm text-card-foreground">
           <input type="checkbox" className="size-4 accent-primary" {...register("active")} />
           Active teacher
