@@ -19,9 +19,11 @@ export function formatSlotTime(value: string): string {
   const match = /T(\d{2}):(\d{2})/.exec(value);
   if (!match) return value;
   const hours24 = Number(match[1]);
-  const period = hours24 >= 12 ? "PM" : "AM";
   const hours12 = hours24 % 12 || 12;
-  return `${hours12}:${match[2]} ${period}`;
+  if (formatterLocale === "ar-EG") {
+    return `${hours12}:${match[2]} ${hours24 >= 12 ? "م" : "ص"}`;
+  }
+  return `${hours12}:${match[2]} ${hours24 >= 12 ? "PM" : "AM"}`;
 }
 
 export function humanizeEnum(value: string): string {

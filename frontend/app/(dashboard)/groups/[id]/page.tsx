@@ -199,17 +199,17 @@ export default function GroupDetailPage() {
           </section>
 
           <div className="mt-5">
-            <ScheduleManager
-              groupId={groupId}
-              canManage={hasPermission(user, "groupsAndSessions", "manageSchedules")}
-            />
-          </div>
-
-          <div className="mt-5">
             <SessionsPanel
               groupId={groupId}
               schedules={schedules}
               canManageSessions={hasPermission(user, "groupsAndSessions", "manageSessions")}
+            />
+          </div>
+
+          <div className="mt-5">
+            <ScheduleManager
+              groupId={groupId}
+              canManage={hasPermission(user, "groupsAndSessions", "manageSchedules")}
             />
           </div>
 

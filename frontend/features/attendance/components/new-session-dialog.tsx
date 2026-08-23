@@ -125,7 +125,7 @@ export function NewSessionDialog({
             </option>
             {schedules.map((schedule) => (
               <option key={schedule.id} value={schedule.id}>
-                {scheduleLabel(schedule)}
+                {scheduleLabel(schedule, tEnum)}
               </option>
             ))}
           </select>
