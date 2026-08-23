@@ -22,8 +22,24 @@ export interface MonthCollected {
   count: number;
 }
 
+export interface OverdueStudent {
+  studentId: number;
+  groupId: number;
+  studentName: string;
+  groupName: string;
+  fee: string;
+  dueDate: string;
+  daysOverdue: number;
+}
+
+export interface OverdueStudents {
+  items: OverdueStudent[];
+  total: number;
+}
+
 export interface DashboardOverview {
   todaySessions: TodaySession[];
   attendanceTrend: AttendanceTrendPoint[];
   monthCollected: MonthCollected | null;
+  overdueStudents: OverdueStudents | null;
 }

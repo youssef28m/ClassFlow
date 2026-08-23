@@ -22,10 +22,26 @@ export interface MonthCollectedDTO {
   count: number;
 }
 
+export interface OverdueStudentDTO {
+  studentId: number;
+  groupId: number;
+  studentName: string;
+  groupName: string;
+  fee: string;
+  dueDate: string;
+  daysOverdue: number;
+}
+
+export interface OverdueStudentsDTO {
+  items: OverdueStudentDTO[];
+  total: number;
+}
+
 export interface DashboardOverviewDTO {
   todaySessions: TodaySessionDTO[];
   attendanceTrend: AttendanceTrendPointDTO[];
   monthCollected: MonthCollectedDTO | null;
+  overdueStudents: OverdueStudentsDTO | null;
 }
 
 export const TREND_DAYS = 28;

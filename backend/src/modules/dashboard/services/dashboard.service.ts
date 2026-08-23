@@ -1,12 +1,16 @@
 import { can } from '../../../shared/authz/permissions.js';
 import { prisma } from '../../../shared/prisma/prisma-client.js';
 import type { AuthUser } from '../../auth/types/auth.types.js';
+import { evaluateRecurring, PERIOD_MONTHS } from '../../finance/services/payment-cycle.js';
 import {
   buildTrend,
   type DashboardOverviewDTO,
+  type OverdueStudentDTO,
   TREND_DAYS,
   toTodaySessionDTO,
 } from '../types/dashboard.types.js';
+
+const OVERDUE_LIST_LIMIT = 10;
 
 export class DashboardService {
   async getOverview(user: AuthUser, centerId: number): Promise<DashboardOverviewDTO> {
@@ -18,6 +22,10 @@ export class DashboardService {
     const trendStart = new Date(todayStart.getTime() - (TREND_DAYS - 1) * 86_400_000);
     const monthStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1));
     const nextMonthStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 1));
+    const canSeePayments =
+      can(user, 'paymentsAndExpenses', 'read') ||
+      can(user, 'paymentsAndExpenses', 'logPayment') ||
+      can(user, 'paymentsAndExpenses', 'managePayments');
 
     const sessionSelect = {
       id: true,
@@ -31,29 +39,51 @@ export class DashboardService {
       attendanceRecords: { select: { status: true } },
     } as const;
 
-    const [todaySessions, trendSessions, monthAggregate] = await Promise.all([
-      prisma.session.findMany({
-        where: { group: { centerId }, sessionDate: { gte: todayStart, lt: tomorrowStart } },
-        select: sessionSelect,
-      }),
-      prisma.session.findMany({
-        where: {
-          group: { centerId },
-          sessionDate: { gte: trendStart, lt: tomorrowStart },
-        },
-        select: { sessionDate: true, attendanceRecords: { select: { status: true } } },
-      }),
-      can(user, 'paymentsAndExpenses', 'read')
-        ? prisma.payment.aggregate({
-            where: {
-              enrollment: { student: { centerId } },
-              paymentDate: { gte: monthStart, lt: nextMonthStart },
-            },
-            _sum: { amount: true },
-            _count: true,
-          })
-        : Promise.resolve(null),
-    ]);
+    const [todaySessions, trendSessions, monthAggregate, recurringEnrollments, periodPayments] =
+      await Promise.all([
+        prisma.session.findMany({
+          where: { group: { centerId }, sessionDate: { gte: todayStart, lt: tomorrowStart } },
+          select: sessionSelect,
+        }),
+        prisma.session.findMany({
+          where: {
+            group: { centerId },
+            sessionDate: { gte: trendStart, lt: tomorrowStart },
+          },
+          select: { sessionDate: true, attendanceRecords: { select: { status: true } } },
+        }),
+        can(user, 'paymentsAndExpenses', 'read')
+          ? prisma.payment.aggregate({
+              where: {
+                enrollment: { student: { centerId } },
+                paymentDate: { gte: monthStart, lt: nextMonthStart },
+              },
+              _sum: { amount: true },
+              _count: true,
+            })
+          : Promise.resolve(null),
+        canSeePayments
+          ? prisma.enrollment.findMany({
+              where: {
+                active: true,
+                student: { centerId },
+                group: { paymentType: { not: 'PER_SESSION' } },
+              },
+              select: {
+                id: true,
+                enrollmentDate: true,
+                student: { select: { id: true, fullName: true } },
+                group: { select: { id: true, name: true, fee: true, paymentType: true } },
+              },
+            })
+          : Promise.resolve([]),
+        canSeePayments
+          ? prisma.payment.findMany({
+              where: { enrollment: { active: true, student: { centerId } } },
+              select: { enrollmentId: true, paymentDate: true },
+            })
+          : Promise.resolve([]),
+      ]);
 
     let monthCollected: DashboardOverviewDTO['monthCollected'] = null;
     if (monthAggregate) {
@@ -63,12 +93,47 @@ export class DashboardService {
       };
     }
 
+    let overdueStudents: DashboardOverviewDTO['overdueStudents'] = null;
+    if (canSeePayments) {
+      const paymentDatesByEnrollment = new Map<number, Date[]>();
+      for (const payment of periodPayments) {
+        const list = paymentDatesByEnrollment.get(payment.enrollmentId) ?? [];
+        list.push(payment.paymentDate);
+        paymentDatesByEnrollment.set(payment.enrollmentId, list);
+      }
+      const overdue: OverdueStudentDTO[] = [];
+      for (const enrollment of recurringEnrollments) {
+        const periodMonths = PERIOD_MONTHS[enrollment.group.paymentType];
+        if (periodMonths === null) continue;
+        const evaluation = evaluateRecurring(
+          new Date(enrollment.enrollmentDate),
+          periodMonths,
+          paymentDatesByEnrollment.get(enrollment.id) ?? [],
+          now,
+        );
+        if (evaluation.status === 'OVERDUE') {
+          overdue.push({
+            studentId: enrollment.student.id,
+            groupId: enrollment.group.id,
+            studentName: enrollment.student.fullName,
+            groupName: enrollment.group.name,
+            fee: enrollment.group.fee.toString(),
+            dueDate: evaluation.dueDate.toISOString().slice(0, 10),
+            daysOverdue: evaluation.daysOverdue ?? 1,
+          });
+        }
+      }
+      overdue.sort((a, b) => b.daysOverdue - a.daysOverdue || a.studentName.localeCompare(b.studentName));
+      overdueStudents = { items: overdue.slice(0, OVERDUE_LIST_LIMIT), total: overdue.length };
+    }
+
     return {
       todaySessions: todaySessions
         .map(toTodaySessionDTO)
         .sort((a, b) => a.startTime.localeCompare(b.startTime)),
       attendanceTrend: buildTrend(trendSessions, trendStart.getTime(), TREND_DAYS),
       monthCollected,
+      overdueStudents,
     };
   }
 }

@@ -1,9 +1,17 @@
 "use client";
 
-import { CalendarCheck, CalendarDays, Clock, MapPin, Wallet } from "lucide-react";
+import {
+  CalendarCheck,
+  CalendarDays,
+  Clock,
+  MapPin,
+  TriangleAlert,
+  Wallet,
+} from "lucide-react";
 import Link from "next/link";
 import { PageHeader } from "@/components/layout/page-header";
 import { ErrorState } from "@/components/feedback/error-state";
+import { StatusBadge } from "@/components/tables/status-badge";
 import { ROLE_TONE_CLASSES } from "@/components/navigation/nav-config";
 import { useAuth } from "@/lib/auth-store";
 import { useI18n } from "@/lib/i18n/provider";
@@ -115,6 +123,64 @@ export default function DashboardPage() {
           <TrendBars trend={trend} isLoading={overview.isLoading} />
         </section>
       </div>
+
+      {/* Late payments */}
+      {overview.data?.overdueStudents ? (
+        <section className="mt-5 rounded-xl border border-border bg-card p-5">
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex items-center gap-2">
+              <TriangleAlert className="size-4 text-amber-500" aria-hidden />
+              <h2 className="text-sm font-semibold text-card-foreground">
+                {t("dashboard.overdueTitle")}
+              </h2>
+            </div>
+            {overview.data.overdueStudents.total > 0 ? (
+              <span className="rounded-full bg-red-500/10 px-2.5 py-0.5 text-xs font-medium tabular-nums text-red-600 dark:text-red-400">
+                {overview.data.overdueStudents.total}
+              </span>
+            ) : null}
+          </div>
+
+          {(overview.data.overdueStudents.items.length ?? 0) === 0 ? (
+            <p className="mt-4 text-sm text-muted-foreground">{t("dashboard.overdueEmpty")}</p>
+          ) : (
+            <ul className="mt-3 divide-y divide-border">
+              {overview.data.overdueStudents.items.map((entry) => (
+                <li key={`${entry.studentId}-${entry.groupId}`}>
+                  <Link
+                    href={`/students/${entry.studentId}`}
+                    className="flex items-center gap-3 py-2.5 transition-colors hover:bg-muted/40"
+                  >
+                    <span className="min-w-0 flex-1 truncate text-sm font-medium text-card-foreground">
+                      {entry.studentName}
+                      <span className="ms-2 font-normal text-muted-foreground">
+                        {entry.groupName}
+                      </span>
+                    </span>
+                    <span className="shrink-0 text-sm tabular-nums text-muted-foreground">
+                      {Number(entry.fee).toLocaleString()} {t("payments.currency")}
+                    </span>
+                    <StatusBadge tone="danger">
+                      {t("studentDetail.statusOverdue")} ·{" "}
+                      {t("studentDetail.overdueDays", { count: entry.daysOverdue })}
+                    </StatusBadge>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          )}
+          {overview.data.overdueStudents.total >
+          overview.data.overdueStudents.items.length ? (
+            <p className="mt-3 text-xs text-muted-foreground">
+              {t("dashboard.overdueMore", {
+                count:
+                  overview.data.overdueStudents.total -
+                  overview.data.overdueStudents.items.length,
+              })}
+            </p>
+          ) : null}
+        </section>
+      ) : null}
 
       {/* Today's sessions */}
       <section className="mt-5 rounded-xl border border-border bg-card p-5">

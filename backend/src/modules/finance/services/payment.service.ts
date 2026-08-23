@@ -14,7 +14,7 @@ import type {
   ListPaymentsQuery,
   UpdatePaymentInput,
 } from '../validation/payment.validation.js';
-import { computeBillingCycle, PERIOD_MONTHS, resolvePaymentStatus } from './payment-cycle.js';
+import { evaluateRecurring, PERIOD_MONTHS } from './payment-cycle.js';
 
 type RouteId = string | string[] | undefined;
 
@@ -91,6 +91,12 @@ export class PaymentService {
     ]);
 
     const today = new Date();
+    const paymentDatesByEnrollment = new Map<number, Date[]>();
+    for (const payment of payments) {
+      const list = paymentDatesByEnrollment.get(payment.enrollmentId) ?? [];
+      list.push(payment.paymentDate);
+      paymentDatesByEnrollment.set(payment.enrollmentId, list);
+    }
     const totalByEnrollment = new Map<number, number>();
     const lastPaymentByEnrollment = new Map<number, Date>();
     let totalPaid = 0;
@@ -116,19 +122,16 @@ export class PaymentService {
       let daysOverdue: number | null = null;
 
       if (periodMonths !== null && enrollment.active) {
-        const cycle = computeBillingCycle(enrolledOn, periodMonths, today);
-        const hasPaymentInPeriod = payments.some(
-          (payment) =>
-            payment.enrollmentId === enrollment.id &&
-            payment.paymentDate >= cycle.periodStart &&
-            payment.paymentDate < cycle.dueDate,
+        const evaluation = evaluateRecurring(
+          enrolledOn,
+          periodMonths,
+          paymentDatesByEnrollment.get(enrollment.id) ?? [],
+          today,
         );
-        status = resolvePaymentStatus(hasPaymentInPeriod, cycle.dueDate, today);
-        periodStart = cycle.periodStart.toISOString().slice(0, 10);
-        dueDate = cycle.dueDate.toISOString().slice(0, 10);
-        if (status === 'OVERDUE') {
-          daysOverdue = Math.floor((today.getTime() - cycle.dueDate.getTime()) / 86_400_000);
-        }
+        status = evaluation.status;
+        periodStart = evaluation.periodStart.toISOString().slice(0, 10);
+        dueDate = evaluation.dueDate.toISOString().slice(0, 10);
+        daysOverdue = evaluation.daysOverdue;
       }
 
       return {

@@ -21,6 +21,58 @@ export interface BillingCycle {
   dueDate: Date;
 }
 
+export interface RecurringEvaluation extends BillingCycle {
+  status: PaymentStatus;
+  daysOverdue: number | null;
+}
+
+/**
+ * Walks billing windows from enrollment forward and evaluates the first
+ * window without a payment:
+ *  - unpaid window already ended          -> OVERDUE (days late since its end)
+ *  - unpaid window still running          -> PENDING
+ *  - every window up to now paid          -> PAID
+ */
+export function evaluateRecurring(
+  enrollmentDate: Date,
+  periodMonths: number,
+  paymentDates: readonly Date[],
+  now: Date,
+): RecurringEvaluation {
+  const anchorDay = Math.min(enrollmentDate.getUTCDate(), MAX_ANCHOR_DAY);
+  let periodStart = new Date(
+    Date.UTC(enrollmentDate.getUTCFullYear(), enrollmentDate.getUTCMonth(), anchorDay),
+  );
+
+  let guard = 0;
+  while (guard < 1200) {
+    guard += 1;
+    const dueDate = addMonthsClamped(periodStart, periodMonths);
+    const paidInWindow = paymentDates.some(
+      (date) => date >= periodStart && date < dueDate,
+    );
+    if (!paidInWindow) {
+      if (dueDate.getTime() <= now.getTime()) {
+        return {
+          status: 'OVERDUE',
+          periodStart,
+          dueDate,
+          daysOverdue: Math.max(
+            1,
+            Math.floor((now.getTime() - dueDate.getTime()) / 86_400_000),
+          ),
+        };
+      }
+      return { status: 'PENDING', periodStart, dueDate, daysOverdue: null };
+    }
+    if (dueDate.getTime() > now.getTime()) {
+      return { status: 'PAID', periodStart, dueDate, daysOverdue: null };
+    }
+    periodStart = dueDate;
+  }
+  return { status: 'OVERDUE', periodStart, dueDate: periodStart, daysOverdue: null };
+}
+
 /**
  * The billing anchor is the day-of-month the student enrolled on (e.g. the
  * 20th): each period runs from that day to the same day of the next period

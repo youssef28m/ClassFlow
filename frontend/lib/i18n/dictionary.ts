@@ -295,6 +295,10 @@ const en = {
   "dashboard.attendanceShort": "{present}/{total} present",
 
   "studentDetail.enrollmentsTitle": "Groups & payments",
+
+  "dashboard.overdueTitle": "Late payments",
+  "dashboard.overdueEmpty": "Everyone is up to date.",
+  "dashboard.overdueMore": "+{count} more not shown",
   "studentDetail.noEnrollments": "This student is not enrolled in any group.",
   "studentDetail.totalPaid": "Total paid",
   "studentDetail.period": "Current period",
@@ -805,6 +809,10 @@ const ar: Dictionary = {
   "dashboard.attendanceShort": "{present}/{total} حاضر",
 
   "studentDetail.enrollmentsTitle": "المجموعات والمدفوعات",
+
+  "dashboard.overdueTitle": "متأخرو السداد",
+  "dashboard.overdueEmpty": "جميع الطلاب مسددون.",
+  "dashboard.overdueMore": "+{count} آخرين غير معروضين",
   "studentDetail.noEnrollments": "هذا الطالب غير مسجل في أي مجموعة.",
   "studentDetail.totalPaid": "إجمالي المدفوع",
   "studentDetail.period": "الفترة الحالية",

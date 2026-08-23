@@ -5,6 +5,10 @@ import {
   StudentStatus,
 } from '../src/generated/prisma/client.js';
 import { prisma } from '../src/shared/prisma/prisma-client.js';
+import {
+  computeBillingCycle,
+  PERIOD_MONTHS,
+} from '../src/modules/finance/services/payment-cycle.js';
 
 const FIRST_NAMES = [
   'أحمد',
@@ -251,12 +255,19 @@ async function main(): Promise<void> {
         (enrollment) => enrollment.studentId === student.id && enrollment.groupId === group.id,
       );
       if (existing) continue;
+      // every 5th seat enrolled ~37 days ago so some billing periods have
+      // already lapsed (drives OVERDUE/PENDING/PAID spread in the demo data)
+      const backdated =
+        seat % 5 === 0
+          ? new Date(Date.now() - 45 * 86_400_000)
+          : undefined;
       enrollments.push(
         await prisma.enrollment.create({
           data: {
             studentId: student.id,
             groupId: group.id,
             active: !(groupIndex === 0 && seat > 7),
+            ...(backdated ? { enrollmentDate: backdated } : {}),
           },
         }),
       );
@@ -278,31 +289,30 @@ async function main(): Promise<void> {
     if (!enrollment.active) continue;
     const group = groupsById.get(enrollment.groupId);
     if (!group) continue;
-    const monthsAgo =
-      group.paymentType === PaymentType.MONTHLY
-        ? 1
-        : group.paymentType === PaymentType.TERMLY
-          ? 2
-          : group.paymentType === PaymentType.YEARLY
-            ? 4
-            : null;
-    const dates: Date[] = [];
-    if (monthsAgo !== null) {
-      dates.push(new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - monthsAgo, 5)));
+    const periodMonths = PERIOD_MONTHS[group.paymentType];
+    const isLongLapsed =
+      now.getTime() - new Date(enrollment.enrollmentDate).getTime() > 40 * 86_400_000;
+    // every 4th recurring enrollment plus all long-lapsed ones stay unpaid
+    if (periodMonths !== null && (index % 4 === 0 || isLongLapsed)) continue;
+    let paymentDate: Date;
+    if (periodMonths !== null) {
+      // pay right after the current billing window opens → counts as PAID
+      const cycle = computeBillingCycle(enrollment.enrollmentDate, periodMonths, now);
+      paymentDate = new Date(Math.min(cycle.periodStart.getTime() + 86_400_000, now.getTime()));
     } else if (random() > 0.4) {
-      dates.push(new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 3)));
+      paymentDate = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 3));
+    } else {
+      continue;
     }
-    for (const paymentDate of dates) {
-      await prisma.payment.create({
-        data: {
-          enrollmentId: enrollment.id,
-          amount: group.fee,
-          paymentDate,
-          paymentMethod: index % 3 === 0 ? PaymentMethod.CARD : PaymentMethod.CASH,
-        },
-      });
-      paymentCount += 1;
-    }
+    await prisma.payment.create({
+      data: {
+        enrollmentId: enrollment.id,
+        amount: group.fee,
+        paymentDate,
+        paymentMethod: index % 3 === 0 ? PaymentMethod.CARD : PaymentMethod.CASH,
+      },
+    });
+    paymentCount += 1;
   }
 
   let sessionCount = 0;
