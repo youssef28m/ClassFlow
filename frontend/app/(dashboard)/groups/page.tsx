@@ -1,6 +1,7 @@
 "use client";
 
 import { Plus, Search, SquarePen, Trash2 } from "lucide-react";
+import Link from "next/link";
 import { useMemo, useState } from "react";
 import { ConfirmDialog } from "@/components/feedback/confirm-dialog";
 import { PermissionGate } from "@/components/feedback/permission-gate";
@@ -85,7 +86,14 @@ export default function GroupsPage() {
     {
       key: "name",
       header: "Name",
-      render: (group) => <span className="font-medium">{group.name}</span>,
+      render: (group) => (
+        <Link
+          href={`/groups/${group.id}`}
+          className="font-medium text-foreground underline-offset-4 transition-colors hover:text-primary hover:underline"
+        >
+          {group.name}
+        </Link>
+      ),
     },
     {
       key: "subject",

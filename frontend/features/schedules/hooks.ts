@@ -16,7 +16,6 @@ export function useSchedulesQuery(filters?: ScheduleFilters) {
     queryKey: scheduleKeys.list(filters ?? {}),
     queryFn: () => schedulesApi.list(filters),
     placeholderData: keepPreviousData,
-    enabled: Boolean(filters?.groupId),
   });
 }
 
