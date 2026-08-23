@@ -7,10 +7,14 @@ import { useToast } from "@/components/feedback/toast";
 import type { Enrollment } from "@/features/enrollments/types";
 import {
   useCompleteSession,
+  useCreateSession,
   useSessionsQuery,
 } from "@/features/attendance/hooks";
 import { AttendanceDialog } from "@/features/attendance/components/attendance-dialog";
-import { NewSessionDialog } from "@/features/attendance/components/new-session-dialog";
+import {
+  NewSessionDialog,
+  nextOccurrence,
+} from "@/features/attendance/components/new-session-dialog";
 import type { ClassSession } from "@/features/attendance/types";
 import { scheduleLabel } from "@/features/schedules/components/schedule-manager";
 import type { Schedule } from "@/features/schedules/types";
@@ -46,6 +50,7 @@ export function SessionsPanel({
   const toast = useToast();
   const sessions = useSessionsQuery({ groupId, pageSize: 100 }, true);
   const completeSession = useCompleteSession();
+  const createSession = useCreateSession();
 
   const [attendanceSession, setAttendanceSession] = useState<ClassSession | null>(null);
   const [newSessionOpen, setNewSessionOpen] = useState(false);
@@ -74,6 +79,42 @@ export function SessionsPanel({
     }
   }
 
+  async function handleQuickBook() {
+    const booked = new Set(
+      items.map((session) => `${session.scheduleId}:${session.sessionDate.slice(0, 10)}`),
+    );
+    let best: { schedule: Schedule; date: string } | null = null;
+    for (const schedule of schedules) {
+      for (let week = 0; week < 8; week += 1) {
+        const candidate = new Date(`${nextOccurrence(schedule.dayOfWeek)}T00:00:00Z`);
+        candidate.setUTCDate(candidate.getUTCDate() + week * 7);
+        const date = candidate.toISOString().slice(0, 10);
+        if (!booked.has(`${schedule.id}:${date}`)) {
+          if (!best || date < best.date) {
+            best = { schedule, date };
+          }
+          break;
+        }
+      }
+    }
+    if (!best) {
+      toast.error("Every upcoming slot already has a session booked.");
+      return;
+    }
+    try {
+      await createSession.mutateAsync({
+        groupId,
+        scheduleId: best.schedule.id,
+        sessionDate: best.date,
+      });
+      toast.success(`Session booked for ${formatDate(best.date)}`);
+    } catch (error) {
+      toast.error(
+        error instanceof ApiError ? error.message : "Failed to book session.",
+      );
+    }
+  }
+
   return (
     <section className="rounded-xl border border-border bg-card p-5">
       <div className="flex items-center justify-between gap-3">
@@ -84,16 +125,31 @@ export function SessionsPanel({
           </p>
         </div>
         {canManageSessions ? (
-          <button
-            type="button"
-            onClick={() => setNewSessionOpen(true)}
-            disabled={schedules.length === 0}
-            title={schedules.length === 0 ? "Add a weekly slot first" : undefined}
-            className="flex h-9 shrink-0 items-center gap-2 rounded-lg border border-border px-3 text-sm font-medium text-card-foreground transition-colors hover:bg-muted disabled:pointer-events-none disabled:opacity-60"
-          >
-            <CalendarPlus className="size-4" aria-hidden />
-            Book session
-          </button>
+          <div className="flex shrink-0 gap-2">
+            <button
+              type="button"
+              onClick={() => void handleQuickBook()}
+              disabled={schedules.length === 0 || createSession.isPending}
+              title={
+                schedules.length === 0
+                  ? "Add a weekly slot first"
+                  : "Books the next free date from your weekly slots"
+              }
+              className="flex h-9 items-center gap-2 rounded-lg bg-primary px-3 text-sm font-medium text-primary-foreground transition-opacity hover:opacity-90 disabled:pointer-events-none disabled:opacity-60"
+            >
+              <CalendarPlus className="size-4" aria-hidden />
+              Quick book
+            </button>
+            <button
+              type="button"
+              onClick={() => setNewSessionOpen(true)}
+              disabled={schedules.length === 0}
+              title={schedules.length === 0 ? "Add a weekly slot first" : undefined}
+              className="flex h-9 items-center gap-2 rounded-lg border border-border px-3 text-sm font-medium text-card-foreground transition-colors hover:bg-muted disabled:pointer-events-none disabled:opacity-60"
+            >
+              Pick date…
+            </button>
+          </div>
         ) : null}
       </div>
 
@@ -101,7 +157,10 @@ export function SessionsPanel({
         <p className="mt-4 text-sm text-muted-foreground">Loading…</p>
       ) : items.length === 0 ? (
         <p className="mt-4 text-sm text-muted-foreground">
-          No sessions booked yet.
+          No sessions booked yet. Use{" "}
+          <span className="font-medium text-card-foreground">Quick book</span>{" "}
+          to schedule the next date from your weekly slots, then take attendance
+          from here or the Attendance page.
         </p>
       ) : (
         <ul className="mt-4 divide-y divide-border rounded-xl border border-border">

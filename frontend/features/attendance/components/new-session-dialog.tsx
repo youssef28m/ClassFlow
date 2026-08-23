@@ -13,6 +13,17 @@ import { humanizeEnum } from "@/lib/formatters";
 
 const UTC_DAYS = ["SUNDAY", "MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY", "SATURDAY"] as const;
 
+export function nextOccurrence(dayOfWeek: string, from = new Date()): string {
+  const cursor = new Date(
+    Date.UTC(from.getUTCFullYear(), from.getUTCMonth(), from.getUTCDate()),
+  );
+  const targetIndex = UTC_DAYS.indexOf(dayOfWeek as (typeof UTC_DAYS)[number]);
+  while (cursor.getUTCDay() !== targetIndex) {
+    cursor.setUTCDate(cursor.getUTCDate() + 1);
+  }
+  return cursor.toISOString().slice(0, 10);
+}
+
 function weekdayOf(dateString: string): string | null {
   const parsed = new Date(`${dateString}T00:00:00Z`);
   if (Number.isNaN(parsed.getTime())) return null;
@@ -35,10 +46,20 @@ export function NewSessionDialog({
   const toast = useToast();
   const createSession = useCreateSession();
   const [scheduleId, setScheduleId] = useState("");
-  const [sessionDate, setSessionDate] = useState(
-    new Date().toISOString().slice(0, 10),
-  );
+  const [sessionDate, setSessionDate] = useState(() => nextOccurrence("SUNDAY"));
   const [rootError, setRootError] = useState<string | null>(null);
+
+  const selectedSchedule = schedules.find(
+    (schedule) => schedule.id === Number(scheduleId),
+  );
+
+  function handleScheduleChange(value: string) {
+    setScheduleId(value);
+    const selected = schedules.find((schedule) => schedule.id === Number(value));
+    if (selected) {
+      setSessionDate(nextOccurrence(selected.dayOfWeek));
+    }
+  }
 
   async function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
@@ -70,10 +91,6 @@ export function NewSessionDialog({
     }
   }
 
-  const selectedSchedule = schedules.find(
-    (schedule) => schedule.id === Number(scheduleId),
-  );
-
   return (
     <FormDialog
       open={open}
@@ -97,7 +114,7 @@ export function NewSessionDialog({
           <select
             id="session-schedule"
             value={scheduleId}
-            onChange={(event) => setScheduleId(event.target.value)}
+            onChange={(event) => handleScheduleChange(event.target.value)}
             className={inputClassName}
           >
             <option value="">
