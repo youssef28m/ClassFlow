@@ -19,6 +19,8 @@ export interface AttendanceTrendPoint {
 
 export interface MonthCollected {
   total: string;
+  payments: string;
+  expenses: string;
   count: number;
 }
 

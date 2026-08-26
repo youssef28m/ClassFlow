@@ -10,8 +10,10 @@ import { SalaryController } from '../controllers/salary.controller.js';
 import { SalaryRepository } from '../repositories/salary.repository.js';
 import { SalaryService } from '../services/salary.service.js';
 import {
+  calculateSalarySchema,
   createSalarySchema,
   listSalariesQuerySchema,
+  paySalarySchema,
   updateSalarySchema,
 } from '../validation/salary.validation.js';
 
@@ -29,6 +31,18 @@ router.get(
   controller.list,
 );
 router.get(
+  '/calculate',
+  requirePermission('teachersAndSalaries', 'manageSalaries'),
+  validateQuery(calculateSalarySchema),
+  controller.calculate,
+);
+router.get(
+  '/:id/report',
+  requirePermission('teachersAndSalaries', 'manageSalaries'),
+  requireResolvedCenterId,
+  controller.report,
+);
+router.get(
   '/:id',
   requirePermission('teachersAndSalaries', 'manageSalaries'),
   requireResolvedCenterId,
@@ -40,6 +54,13 @@ router.post(
   requireResolvedCenterId,
   validate(createSalarySchema),
   controller.create,
+);
+router.post(
+  '/pay',
+  requirePermission('teachersAndSalaries', 'manageSalaries'),
+  requireResolvedCenterId,
+  validate(paySalarySchema),
+  controller.pay,
 );
 router.patch(
   '/:id',

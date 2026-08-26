@@ -48,11 +48,12 @@ export class PaymentService {
     query: ListPaymentsQuery,
     centerId: number | null,
   ): Promise<PaginatedResponse<PaymentDTO>> {
-    const { page, pageSize, enrollmentId, paymentMethod, from, to } = query;
+    const { page, pageSize, enrollmentId, groupId, paymentMethod, from, to } = query;
     if (from && to && from > to)
       throw new AppError('The from date must be before the to date', 400);
     const { items, total } = await this.repository.findMany({
       enrollmentId,
+      groupId,
       paymentMethod,
       from,
       to,

@@ -21,4 +21,11 @@ router.get(
   controller.getOverview,
 );
 
+router.get(
+  '/overdue',
+  requirePermission('paymentsAndExpenses', 'read'),
+  requireResolvedCenterId,
+  controller.getOverdue,
+);
+
 export default router;

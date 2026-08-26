@@ -6,6 +6,7 @@ import { useMemo, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { Field, inputClassName } from "@/components/forms/field";
 import { FormDialog } from "@/components/forms/form-dialog";
+import { SearchableSelect } from "@/components/forms/searchable-select";
 import { TimeSelect } from "@/components/forms/time-select";
 import { useToast } from "@/components/feedback/toast";
 import { useGroupsQuery } from "@/features/groups/hooks";
@@ -28,7 +29,8 @@ export function ScheduleFormDialog({ open, onClose, schedule }: ScheduleFormDial
   const updateSchedule = useUpdateSchedule();
   const [rootError, setRootError] = useState<string | null>(null);
   const initialValues = useMemo(() => schedule ? toScheduleFormValues(schedule) : defaultValues(), [schedule]);
-  const { register, control, handleSubmit, setError, formState: { errors } } = useForm<ScheduleFormValues>({ resolver: zodResolver(scheduleFormSchema), defaultValues: initialValues });
+  const { register, control, watch, handleSubmit, setError, formState: { errors } } = useForm<ScheduleFormValues>({ resolver: zodResolver(scheduleFormSchema), defaultValues: initialValues });
+  const groupIdValue = watch("groupId");
   const isSaving = createSchedule.isPending || updateSchedule.isPending;
   const onSubmit = handleSubmit(async (values) => {
     setRootError(null);
@@ -64,7 +66,24 @@ export function ScheduleFormDialog({ open, onClose, schedule }: ScheduleFormDial
   return <FormDialog open={open} onOpenChange={(nextOpen) => !nextOpen && onClose()} title={schedule ? t("schedules.editTitle") : t("schedules.addTitle")} description={schedule ? t("schedules.editDescription") : t("schedules.addDescription")}>
     <form onSubmit={onSubmit} className="space-y-4" noValidate>
       {rootError ? <p role="alert" className="rounded-lg bg-red-500/10 px-3 py-2 text-sm text-red-600 dark:text-red-400">{rootError}</p> : null}
-      <Field label={t("nav.groups")} htmlFor="schedule-group" error={errors.groupId?.message}><select id="schedule-group" className={inputClassName} aria-invalid={Boolean(errors.groupId)} disabled={Boolean(schedule)} {...register("groupId")}><option value="">{groups.isLoading ? t("common.loading") : t("schedules.selectGroupPlaceholder")}</option>{(groups.data?.items ?? []).map((group) => <option key={group.id} value={group.id}>{group.name} — {group.subject}</option>)}</select></Field>
+      <Field label={t("nav.groups")} htmlFor="schedule-group" error={errors.groupId?.message}>
+        <input type="hidden" {...register("groupId")} />
+        <SearchableSelect
+          value={groupIdValue}
+          onChange={(val) => { register("groupId").onChange({ target: { value: val, name: "groupId" } }); }}
+          placeholder={groups.isLoading ? t("common.loading") : t("schedules.selectGroupPlaceholder")}
+          searchPlaceholder={t("groups.searchPlaceholder")}
+          emptyText={t("groups.emptyFiltered")}
+          loading={groups.isLoading}
+          disabled={Boolean(schedule)}
+          className="min-w-65"
+          options={(groups.data?.items ?? []).map((g) => ({
+            value: g.id,
+            label: g.name,
+            hint: g.subject,
+          }))}
+        />
+      </Field>
       <Field label={t("schedules.day")} htmlFor="schedule-day" error={errors.dayOfWeek?.message}><select id="schedule-day" className={inputClassName} {...register("dayOfWeek")}>{DAYS_OF_WEEK.map((day) => <option key={day} value={day}>{tEnum(day)}</option>)}</select></Field>
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <Field label={t("time.start")} htmlFor="schedule-start" error={errors.startTime?.message}>

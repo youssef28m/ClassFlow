@@ -3,7 +3,9 @@ import type { Payment, PaymentMethod } from '../../../generated/prisma/client.js
 export interface PaymentDTO {
   id: number;
   enrollmentId: number;
+  studentId: number;
   studentName: string;
+  groupId: number;
   groupName: string;
   amount: string;
   paymentDate: Date;
@@ -14,8 +16,8 @@ export interface PaymentDTO {
 }
 
 interface EnrollmentForPayment {
-  student: { fullName: string };
-  group: { name: string };
+  student: { id: number; fullName: string };
+  group: { id: number; name: string };
 }
 
 export interface PaginationMeta {
@@ -71,7 +73,9 @@ export function toPaymentDTO(payment: Payment & { enrollment?: EnrollmentForPaym
   return {
     id: payment.id,
     enrollmentId: payment.enrollmentId,
+    studentId: payment.enrollment?.student.id ?? 0,
     studentName: payment.enrollment?.student.fullName ?? '',
+    groupId: payment.enrollment?.group.id ?? 0,
     groupName: payment.enrollment?.group.name ?? '',
     amount: payment.amount.toString(),
     paymentDate: payment.paymentDate,

@@ -19,6 +19,8 @@ export interface AttendanceTrendPointDTO {
 
 export interface MonthCollectedDTO {
   total: string;
+  payments: string;
+  expenses: string;
   count: number;
 }
 

@@ -13,6 +13,7 @@ import {
 import { StatusBadge } from "@/components/tables/status-badge";
 import { TablePagination } from "@/components/tables/table-pagination";
 import { inputClassName } from "@/components/forms/field";
+import { SearchableSelect } from "@/components/forms/searchable-select";
 import { useSessionsQuery } from "@/features/attendance/hooks";
 import type { ClassSession } from "@/features/attendance/types";
 import { scheduleLabel } from "@/features/schedules/components/schedule-manager";
@@ -139,25 +140,24 @@ export default function AttendancePage() {
 
       <PermissionGate resource="groupsAndSessions" action="read">
         <FilterBar>
-          <select
-            id="attendance-group-filter"
-            aria-label={t("schedules.filterGroup")}
-            value={groupFilter === "ALL" ? "ALL" : String(groupFilter)}
-            onChange={(event) =>
+          <SearchableSelect
+            value={groupFilter === "ALL" ? "" : String(groupFilter)}
+            onChange={(val) =>
               updateFilters(() => {
-                const value = event.target.value;
-                setGroupFilter(value === "ALL" ? "ALL" : Number(value));
+                setGroupFilter(val === "" ? "ALL" : Number(val));
               })
             }
-            className={`${inputClassName} w-auto`}
-          >
-            <option value="ALL">{t("schedules.allGroups")}</option>
-            {(groups.data?.items ?? []).map((group) => (
-              <option key={group.id} value={group.id}>
-                {group.name}
-              </option>
-            ))}
-          </select>
+            placeholder={t("schedules.allGroups")}
+            searchPlaceholder={t("groups.searchPlaceholder")}
+            emptyText={t("groups.emptyFiltered")}
+            loading={groups.isLoading}
+            className="w-auto min-w-65"
+            options={(groups.data?.items ?? []).map((g) => ({
+              value: g.id,
+              label: g.name,
+              hint: g.subject,
+            }))}
+          />
           <select
             id="attendance-status-filter"
             aria-label="Filter by status"

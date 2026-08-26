@@ -6,6 +6,7 @@ import { ConfirmDialog } from "@/components/feedback/confirm-dialog";
 import { PermissionGate } from "@/components/feedback/permission-gate";
 import { useToast } from "@/components/feedback/toast";
 import { inputClassName } from "@/components/forms/field";
+import { SearchableSelect } from "@/components/forms/searchable-select";
 import { PageHeader } from "@/components/layout/page-header";
 import { FilterBar } from "@/components/tables/filter-bar";
 import { DataTable, type DataTableColumn } from "@/components/tables/data-table";
@@ -56,7 +57,7 @@ export default function SchedulesPage() {
 
   return <>
     <PageHeader title={t("nav.schedules")} description={t("schedules.description")} actions={<PermissionGate resource="groupsAndSessions" action="manageSchedules"><button type="button" onClick={() => { setEditingSchedule(null); setFormOpen(true); }} className="flex h-10 items-center gap-2 rounded-lg bg-primary px-4 text-sm font-medium text-primary-foreground hover:opacity-90"><Plus className="size-4" aria-hidden />{t("schedules.add")}</button></PermissionGate>} />
-    <PermissionGate resource="groupsAndSessions" action="read"><FilterBar><select aria-label={t("schedules.filterGroup")} value={groupId} onChange={(event) => updateFilters(() => setGroupId(event.target.value))} className={`${inputClassName} w-auto`}><option value="">{t("schedules.allGroups")}</option>{(groups.data?.items ?? []).map((group) => <option key={group.id} value={group.id}>{group.name}</option>)}</select><select aria-label={t("schedules.filterDay")} value={dayOfWeek} onChange={(event) => updateFilters(() => setDayOfWeek(event.target.value as typeof dayOfWeek))} className={`${inputClassName} w-auto`}><option value="ALL">{t("schedules.allDays")}</option>{DAYS_OF_WEEK.map((day) => <option key={day} value={day}>{tEnum(day)}</option>)}</select></FilterBar>
+    <PermissionGate resource="groupsAndSessions" action="read"><FilterBar><SearchableSelect value={groupId} onChange={(val) => updateFilters(() => setGroupId(val))} placeholder={t("schedules.allGroups")} searchPlaceholder={t("groups.searchPlaceholder")} emptyText={t("groups.emptyFiltered")} loading={groups.isLoading} className="w-auto min-w-65" options={(groups.data?.items ?? []).map((g) => ({ value: g.id, label: g.name, hint: g.subject }))} /><select aria-label={t("schedules.filterDay")} value={dayOfWeek} onChange={(event) => updateFilters(() => setDayOfWeek(event.target.value as typeof dayOfWeek))} className={`${inputClassName} w-auto`}><option value="ALL">{t("schedules.allDays")}</option>{DAYS_OF_WEEK.map((day) => <option key={day} value={day}>{tEnum(day)}</option>)}</select></FilterBar>
     <DataTable columns={columns} rows={data?.items} getRowKey={(schedule) => schedule.id} isLoading={isLoading} error={error ?? null} onRetry={() => void refetch()} emptyTitle={groupId || dayOfWeek !== "ALL" ? t("schedules.emptyFiltered") : t("schedules.empty")} emptyDescription={t("schedules.emptyDescription")} />
     {data && data.meta.totalPages > 0 ? <TablePagination page={data.meta.page} totalPages={data.meta.totalPages} total={data.meta.total} onPageChange={setPage} /> : null}</PermissionGate>
     <ScheduleFormDialog key={`${formOpen}-${editingSchedule?.id ?? "new"}`} open={formOpen} onClose={() => { setFormOpen(false); setEditingSchedule(null); }} schedule={editingSchedule} />

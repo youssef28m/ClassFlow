@@ -2,11 +2,16 @@ import { createApp } from './app.js';
 import { env } from './config/env.js';
 import { logger } from './config/logger.js';
 import { prisma } from './shared/prisma/prisma-client.js';
+import { startSalaryScheduler } from './shared/scheduler/salary-scheduler.js';
 
 async function bootstrap(): Promise<void> {
   try {
     await prisma.$connect();
     logger.info('Database connection established');
+
+    if (env.NODE_ENV !== 'test') {
+      startSalaryScheduler();
+    }
 
     const app = createApp();
     const server = app.listen(env.PORT, env.HOST, () => {

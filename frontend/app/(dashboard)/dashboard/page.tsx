@@ -91,6 +91,9 @@ export default function DashboardPage() {
                 </span>
               </p>
               <p className="mt-1 text-sm text-muted-foreground">
+                {Number(collected.payments).toLocaleString()} {t("dashboard.payments")} − {Number(collected.expenses).toLocaleString()} {t("dashboard.expenses")}
+              </p>
+              <p className="mt-0.5 text-xs text-muted-foreground/70">
                 {t("dashboard.collectedCount", { count: collected.count })}
               </p>
             </>
@@ -244,13 +247,16 @@ export default function DashboardPage() {
           )}
           {overview.data.overdueStudents.total >
           overview.data.overdueStudents.items.length ? (
-            <p className="mt-3 text-xs text-muted-foreground">
+            <Link
+              href="/overdue"
+              className="mt-3 block text-xs font-medium text-primary transition-colors hover:underline"
+            >
               {t("dashboard.overdueMore", {
                 count:
                   overview.data.overdueStudents.total -
                   overview.data.overdueStudents.items.length,
               })}
-            </p>
+            </Link>
           ) : null}
         </section>
       ) : null}

@@ -1,11 +1,12 @@
 "use client";
 
-import { Plus, Power, Search, Trash2 } from "lucide-react";
+import { Plus, Power, Trash2 } from "lucide-react";
 import { useMemo, useState } from "react";
 import { ConfirmDialog } from "@/components/feedback/confirm-dialog";
 import { PermissionGate } from "@/components/feedback/permission-gate";
 import { useToast } from "@/components/feedback/toast";
 import { inputClassName } from "@/components/forms/field";
+import { SearchableSelect } from "@/components/forms/searchable-select";
 import { PageHeader } from "@/components/layout/page-header";
 import { FilterBar } from "@/components/tables/filter-bar";
 import { DataTable, type DataTableColumn } from "@/components/tables/data-table";
@@ -63,7 +64,7 @@ export default function EnrollmentsPage() {
   ];
   return <>
     <PageHeader title={t("nav.enrollments")} description={t("enrollments.description")} actions={<PermissionGate resource="students" action="create"><button type="button" onClick={() => setFormOpen(true)} className="flex h-10 items-center gap-2 rounded-lg bg-primary px-4 text-sm font-medium text-primary-foreground hover:opacity-90"><Plus className="size-4" aria-hidden />{t("enrollments.add")}</button></PermissionGate>} />
-    <PermissionGate resource="students" action="read"><FilterBar><div className="relative w-full max-w-xs"><Search className="pointer-events-none absolute start-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" aria-hidden /><select aria-label={t("enrollments.filterStudent")} value={studentId} onChange={(event) => updateFilters(() => setStudentId(event.target.value))} className={`${inputClassName} ps-9`}><option value="">{t("enrollments.allStudents")}</option>{(students.data?.items ?? []).map((student) => <option key={student.id} value={student.id}>{student.fullName}</option>)}</select></div><select aria-label={t("schedules.filterGroup")} value={groupId} onChange={(event) => updateFilters(() => setGroupId(event.target.value))} className={`${inputClassName} w-auto`}><option value="">{t("schedules.allGroups")}</option>{(groups.data?.items ?? []).map((group) => <option key={group.id} value={group.id}>{group.name}</option>)}</select><select aria-label={t("attendance.filterStatus")} value={activeFilter} onChange={(event) => updateFilters(() => setActiveFilter(event.target.value as typeof activeFilter))} className={`${inputClassName} w-auto`}><option value="ALL">{t("attendance.allStatuses")}</option><option value="true">{t("enum.ACTIVE")}</option><option value="false">{t("enum.INACTIVE")}</option></select></FilterBar>
+    <PermissionGate resource="students" action="read"><FilterBar><SearchableSelect value={studentId} onChange={(val) => updateFilters(() => setStudentId(val))} placeholder={t("enrollments.allStudents")} searchPlaceholder={t("groups.searchPlaceholder")} emptyText={t("groups.emptyFiltered")} loading={students.isLoading} className="w-auto min-w-65" options={(students.data?.items ?? []).map((s) => ({ value: s.id, label: s.fullName, hint: s.grade }))} /><SearchableSelect value={groupId} onChange={(val) => updateFilters(() => setGroupId(val))} placeholder={t("schedules.allGroups")} searchPlaceholder={t("groups.searchPlaceholder")} emptyText={t("groups.emptyFiltered")} loading={groups.isLoading} className="w-auto min-w-65" options={(groups.data?.items ?? []).map((g) => ({ value: g.id, label: g.name, hint: g.subject }))} /><select aria-label={t("attendance.filterStatus")} value={activeFilter} onChange={(event) => updateFilters(() => setActiveFilter(event.target.value as typeof activeFilter))} className={`${inputClassName} w-auto`}><option value="ALL">{t("attendance.allStatuses")}</option><option value="true">{t("enum.ACTIVE")}</option><option value="false">{t("enum.INACTIVE")}</option></select></FilterBar>
     <DataTable columns={columns} rows={data?.items} getRowKey={(enrollment) => enrollment.id} isLoading={isLoading} error={error ?? null} onRetry={() => void refetch()} emptyTitle={studentId || groupId || activeFilter !== "ALL" ? t("enrollments.emptyFiltered") : t("enrollments.empty")} emptyDescription={t("enrollments.emptyDescription")} />
     {data && data.meta.totalPages > 0 ? <TablePagination page={data.meta.page} totalPages={data.meta.totalPages} total={data.meta.total} onPageChange={setPage} /> : null}</PermissionGate>
     <EnrollmentFormDialog key={String(formOpen)} open={formOpen} onClose={() => setFormOpen(false)} />

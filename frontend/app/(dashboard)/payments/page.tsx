@@ -2,11 +2,13 @@
 
 import { Plus, Trash2 } from "lucide-react";
 import { useMemo, useState } from "react";
+import Link from "next/link";
 import { ConfirmDialog } from "@/components/feedback/confirm-dialog";
 import { PermissionGate } from "@/components/feedback/permission-gate";
 import { useToast } from "@/components/feedback/toast";
 import { PageHeader } from "@/components/layout/page-header";
 import { inputClassName } from "@/components/forms/field";
+import { SearchableSelect } from "@/components/forms/searchable-select";
 import { DataTable, type DataTableColumn } from "@/components/tables/data-table";
 import { FilterBar } from "@/components/tables/filter-bar";
 import { StatusBadge, type BadgeTone } from "@/components/tables/status-badge";
@@ -15,6 +17,7 @@ import {
   useDeletePayment,
   usePaymentsQuery,
 } from "@/features/payments/hooks";
+import { useGroupsQuery } from "@/features/groups/hooks";
 import { RecordPaymentDialog } from "@/features/payments/components/record-payment-dialog";
 import {
   PAYMENT_METHODS,
@@ -39,10 +42,13 @@ export default function PaymentsPage() {
   const toast = useToast();
   const { t, tEnum } = useI18n();
   const [methodFilter, setMethodFilter] = useState<"ALL" | PaymentMethod>("ALL");
+  const [groupFilter, setGroupFilter] = useState<string>("");
   const [fromDate, setFromDate] = useState("");
   const [toDate, setToDate] = useState("");
   const [page, setPage] = useState(1);
   const deletePayment = useDeletePayment();
+
+  const { data: groupsData } = useGroupsQuery({ pageSize: 100 });
 
   const [dialogOpen, setDialogOpen] = useState(false);
   const [deletingPayment, setDeletingPayment] = useState<Payment | null>(null);
@@ -51,11 +57,12 @@ export default function PaymentsPage() {
     () => ({
       page,
       pageSize: PAGE_SIZE,
+      groupId: groupFilter ? Number(groupFilter) : undefined,
       paymentMethod: methodFilter === "ALL" ? undefined : methodFilter,
       from: fromDate || undefined,
       to: toDate || undefined,
     }),
-    [page, methodFilter, fromDate, toDate],
+    [page, groupFilter, methodFilter, fromDate, toDate],
   );
 
   const { data, isLoading, error, refetch } = usePaymentsQuery(filters);
@@ -91,7 +98,14 @@ export default function PaymentsPage() {
     {
       key: "studentName",
       header: t("students.columnName"),
-      render: (payment) => <span className="font-medium">{payment.studentName}</span>,
+      render: (payment) => (
+        <Link
+          href={`/students/${payment.studentId}`}
+          className="font-medium text-primary underline-offset-4 hover:underline"
+        >
+          {payment.studentName}
+        </Link>
+      ),
     },
     {
       key: "groupName",
@@ -162,6 +176,20 @@ export default function PaymentsPage() {
 
       <PermissionGate resource="paymentsAndExpenses" action="read">
         <FilterBar>
+          <SearchableSelect
+            value={groupFilter}
+            onChange={(val) => updateFilters(() => setGroupFilter(val))}
+            placeholder={t("groups.allGroups")}
+            searchPlaceholder={t("groups.searchPlaceholder")}
+            emptyText={t("groups.emptyFiltered")}
+            loading={groupsData === undefined}
+            className="w-auto min-w-65"
+            options={(groupsData?.items ?? []).map((g) => ({
+              value: g.id,
+              label: g.name,
+              hint: g.subject,
+            }))}
+          />
           <select
             id="payment-method-filter"
             aria-label={t("payments.method")}
@@ -212,7 +240,7 @@ export default function PaymentsPage() {
           error={error ?? null}
           onRetry={() => void refetch()}
           emptyTitle={
-            methodFilter !== "ALL" || fromDate || toDate
+            groupFilter || methodFilter !== "ALL" || fromDate || toDate
               ? t("payments.emptyFiltered")
               : t("payments.empty")
           }

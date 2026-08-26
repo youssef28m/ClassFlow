@@ -7,6 +7,7 @@ import { useForm } from "react-hook-form";
 import { useToast } from "@/components/feedback/toast";
 import { Field, inputClassName } from "@/components/forms/field";
 import { FormDialog } from "@/components/forms/form-dialog";
+import { SearchableSelect } from "@/components/forms/searchable-select";
 import {
   paymentFormSchema,
   toPaymentPayload,
@@ -18,7 +19,6 @@ import { useEnrollmentsQuery } from "@/features/enrollments/hooks";
 import { useStudentsQuery } from "@/features/students/hooks";
 import { ApiError } from "@/lib/api-client";
 import { useI18n } from "@/lib/i18n/provider";
-import { useDebouncedValue } from "@/lib/use-debounced-value";
 
 interface RecordPaymentDialogProps {
   open: boolean;
@@ -29,21 +29,18 @@ export function RecordPaymentDialog({ open, onClose }: RecordPaymentDialogProps)
   const toast = useToast();
   const createPayment = useCreatePayment();
   const { t, tEnum } = useI18n();
-  const [studentSearch, setStudentSearch] = useState("");
-  const [selectedStudentId, setSelectedStudentId] = useState<number | null>(null);
-  const debouncedStudentSearch = useDebouncedValue(studentSearch.trim());
   const students = useStudentsQuery({
-    pageSize: 10,
+    pageSize: 100,
     status: "ACTIVE",
-    search: debouncedStudentSearch || undefined,
   });
+  const [selectedStudentId, setSelectedStudentId] = useState<number | null>(null);
   const enrollments = useEnrollmentsQuery({
     studentId: selectedStudentId ?? undefined,
     active: true,
     pageSize: 100,
   });
   const [rootError, setRootError] = useState<string | null>(null);
-  const { register, handleSubmit, setError, setValue, reset, formState: { errors } } =
+  const { register, handleSubmit, setError, setValue, watch, reset, formState: { errors } } =
     useForm<PaymentFormValues>({
       resolver: zodResolver(paymentFormSchema),
       defaultValues: {
@@ -55,6 +52,8 @@ export function RecordPaymentDialog({ open, onClose }: RecordPaymentDialogProps)
         notes: "",
       },
     });
+  const enrollmentIdValue = watch("enrollmentId");
+  const studentIdValue = watch("studentId");
 
   const onSubmit = handleSubmit(async (values) => {
     setRootError(null);
@@ -62,7 +61,6 @@ export function RecordPaymentDialog({ open, onClose }: RecordPaymentDialogProps)
       await createPayment.mutateAsync(toPaymentPayload(values));
       toast.success(t("payments.created"));
       reset();
-      setStudentSearch("");
       setSelectedStudentId(null);
       onClose();
     } catch (error) {
@@ -101,93 +99,55 @@ export function RecordPaymentDialog({ open, onClose }: RecordPaymentDialogProps)
         >
           <input type="hidden" {...register("studentId")} />
           <input type="hidden" {...register("enrollmentId")} />
-          <div className="relative">
-            <input
-              id="payment-student"
-              type="search"
-              autoComplete="off"
-              placeholder={t("enrollments.namePlaceholder")}
-              value={studentSearch}
-              role="combobox"
-              aria-autocomplete="list"
-              aria-expanded={Boolean(debouncedStudentSearch && !selectedStudentId)}
-              aria-controls="payment-student-results"
-              className={inputClassName}
-              onChange={(event) => {
-                setStudentSearch(event.target.value);
-                setSelectedStudentId(null);
-                setValue("studentId", "", { shouldValidate: true });
-                setValue("enrollmentId", "");
-                setValue("amount", "");
-              }}
-            />
-            {debouncedStudentSearch && !selectedStudentId ? (
-              <div
-                id="payment-student-results"
-                role="listbox"
-                aria-label={t("enrollDialog.searchResults")}
-                className="absolute z-10 mt-1 w-full overflow-hidden rounded-lg border border-border bg-card shadow-lg"
-              >
-                {students.isLoading ? (
-                  <p className="px-3 py-2 text-sm text-muted-foreground">{t("common.loading")}</p>
-                ) : null}
-                {!students.isLoading && (students.data?.items.length ?? 0) === 0 ? (
-                  <p className="px-3 py-2 text-sm text-muted-foreground">
-                    {t("enrollments.noActiveStudents")}
-                  </p>
-                ) : null}
-                {(students.data?.items ?? []).map((student) => (
-                  <button
-                    key={student.id}
-                    type="button"
-                    role="option"
-                    aria-selected={false}
-                    className="block w-full px-3 py-2 text-start text-sm hover:bg-muted"
-                    onClick={() => {
-                      setStudentSearch(student.fullName);
-                      setSelectedStudentId(student.id);
-                      setValue("studentId", String(student.id), { shouldValidate: true });
-                      setValue("enrollmentId", "");
-                    }}
-                  >
-                    <span className="font-medium text-card-foreground">{student.fullName}</span>
-                    <span className="ms-2 text-muted-foreground">
-                      {student.grade}
-                      {student.phone ? ` · ${student.phone}` : ""}
-                    </span>
-                  </button>
-                ))}
-              </div>
-            ) : null}
-          </div>
+          <SearchableSelect
+            value={studentIdValue}
+            onChange={(val) => {
+              setSelectedStudentId(val ? Number(val) : null);
+              setValue("studentId", val, { shouldValidate: true });
+              setValue("enrollmentId", "");
+              setValue("amount", "");
+            }}
+            placeholder={students.isLoading ? t("common.loading") : t("enrollments.namePlaceholder")}
+            searchPlaceholder={t("groups.searchPlaceholder")}
+            emptyText={t("enrollments.noActiveStudents")}
+            loading={students.isLoading}
+            className="min-w-65"
+            options={(students.data?.items ?? []).map((s) => ({
+              value: s.id,
+              label: s.fullName,
+              hint: [s.grade, s.phone].filter(Boolean).join(" · "),
+            }))}
+          />
         </Field>
         <Field label={t("payments.groupLabel")} htmlFor="payment-enrollment" error={errors.enrollmentId?.message}>
-          <select
-            id="payment-enrollment"
-            className={inputClassName}
-            disabled={!selectedStudentId || enrollments.isLoading}
-            {...register("enrollmentId", {
-              onChange: (event) => {
-                const enrollment = (enrollments.data?.items ?? []).find(
-                  (item) => item.id === Number(event.target.value),
-                );
-                if (enrollment) setValue("amount", String(Number(enrollment.group.fee)), { shouldValidate: false });
-              },
-            })}
-          >
-            <option value="">
-              {!selectedStudentId
+          <input type="hidden" {...register("enrollmentId")} />
+          <SearchableSelect
+            value={enrollmentIdValue}
+            onChange={(val) => {
+              setValue("enrollmentId", val, { shouldValidate: true });
+              const enrollment = (enrollments.data?.items ?? []).find(
+                (item) => item.id === Number(val),
+              );
+              if (enrollment) setValue("amount", String(Number(enrollment.group.fee)), { shouldValidate: false });
+            }}
+            placeholder={
+              !selectedStudentId
                 ? t("payments.selectStudentFirst")
                 : enrollments.isLoading
                   ? t("payments.loadingEnrollments")
-                  : t("payments.selectGroup")}
-            </option>
-            {(enrollments.data?.items ?? []).map((enrollment) => (
-              <option key={enrollment.id} value={enrollment.id}>
-                {enrollment.group.name} — {enrollment.group.subject}
-              </option>
-            ))}
-          </select>
+                  : t("payments.selectGroup")
+            }
+            searchPlaceholder={t("groups.searchPlaceholder")}
+            emptyText={t("groups.emptyFiltered")}
+            disabled={!selectedStudentId || enrollments.isLoading}
+            loading={enrollments.isLoading}
+            className="min-w-65"
+            options={(enrollments.data?.items ?? []).map((e) => ({
+              value: e.id,
+              label: e.group.name,
+              hint: e.group.subject,
+            }))}
+          />
         </Field>
         <div className="grid gap-4 sm:grid-cols-2">
           <Field label={t("payments.amount")} htmlFor="payment-amount" error={errors.amount?.message}>

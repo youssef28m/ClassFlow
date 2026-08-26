@@ -11,4 +11,8 @@ export class DashboardController {
       .status(200)
       .json(await this.service.getOverview(req.user as AuthUser, mustGetCenterId(req)));
   };
+
+  getOverdue = async (req: Request, res: Response): Promise<void> => {
+    res.status(200).json(await this.service.getOverdue(mustGetCenterId(req)));
+  };
 }

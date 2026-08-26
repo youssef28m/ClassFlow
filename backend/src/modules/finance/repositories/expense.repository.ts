@@ -48,7 +48,7 @@ export class ExpenseRepository {
     const [items, total] = await prisma.$transaction([
       prisma.expense.findMany({
         where,
-        orderBy: { expenseDate: 'desc' },
+        orderBy: [{ expenseDate: 'desc' }, { id: 'desc' }],
         skip: params.skip,
         take: params.take,
       }),

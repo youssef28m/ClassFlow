@@ -270,6 +270,8 @@ model TeacherSalary {
   salaryMonth Int      @map("salary_month")
   salaryYear  Int      @map("salary_year")
   amount      Decimal  @db.Decimal(10, 2)
+  paymentSum  Decimal  @db.Decimal(10, 2) @map("payment_sum")
+  percentage  Decimal  @db.Decimal(5, 2)
   paymentDate DateTime @db.Date @map("payment_date")
   isPaid      Boolean  @default(false) @map("is_paid")
   notes       String?
@@ -289,6 +291,7 @@ model Expense {
   expenseDate DateTime       @db.Date @map("expense_date")
   description String?
   centerId    Int            @map("center_id")
+  salaryId    Int?           @map("salary_id")
   createdAt   DateTime       @default(now()) @map("created_at")
   updatedAt   DateTime       @updatedAt @map("updated_at")
 
@@ -297,5 +300,6 @@ model Expense {
   @@index([centerId])
   @@index([category])
   @@index([expenseDate])
+  @@index([salaryId])
   @@map("expenses")
 }

@@ -3,6 +3,7 @@ import { prisma } from '../../../shared/prisma/prisma-client.js';
 
 export interface PaymentFindManyParams {
   enrollmentId?: number;
+  groupId?: number;
   paymentMethod?: PaymentMethod;
   from?: Date;
   to?: Date;
@@ -61,13 +62,16 @@ export class PaymentRepository {
     id: number,
     centerId: number,
   ): Promise<
-    (Payment & { enrollment: { student: { fullName: string }; group: { name: string } } }) | null
+    (Payment & { enrollment: { student: { id: number; fullName: string }; group: { id: number; name: string } } }) | null
   > {
     return prisma.payment.findFirst({
       where: { id, enrollment: { student: { centerId } } },
       include: {
         enrollment: {
-          select: { student: { select: { fullName: true } }, group: { select: { name: true } } },
+          select: {
+            student: { select: { id: true, fullName: true } },
+            group: { select: { id: true, name: true } },
+          },
         },
       },
     });
@@ -98,6 +102,7 @@ export class PaymentRepository {
       enrollment: params.centerId === null ? {} : { student: { centerId: params.centerId } },
     };
     if (params.enrollmentId !== undefined) where.enrollmentId = params.enrollmentId;
+    if (params.groupId !== undefined) where.enrollment = { ...where.enrollment as Prisma.EnrollmentWhereInput, groupId: params.groupId };
     if (params.paymentMethod !== undefined) where.paymentMethod = params.paymentMethod;
     if (params.from || params.to) {
       where.paymentDate = {
@@ -114,7 +119,10 @@ export class PaymentRepository {
         take: params.take,
         include: {
           enrollment: {
-            select: { student: { select: { fullName: true } }, group: { select: { name: true } } },
+            select: {
+              student: { select: { id: true, fullName: true } },
+              group: { select: { id: true, name: true } },
+            },
           },
         },
       }),

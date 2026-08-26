@@ -6,7 +6,9 @@ export type PaymentMethod = (typeof PAYMENT_METHODS)[number];
 export interface Payment {
   id: number;
   enrollmentId: number;
+  studentId: number;
   studentName: string;
+  groupId: number;
   groupName: string;
   amount: string;
   paymentDate: string;
@@ -24,6 +26,7 @@ export interface PaymentListResponse {
 export interface PaymentFilters {
   page?: number;
   pageSize?: number;
+  groupId?: number;
   paymentMethod?: PaymentMethod;
   from?: string;
   to?: string;
