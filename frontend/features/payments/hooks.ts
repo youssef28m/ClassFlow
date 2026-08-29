@@ -18,15 +18,11 @@ export function usePaymentsQuery(filters: PaymentFilters) {
   });
 }
 
-function invalidatePayments(queryClient: ReturnType<typeof useQueryClient>) {
-  return queryClient.invalidateQueries({ queryKey: paymentKeys.lists() });
-}
-
 export function useCreatePayment() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (payload: PaymentPayload) => paymentsApi.create(payload),
-    onSuccess: () => invalidatePayments(queryClient),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: paymentKeys.all }),
   });
 }
 
@@ -34,6 +30,6 @@ export function useDeletePayment() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (id: number) => paymentsApi.remove(id),
-    onSuccess: () => invalidatePayments(queryClient),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: paymentKeys.all }),
   });
 }

@@ -3,6 +3,7 @@
 import { Loader2 } from "lucide-react";
 import { FormDialog } from "@/components/forms/form-dialog";
 import { useSalaryReport } from "@/features/salaries/hooks";
+import { SalaryReportExportActions } from "@/features/salaries/components/salary-report-export-actions";
 import type { SalaryReport, SalaryReportGroup } from "@/features/salaries/types";
 import { useI18n } from "@/lib/i18n/provider";
 
@@ -64,6 +65,10 @@ export function ReportContent({ data }: { data: SalaryReport }) {
 
   return (
     <div className="space-y-5">
+      <div className="flex justify-end">
+        <SalaryReportExportActions report={data} />
+      </div>
+
       <div className="grid grid-cols-2 gap-3 text-sm sm:grid-cols-4">
         <div className="rounded-lg bg-muted/50 p-3">
           <p className="text-xs text-muted-foreground">{t("salaries.amount")}</p>

@@ -62,7 +62,13 @@ export class PaymentRepository {
     id: number,
     centerId: number,
   ): Promise<
-    (Payment & { enrollment: { student: { id: number; fullName: string }; group: { id: number; name: string } } }) | null
+    | (Payment & {
+        enrollment: {
+          student: { id: number; fullName: string };
+          group: { id: number; name: string };
+        };
+      })
+    | null
   > {
     return prisma.payment.findFirst({
       where: { id, enrollment: { student: { centerId } } },
@@ -102,7 +108,11 @@ export class PaymentRepository {
       enrollment: params.centerId === null ? {} : { student: { centerId: params.centerId } },
     };
     if (params.enrollmentId !== undefined) where.enrollmentId = params.enrollmentId;
-    if (params.groupId !== undefined) where.enrollment = { ...where.enrollment as Prisma.EnrollmentWhereInput, groupId: params.groupId };
+    if (params.groupId !== undefined)
+      where.enrollment = {
+        ...(where.enrollment as Prisma.EnrollmentWhereInput),
+        groupId: params.groupId,
+      };
     if (params.paymentMethod !== undefined) where.paymentMethod = params.paymentMethod;
     if (params.from || params.to) {
       where.paymentDate = {
@@ -114,7 +124,7 @@ export class PaymentRepository {
     const [items, total] = await prisma.$transaction([
       prisma.payment.findMany({
         where,
-        orderBy: { paymentDate: 'desc' },
+        orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
         skip: params.skip,
         take: params.take,
         include: {

@@ -1,14 +1,18 @@
 "use client";
 
-import { ArrowLeft, CalendarDays, GraduationCap, Phone } from "lucide-react";
+import { ArrowLeft, CalendarDays, GraduationCap, Phone, Plus } from "lucide-react";
 import Link from "next/link";
+import { useState } from "react";
 import { useParams } from "next/navigation";
 import { ErrorState } from "@/components/feedback/error-state";
 import { StatusBadge, type BadgeTone } from "@/components/tables/status-badge";
 import { useStudentPaymentSummary } from "@/features/payments/hooks";
+import { RecordPaymentDialog } from "@/features/payments/components/record-payment-dialog";
 import type { EnrollmentPaymentEntry } from "@/features/payments/payment-status";
+import { useAuth } from "@/lib/auth-store";
 import { useI18n } from "@/lib/i18n/provider";
 import { formatDate } from "@/lib/formatters";
+import { can } from "@/lib/permissions";
 import type { TranslationKey } from "@/lib/i18n/dictionary";
 
 const STATUS_TONES: Record<string, BadgeTone> = {
@@ -29,8 +33,13 @@ const STATUS_LABEL_KEYS: Record<
 export default function StudentDetailPage() {
   const params = useParams<{ id: string }>();
   const studentId = Number(params?.id);
+  const { user } = useAuth();
   const { t, tEnum } = useI18n();
+  const [paymentOpen, setPaymentOpen] = useState(false);
   const summary = useStudentPaymentSummary(Number.isInteger(studentId) ? studentId : null);
+  const canRecordPayment =
+    can(user, "paymentsAndExpenses", "logPayment") ||
+    can(user, "paymentsAndExpenses", "managePayments");
 
   if (summary.isLoading) {
     return <p className="mt-6 text-sm text-muted-foreground">{t("common.loading")}</p>;
@@ -56,22 +65,34 @@ export default function StudentDetailPage() {
       </Link>
 
       <section className="mt-4 rounded-xl border border-border bg-card p-5">
-        <div className="flex flex-wrap items-center gap-3">
-          <span className="flex size-11 items-center justify-center rounded-full bg-primary/10 text-primary">
-            <GraduationCap className="size-5" aria-hidden />
-          </span>
-          <div>
-            <h1 className="text-lg font-semibold text-card-foreground">{student.fullName}</h1>
-            <p className="text-sm text-muted-foreground">
-              {student.grade}
-              {student.school ? ` · ${student.school}` : ""}
-            </p>
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="flex flex-wrap items-center gap-3">
+            <span className="flex size-11 items-center justify-center rounded-full bg-primary/10 text-primary">
+              <GraduationCap className="size-5" aria-hidden />
+            </span>
+            <div>
+              <h1 className="text-lg font-semibold text-card-foreground">{student.fullName}</h1>
+              <p className="text-sm text-muted-foreground">
+                {student.grade}
+                {student.school ? ` · ${student.school}` : ""}
+              </p>
+            </div>
+            <StatusBadge
+              tone={student.status === "ACTIVE" ? "success" : "neutral"}
+            >
+              {tEnum(student.status)}
+            </StatusBadge>
           </div>
-          <StatusBadge
-            tone={student.status === "ACTIVE" ? "success" : "neutral"}
-          >
-            {tEnum(student.status)}
-          </StatusBadge>
+          {canRecordPayment ? (
+            <button
+              type="button"
+              onClick={() => setPaymentOpen(true)}
+              className="flex h-10 items-center gap-2 rounded-lg bg-primary px-4 text-sm font-medium text-primary-foreground transition-opacity hover:opacity-90"
+            >
+              <Plus className="size-4" aria-hidden />
+              {t("studentDetail.recordPayment")}
+            </button>
+          ) : null}
         </div>
         <dl className="mt-4 grid gap-3 text-sm sm:grid-cols-2 lg:grid-cols-4">
           <div>
@@ -141,6 +162,14 @@ export default function StudentDetailPage() {
           </div>
         ) : null}
       </section>
+
+      <RecordPaymentDialog
+        key={`record-${paymentOpen}`}
+        open={paymentOpen}
+        onClose={() => setPaymentOpen(false)}
+        defaultStudentId={student.id}
+        defaultStudentName={student.fullName}
+      />
     </>
   );
 

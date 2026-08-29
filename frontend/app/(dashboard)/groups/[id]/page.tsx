@@ -1,18 +1,21 @@
 "use client";
 
-import { ArrowLeft, UserPlus } from "lucide-react";
+import { ArrowLeft, Check, FileBarChart2, Pencil, UserPlus, Users, X } from "lucide-react";
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import { useParams } from "next/navigation";
 import { PermissionGate } from "@/components/feedback/permission-gate";
 import { useToast } from "@/components/feedback/toast";
+import { inputClassName } from "@/components/forms/field";
 import { PageHeader } from "@/components/layout/page-header";
 import { StatusBadge } from "@/components/tables/status-badge";
 import { EnrollStudentDialog } from "@/features/enrollments/components/enroll-student-dialog";
 import {
   useDeleteEnrollment,
   useEnrollmentsQuery,
+  useUpdateEnrollmentDate,
 } from "@/features/enrollments/hooks";
+import type { Enrollment } from "@/features/enrollments/types";
 import { useGroupsQuery } from "@/features/groups/hooks";
 import { ScheduleManager } from "@/features/schedules/components/schedule-manager";
 import { useSchedulesQuery } from "@/features/schedules/hooks";
@@ -33,7 +36,10 @@ export default function GroupDetailPage() {
   const toast = useToast();
   const { t, tEnum } = useI18n();
   const [enrollOpen, setEnrollOpen] = useState(false);
+  const [editingEnrollmentId, setEditingEnrollmentId] = useState<number | null>(null);
+  const [editingDate, setEditingDate] = useState("");
   const deleteEnrollment = useDeleteEnrollment();
+  const updateDate = useUpdateEnrollmentDate();
 
   const groups = useGroupsQuery(
     validGroupId ? { page: 1, pageSize: 100 } : { page: 1, pageSize: 1 },
@@ -60,6 +66,11 @@ export default function GroupDetailPage() {
     [roster],
   );
 
+  const canViewReport =
+    can(user, "paymentsAndExpenses", "read") ||
+    can(user, "paymentsAndExpenses", "logPayment") ||
+    can(user, "paymentsAndExpenses", "managePayments");
+
   const schedulesQuery = useSchedulesQuery({
     groupId: validGroupId ? groupId : -1,
     pageSize: 100,
@@ -85,6 +96,19 @@ export default function GroupDetailPage() {
     try {
       await deleteEnrollment.mutateAsync(enrollmentId);
       toast.success(t("groupDetail.removed", { name: studentName }));
+    } catch (error) {
+      toast.error(
+        error instanceof ApiError ? error.message : t("common.somethingWentWrong"),
+      );
+    }
+  }
+
+  async function saveDate(enrollment: Enrollment, date: string) {
+    if (!date) return;
+    try {
+      await updateDate.mutateAsync({ id: enrollment.id, enrollmentDate: date });
+      toast.success(t("groupDetail.dateUpdated"));
+      setEditingEnrollmentId(null);
     } catch (error) {
       toast.error(
         error instanceof ApiError ? error.message : t("common.somethingWentWrong"),
@@ -122,6 +146,17 @@ export default function GroupDetailPage() {
               feeType: tEnum(group.paymentType),
               fee: group.fee,
             })}
+            actions={
+              canViewReport ? (
+                <Link
+                  href={`/groups/${groupId}/payments-report`}
+                  className="flex h-10 items-center gap-2 rounded-lg border border-border px-4 text-sm font-medium text-card-foreground transition-colors hover:bg-muted"
+                >
+                  <FileBarChart2 className="size-4" aria-hidden />
+                  {t("groupReport.openButton")}
+                </Link>
+              ) : undefined
+            }
           />
 
           <div className="mt-5">
@@ -142,16 +177,25 @@ export default function GroupDetailPage() {
                   {t("groupDetail.rosterSubtitle")}
                 </p>
               </div>
-              <PermissionGate resource="students" action="create">
-                <button
-                  type="button"
-                  onClick={() => setEnrollOpen(true)}
-                  className="flex h-9 shrink-0 items-center gap-2 rounded-lg border border-border px-3 text-sm font-medium text-card-foreground transition-colors hover:bg-muted"
+              <div className="flex shrink-0 items-center gap-2">
+                <Link
+                  href={`/groups/${groupId}/students`}
+                  className="flex h-9 items-center gap-2 rounded-lg border border-border px-3 text-sm font-medium text-card-foreground transition-colors hover:bg-muted"
                 >
-                  <UserPlus className="size-4" aria-hidden />
-                  {t("students.add")}
-                </button>
-              </PermissionGate>
+                  <Users className="size-4" aria-hidden />
+                  {t("groupRoster.openButton")}
+                </Link>
+                <PermissionGate resource="students" action="create">
+                  <button
+                    type="button"
+                    onClick={() => setEnrollOpen(true)}
+                    className="flex h-9 shrink-0 items-center gap-2 rounded-lg border border-border px-3 text-sm font-medium text-card-foreground transition-colors hover:bg-muted"
+                  >
+                    <UserPlus className="size-4" aria-hidden />
+                    {t("students.add")}
+                  </button>
+                </PermissionGate>
+              </div>
             </div>
 
             {enrollments.isLoading ? (
@@ -168,22 +212,68 @@ export default function GroupDetailPage() {
                     className="flex items-center justify-between gap-3 px-4 py-3"
                   >
                     <div className="min-w-0">
-                      <p className="truncate text-sm font-medium text-card-foreground">
+                      <Link
+                        href={`/students/${enrollment.studentId}`}
+                        className="block truncate text-sm font-medium text-card-foreground transition-colors hover:text-primary hover:underline"
+                      >
                         {enrollment.student.fullName}
-                      </p>
-                      <p className="text-xs text-muted-foreground">
-                        {enrollment.student.phone
-                          ? t("groupDetail.phoneAndEnrolled", {
-                              phone: enrollment.student.phone,
-                              date: formatDate(enrollment.enrollmentDate),
-                            })
-                          : t("groupDetail.enrolledOn", {
-                              date: formatDate(enrollment.enrollmentDate),
-                            })}
-                      </p>
+                      </Link>
+                      {editingEnrollmentId === enrollment.id ? (
+                        <div className="mt-1.5 flex items-center gap-1.5">
+                          <input
+                            type="date"
+                            value={editingDate}
+                            onChange={(event) => setEditingDate(event.target.value)}
+                            className={`${inputClassName} h-8 w-auto px-2 text-xs`}
+                            aria-label={t("groupDetail.enrolledOnLabel")}
+                          />
+                          <button
+                            type="button"
+                            aria-label={t("common.save")}
+                            onClick={() => void saveDate(enrollment, editingDate)}
+                            disabled={updateDate.isPending}
+                            className="rounded-md p-1.5 text-emerald-600 transition-colors hover:bg-emerald-500/10 disabled:opacity-50 dark:text-emerald-400"
+                          >
+                            <Check className="size-4" aria-hidden />
+                          </button>
+                          <button
+                            type="button"
+                            aria-label={t("common.cancel")}
+                            onClick={() => setEditingEnrollmentId(null)}
+                            disabled={updateDate.isPending}
+                            className="rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-muted hover:text-card-foreground disabled:opacity-50"
+                          >
+                            <X className="size-4" aria-hidden />
+                          </button>
+                        </div>
+                      ) : (
+                        <p className="mt-0.5 text-xs text-muted-foreground">
+                          {enrollment.student.phone
+                            ? t("groupDetail.phoneAndEnrolled", {
+                                phone: enrollment.student.phone,
+                                date: formatDate(enrollment.enrollmentDate),
+                              })
+                            : t("groupDetail.enrolledOn", {
+                                date: formatDate(enrollment.enrollmentDate),
+                              })}
+                        </p>
+                      )}
                     </div>
-                    <div className="flex shrink-0 items-center gap-2">
+                    <div className="flex shrink-0 items-center gap-1.5">
                       <StatusBadge tone="neutral">{enrollment.student.grade}</StatusBadge>
+                      {can(user, "students", "update") ? (
+                        <button
+                          type="button"
+                          aria-label={t("common.edit")}
+                          onClick={() => {
+                            setEditingEnrollmentId(enrollment.id);
+                            setEditingDate(enrollment.enrollmentDate.slice(0, 10));
+                          }}
+                          className="rounded-lg p-2 text-muted-foreground transition-colors hover:bg-muted hover:text-card-foreground"
+                        >
+                          <Pencil className="size-4" aria-hidden />
+                        </button>
+                      ) : null}
                       {can(user, "students", "delete") ? (
                         <button
                           type="button"

@@ -2,10 +2,9 @@ import { z } from "zod";
 import type { PaymentPayload } from "@/features/payments/types";
 
 export const paymentFormSchema = z.object({
-  studentId: z.string().min(1),
   enrollmentId: z
     .string()
-    .min(1)
+    .min(1, "Required")
     .refine((value) => Number(value) > 0, { message: "Required" }),
   amount: z
     .string()

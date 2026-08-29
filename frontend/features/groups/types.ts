@@ -34,3 +34,30 @@ export interface GroupFilters {
   teacherId?: number;
   paymentType?: PaymentType;
 }
+
+export interface GroupPaymentReportFilters {
+  from?: string;
+  to?: string;
+}
+
+export interface GroupPaymentReportStudent {
+  studentId: number;
+  fullName: string;
+  phone: string | null;
+  grade: string;
+  paid: boolean;
+  paymentCount: number;
+  totalPaid: string;
+  lastPaymentDate: string | null;
+}
+
+export interface GroupPaymentReport {
+  group: Group;
+  from: string | null;
+  to: string | null;
+  totalStudents: number;
+  paidStudents: number;
+  notPaidStudents: number;
+  totalCollected: string;
+  students: GroupPaymentReportStudent[];
+}

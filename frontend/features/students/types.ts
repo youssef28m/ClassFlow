@@ -33,4 +33,9 @@ export interface StudentFilters {
   pageSize?: number;
   search?: string;
   status?: StudentStatus;
+  grade?: string;
+}
+
+export interface StudentGradesResponse {
+  grades: string[];
 }

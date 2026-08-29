@@ -1,4 +1,9 @@
-import type { Group, PaymentType, Prisma } from '../../../generated/prisma/client.js';
+import type {
+  Group,
+  PaymentType,
+  Prisma,
+  StudentStatus,
+} from '../../../generated/prisma/client.js';
 import { prisma } from '../../../shared/prisma/prisma-client.js';
 
 export interface GroupFindManyParams {
@@ -8,6 +13,19 @@ export interface GroupFindManyParams {
   centerId?: number | null;
   skip: number;
   take: number;
+}
+
+export interface GroupEnrollmentWithStudentAndPayments {
+  id: number;
+  enrollmentDate: Date;
+  student: {
+    id: number;
+    fullName: string;
+    phone: string | null;
+    grade: string;
+    status: StudentStatus;
+  };
+  payments: { id: number; amount: Prisma.Decimal; paymentDate: Date }[];
 }
 
 export class GroupRepository {
@@ -45,6 +63,43 @@ export class GroupRepository {
 
   countActiveEnrollments(groupId: number): Promise<number> {
     return prisma.enrollment.count({ where: { groupId, active: true } });
+  }
+
+  async getPaymentReport(
+    id: number,
+    centerId: number,
+    from?: Date,
+    to?: Date,
+  ): Promise<{ group: Group; enrollments: GroupEnrollmentWithStudentAndPayments[] } | null> {
+    const group = await prisma.group.findFirst({ where: { id, centerId } });
+    if (!group) {
+      return null;
+    }
+
+    const enrollments = await prisma.enrollment.findMany({
+      where: { groupId: id, active: true, student: { centerId } },
+      include: {
+        student: {
+          select: { id: true, fullName: true, phone: true, grade: true, status: true },
+        },
+        payments: {
+          where:
+            from || to
+              ? {
+                  paymentDate: {
+                    ...(from ? { gte: from } : {}),
+                    ...(to ? { lte: to } : {}),
+                  },
+                }
+              : {},
+          select: { id: true, amount: true, paymentDate: true },
+          orderBy: { paymentDate: 'asc' },
+        },
+      },
+      orderBy: { enrollmentDate: 'asc' },
+    });
+
+    return { group, enrollments };
   }
 
   async findMany(params: GroupFindManyParams): Promise<{ items: Group[]; total: number }> {

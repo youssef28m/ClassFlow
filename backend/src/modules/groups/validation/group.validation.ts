@@ -40,3 +40,10 @@ export const listGroupsQuerySchema = z.object({
 });
 
 export type ListGroupsQuery = z.infer<typeof listGroupsQuerySchema>;
+
+export const groupPaymentReportQuerySchema = z.object({
+  from: z.coerce.date().optional(),
+  to: z.coerce.date().optional(),
+});
+
+export type GroupPaymentReportQuery = z.infer<typeof groupPaymentReportQuerySchema>;

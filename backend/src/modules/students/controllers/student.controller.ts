@@ -33,4 +33,9 @@ export class StudentController {
     );
     res.status(200).json(result);
   };
+
+  listGrades = async (req: Request, res: Response): Promise<void> => {
+    const grades = await this.service.listGrades(req.centerId ?? null);
+    res.status(200).json({ grades });
+  };
 }

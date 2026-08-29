@@ -1,9 +1,10 @@
 import { AppError } from '../../../shared/middleware/error-handler.js';
 import type { GroupRepository } from '../repositories/group.repository.js';
-import type { GroupDTO, PaginatedResponse } from '../types/group.types.js';
+import type { GroupDTO, GroupPaymentReportDTO, PaginatedResponse } from '../types/group.types.js';
 import { toGroupDTO } from '../types/group.types.js';
 import type {
   CreateGroupInput,
+  GroupPaymentReportQuery,
   ListGroupsQuery,
   UpdateGroupInput,
 } from '../validation/group.validation.js';
@@ -89,6 +90,54 @@ export class GroupService {
     if (!exists) {
       throw new AppError('Teacher not found in this center', 400);
     }
+  }
+
+  async getPaymentReport(
+    id: RouteId,
+    centerId: number,
+    query: GroupPaymentReportQuery,
+  ): Promise<GroupPaymentReportDTO> {
+    const groupId = this.parseId(id);
+    const { from, to } = query;
+    if (from && to && from > to) {
+      throw new AppError('The from date must be before the to date', 400);
+    }
+
+    const data = await this.repository.getPaymentReport(groupId, centerId, from, to);
+    if (!data) {
+      throw new AppError('Group not found', 404);
+    }
+
+    const students = data.enrollments.map((enrollment) => {
+      const totalPaid = enrollment.payments.reduce(
+        (sum, payment) => sum + Number(payment.amount),
+        0,
+      );
+      const last = enrollment.payments[enrollment.payments.length - 1];
+      return {
+        studentId: enrollment.student.id,
+        fullName: enrollment.student.fullName,
+        phone: enrollment.student.phone,
+        grade: enrollment.student.grade,
+        paid: enrollment.payments.length > 0,
+        paymentCount: enrollment.payments.length,
+        totalPaid: totalPaid.toFixed(2),
+        lastPaymentDate: last?.paymentDate ?? null,
+      };
+    });
+
+    return {
+      group: toGroupDTO(data.group),
+      from: from ?? null,
+      to: to ?? null,
+      totalStudents: students.length,
+      paidStudents: students.filter((student) => student.paid).length,
+      notPaidStudents: students.length - students.filter((student) => student.paid).length,
+      totalCollected: students
+        .reduce((sum, student) => sum + Number(student.totalPaid), 0)
+        .toFixed(2),
+      students,
+    };
   }
 
   private parseId(id: RouteId): number {

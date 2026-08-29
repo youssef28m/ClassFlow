@@ -6,6 +6,7 @@ import Link from "next/link";
 import { ConfirmDialog } from "@/components/feedback/confirm-dialog";
 import { PermissionGate } from "@/components/feedback/permission-gate";
 import { useToast } from "@/components/feedback/toast";
+import { ExportButtons } from "@/components/export/export-buttons";
 import { PageHeader } from "@/components/layout/page-header";
 import { inputClassName } from "@/components/forms/field";
 import { SearchableSelect } from "@/components/forms/searchable-select";
@@ -17,14 +18,17 @@ import {
   useDeletePayment,
   usePaymentsQuery,
 } from "@/features/payments/hooks";
+import { paymentsApi } from "@/features/payments/api";
 import { useGroupsQuery } from "@/features/groups/hooks";
 import { RecordPaymentDialog } from "@/features/payments/components/record-payment-dialog";
 import {
   PAYMENT_METHODS,
   type Payment,
   type PaymentMethod,
+  type PaymentFilters,
 } from "@/features/payments/types";
 import { ApiError } from "@/lib/api-client";
+import { downloadCSV, openPrintWindow } from "@/lib/export";
 import { useAuth } from "@/lib/auth-store";
 import { useI18n } from "@/lib/i18n/provider";
 import { formatDate } from "@/lib/formatters";
@@ -37,14 +41,29 @@ const METHOD_TONES: Record<PaymentMethod, BadgeTone> = {
 
 const PAGE_SIZE = 10;
 
+function toISODate(date: Date): string {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+const DEFAULT_FROM = (() => {
+  const date = new Date();
+  date.setDate(date.getDate() - 29);
+  return toISODate(date);
+})();
+
+const DEFAULT_TO = toISODate(new Date());
+
 export default function PaymentsPage() {
   const { user } = useAuth();
   const toast = useToast();
   const { t, tEnum } = useI18n();
   const [methodFilter, setMethodFilter] = useState<"ALL" | PaymentMethod>("ALL");
   const [groupFilter, setGroupFilter] = useState<string>("");
-  const [fromDate, setFromDate] = useState("");
-  const [toDate, setToDate] = useState("");
+  const [fromDate, setFromDate] = useState(DEFAULT_FROM);
+  const [toDate, setToDate] = useState(DEFAULT_TO);
   const [page, setPage] = useState(1);
   const deletePayment = useDeletePayment();
 
@@ -66,6 +85,139 @@ export default function PaymentsPage() {
   );
 
   const { data, isLoading, error, refetch } = usePaymentsQuery(filters);
+
+  const exportFilters: PaymentFilters = useMemo(
+    () => ({
+      groupId: filters.groupId,
+      paymentMethod: filters.paymentMethod,
+      from: filters.from,
+      to: filters.to,
+    }),
+    [filters],
+  );
+
+  const [csvExporting, setCsvExporting] = useState(false);
+
+  async function fetchAllPayments() {
+    const all: Payment[] = [];
+    let currentPage = 1;
+    let totalPages = 1;
+    do {
+      const response = await paymentsApi.list({
+        ...exportFilters,
+        page: currentPage,
+        pageSize: 100,
+      });
+      all.push(...response.items);
+      totalPages = response.meta.totalPages;
+      currentPage += 1;
+    } while (currentPage <= totalPages);
+    return all;
+  }
+
+  async function handleExportCsv() {
+    setCsvExporting(true);
+    try {
+      const all = await fetchAllPayments();
+      const filename = `payments-${new Date().toISOString().slice(0, 10)}.csv`;
+      downloadCSV(
+        filename,
+        [
+          t("payments.columnDate"),
+          t("students.columnName"),
+          t("payments.columnGroup"),
+          t("payments.amount"),
+          t("payments.method"),
+          t("payments.notes"),
+        ],
+        all.map((payment) => [
+          payment.paymentDate,
+          payment.studentName,
+          payment.groupName,
+          Number(payment.amount),
+          tEnum(payment.paymentMethod),
+          payment.notes ?? "",
+        ]),
+      );
+    } catch (exportError) {
+      toast.error(
+        exportError instanceof ApiError
+          ? exportError.message
+          : t("common.somethingWentWrong"),
+      );
+    } finally {
+      setCsvExporting(false);
+    }
+  }
+
+  function handleExportPdf() {
+    // Open the print window synchronously so popup blockers don't eat it,
+    // then fill it once the data is loaded.
+    const win = window.open("", "_blank");
+    if (!win) {
+      toast.error(t("common.somethingWentWrong"));
+      return;
+    }
+    void (async () => {
+      try {
+        const all = await fetchAllPayments();
+        const meta = [
+          ...(groupFilter
+            ? [
+                {
+                  label: t("payments.groupLabel"),
+                  value:
+                    groupsData?.items.find((g) => String(g.id) === groupFilter)?.name ??
+                    groupFilter,
+                },
+              ]
+            : []),
+          ...(methodFilter !== "ALL"
+            ? [{ label: t("payments.method"), value: tEnum(methodFilter) }]
+            : []),
+          {
+            label: `${t("payments.from")} – ${t("payments.to")}`,
+            value: `${formatDate(fromDate)} → ${formatDate(toDate)}`,
+          },
+        ];
+        openPrintWindow(
+          t("payments.title"),
+          t("export.matchingRecords", { count: all.length }),
+          meta,
+          [
+            {
+              table: {
+                headers: [
+                  t("payments.columnDate"),
+                  t("students.columnName"),
+                  t("payments.columnGroup"),
+                  t("payments.amount"),
+                  t("payments.method"),
+                  t("payments.notes"),
+                ],
+                rows: all.map((payment) => [
+                  formatDate(payment.paymentDate),
+                  payment.studentName,
+                  payment.groupName,
+                  Number(payment.amount),
+                  tEnum(payment.paymentMethod),
+                  payment.notes ?? "",
+                ]),
+              },
+            },
+          ],
+          win,
+        );
+      } catch (exportError) {
+        win.close();
+        toast.error(
+          exportError instanceof ApiError
+            ? exportError.message
+            : t("common.somethingWentWrong"),
+        );
+      }
+    })();
+  }
 
   function updateFilters(update: () => void) {
     setPage(1);
@@ -160,17 +312,24 @@ export default function PaymentsPage() {
         title={t("payments.title")}
         description={t("payments.description")}
         actions={
-          can(user, "paymentsAndExpenses", "logPayment") ||
-          can(user, "paymentsAndExpenses", "managePayments") ? (
-            <button
-              type="button"
-              onClick={() => setDialogOpen(true)}
-              className="flex h-10 items-center gap-2 rounded-lg bg-primary px-4 text-sm font-medium text-primary-foreground transition-opacity hover:opacity-90"
-            >
-              <Plus className="size-4" aria-hidden />
-              {t("payments.recordPayment")}
-            </button>
-          ) : null
+          <>
+            <ExportButtons
+              onExportCsv={handleExportCsv}
+              onExportPdf={handleExportPdf}
+              isExporting={csvExporting}
+            />
+            {can(user, "paymentsAndExpenses", "logPayment") ||
+            can(user, "paymentsAndExpenses", "managePayments") ? (
+              <button
+                type="button"
+                onClick={() => setDialogOpen(true)}
+                className="flex h-10 items-center gap-2 rounded-lg bg-primary px-4 text-sm font-medium text-primary-foreground transition-opacity hover:opacity-90"
+              >
+                <Plus className="size-4" aria-hidden />
+                {t("payments.recordPayment")}
+              </button>
+            ) : null}
+          </>
         }
       />
 
@@ -240,7 +399,10 @@ export default function PaymentsPage() {
           error={error ?? null}
           onRetry={() => void refetch()}
           emptyTitle={
-            groupFilter || methodFilter !== "ALL" || fromDate || toDate
+            groupFilter ||
+            methodFilter !== "ALL" ||
+            fromDate !== DEFAULT_FROM ||
+            toDate !== DEFAULT_TO
               ? t("payments.emptyFiltered")
               : t("payments.empty")
           }

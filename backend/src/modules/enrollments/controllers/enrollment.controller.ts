@@ -25,6 +25,11 @@ export class EnrollmentController {
     res.status(200).json(enrollment);
   };
 
+  updateDate = async (req: Request, res: Response): Promise<void> => {
+    const enrollment = await this.service.updateDate(req.params.id, mustGetCenterId(req), req.body);
+    res.status(200).json(enrollment);
+  };
+
   delete = async (req: Request, res: Response): Promise<void> => {
     await this.service.delete(req.params.id, mustGetCenterId(req));
     res.status(204).send();

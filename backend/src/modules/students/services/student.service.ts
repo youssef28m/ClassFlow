@@ -12,12 +12,14 @@ import type {
 type RouteId = string | string[] | undefined;
 
 const DUPLICATE_MESSAGE = 'A student with this name and phone already exists in this center';
+const DUPLICATE_NAME_GRADE_MESSAGE =
+  'A student with this name and grade already exists in this center';
 
 export class StudentService {
   constructor(private readonly repository: StudentRepository) {}
 
   async create(input: CreateStudentInput, centerId: number): Promise<StudentDTO> {
-    await this.assertNoDuplicate(centerId, input.fullName, input.phone ?? null);
+    await this.assertNoDuplicate(centerId, input.fullName, input.grade, input.phone ?? null);
 
     try {
       const student = await this.repository.create({ ...input, centerId });
@@ -47,8 +49,9 @@ export class StudentService {
     }
 
     const fullName = input.fullName ?? existing.fullName;
+    const grade = input.grade ?? existing.grade;
     const phone = input.phone === undefined ? existing.phone : input.phone;
-    await this.assertNoDuplicate(centerId, fullName, phone, parsedId);
+    await this.assertNoDuplicate(centerId, fullName, grade, phone, parsedId);
 
     try {
       const student = await this.repository.update(parsedId, centerId, input);
@@ -74,15 +77,24 @@ export class StudentService {
   private async assertNoDuplicate(
     centerId: number,
     fullName: string,
+    grade: string,
     phone: string | null,
     excludeId?: number,
   ): Promise<void> {
-    if (phone === null) {
-      return;
+    if (phone !== null) {
+      const duplicate = await this.repository.findDuplicate(centerId, fullName, phone);
+      if (duplicate && duplicate.id !== excludeId) {
+        throw new AppError(DUPLICATE_MESSAGE, 409);
+      }
     }
-    const duplicate = await this.repository.findDuplicate(centerId, fullName, phone);
-    if (duplicate && duplicate.id !== excludeId) {
-      throw new AppError(DUPLICATE_MESSAGE, 409);
+
+    const nameGradeDuplicate = await this.repository.findDuplicateByNameAndGrade(
+      centerId,
+      fullName,
+      grade,
+    );
+    if (nameGradeDuplicate && nameGradeDuplicate.id !== excludeId) {
+      throw new AppError(DUPLICATE_NAME_GRADE_MESSAGE, 409);
     }
   }
 
@@ -90,10 +102,11 @@ export class StudentService {
     query: ListStudentsQuery,
     centerId: number | null,
   ): Promise<PaginatedResponse<StudentDTO>> {
-    const { page, pageSize, search, status } = query;
+    const { page, pageSize, search, status, grade } = query;
     const { items, total } = await this.repository.findMany({
       search,
       status,
+      grade,
       centerId,
       skip: (page - 1) * pageSize,
       take: pageSize,
@@ -108,6 +121,10 @@ export class StudentService {
         totalPages: Math.ceil(total / pageSize),
       },
     };
+  }
+
+  async listGrades(centerId: number | null): Promise<string[]> {
+    return this.repository.findDistinctGrades(centerId);
   }
 
   private parseId(id: RouteId): number {

@@ -1,5 +1,11 @@
 import { apiClient } from "@/lib/api-client";
-import type { Group, GroupFilters, GroupListResponse } from "@/features/groups/types";
+import type {
+  Group,
+  GroupFilters,
+  GroupListResponse,
+  GroupPaymentReport,
+  GroupPaymentReportFilters,
+} from "@/features/groups/types";
 import type { GroupPayload } from "@/features/groups/schema";
 
 export const groupsApi = {
@@ -11,6 +17,15 @@ export const groupsApi = {
 
   get(id: number): Promise<Group> {
     return apiClient.request<Group>(`/groups/${id}`);
+  },
+
+  paymentReport(
+    id: number,
+    filters: GroupPaymentReportFilters = {},
+  ): Promise<GroupPaymentReport> {
+    return apiClient.request<GroupPaymentReport>(`/groups/${id}/payment-report`, {
+      params: filters as Record<string, string | undefined>,
+    });
   },
 
   create(payload: GroupPayload): Promise<Group> {
@@ -36,4 +51,7 @@ export const groupKeys = {
   all: ["groups"] as const,
   lists: () => [...groupKeys.all, "list"] as const,
   list: (filters: GroupFilters) => [...groupKeys.lists(), filters] as const,
+  report: (id: number, filters: GroupPaymentReportFilters) =>
+    [...groupKeys.all, "report", id, filters] as const,
+  detail: (id: number) => [...groupKeys.all, "detail", id] as const,
 };

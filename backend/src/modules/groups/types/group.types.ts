@@ -39,3 +39,25 @@ export function toGroupDTO(group: Group): GroupDTO {
     updatedAt: group.updatedAt,
   };
 }
+
+export interface GroupPaymentReportStudent {
+  studentId: number;
+  fullName: string;
+  phone: string | null;
+  grade: string;
+  paid: boolean;
+  paymentCount: number;
+  totalPaid: string;
+  lastPaymentDate: Date | null;
+}
+
+export interface GroupPaymentReportDTO {
+  group: GroupDTO;
+  from: Date | null;
+  to: Date | null;
+  totalStudents: number;
+  paidStudents: number;
+  notPaidStudents: number;
+  totalCollected: string;
+  students: GroupPaymentReportStudent[];
+}

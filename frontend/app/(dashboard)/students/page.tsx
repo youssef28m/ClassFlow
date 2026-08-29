@@ -18,6 +18,7 @@ import { inputClassName } from "@/components/forms/field";
 import { StudentFormDialog } from "@/features/students/components/student-form-dialog";
 import {
   useDeleteStudent,
+  useStudentGradesQuery,
   useStudentsQuery,
 } from "@/features/students/hooks";
 import { STUDENT_STATUSES, type Student, type StudentStatus } from "@/features/students/types";
@@ -42,9 +43,11 @@ export default function StudentsPage() {
   const { t, tEnum } = useI18n();
   const [searchText, setSearchText] = useState("");
   const [statusFilter, setStatusFilter] = useState<"ALL" | StudentStatus>("ALL");
+  const [gradeFilter, setGradeFilter] = useState("");
   const [page, setPage] = useState(1);
   const search = useDebouncedValue(searchText);
   const deleteStudent = useDeleteStudent();
+  const gradesQuery = useStudentGradesQuery();
 
   const [formOpen, setFormOpen] = useState(false);
   const [editingStudent, setEditingStudent] = useState<Student | null>(null);
@@ -56,8 +59,9 @@ export default function StudentsPage() {
       pageSize: PAGE_SIZE,
       search: search || undefined,
       status: statusFilter === "ALL" ? undefined : statusFilter,
+      grade: gradeFilter || undefined,
     }),
-    [page, search, statusFilter],
+    [page, search, statusFilter, gradeFilter],
   );
 
   const { data, isLoading, error, refetch } = useStudentsQuery(filters);
@@ -208,6 +212,24 @@ export default function StudentsPage() {
             />
           </div>
           <select
+            id="student-grade-filter"
+            aria-label={t("students.filterGrade")}
+            value={gradeFilter}
+            onChange={(event) =>
+              updateFilters(() => {
+                setGradeFilter(event.target.value);
+              })
+            }
+            className={`${inputClassName} w-auto`}
+          >
+            <option value="">{t("students.allGrades")}</option>
+            {(gradesQuery.data?.grades ?? []).map((grade) => (
+              <option key={grade} value={grade}>
+                {grade}
+              </option>
+            ))}
+          </select>
+          <select
             id="student-status-filter"
             aria-label={t("attendance.filterStatus")}
             value={statusFilter}
@@ -235,7 +257,7 @@ export default function StudentsPage() {
           error={error ?? null}
           onRetry={() => void refetch()}
           emptyTitle={
-            search || statusFilter !== "ALL"
+            search || statusFilter !== "ALL" || gradeFilter !== ""
               ? t("students.emptyFiltered")
               : t("students.empty")
           }

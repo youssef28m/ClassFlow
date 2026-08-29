@@ -241,10 +241,7 @@ export class SalaryService {
       const students = group.enrollments
         .filter((e) => e.payments.length > 0)
         .map((enrollment) => {
-          const studentTotal = enrollment.payments.reduce(
-            (sum, p) => sum + Number(p.amount),
-            0,
-          );
+          const studentTotal = enrollment.payments.reduce((sum, p) => sum + Number(p.amount), 0);
           totalStudentPayments += studentTotal;
 
           return {

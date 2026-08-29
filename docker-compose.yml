@@ -1,0 +1,57 @@
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-classflow}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-classflow}
+      POSTGRES_DB: ${POSTGRES_DB:-classflow}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-classflow} -d ${POSTGRES_DB:-classflow}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  backend:
+    build:
+      context: ./backend
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "${BACKEND_PORT:-8082}:3000"
+    environment:
+      NODE_ENV: production
+      HOST: 0.0.0.0
+      PORT: 3000
+      DATABASE_URL: postgresql://${POSTGRES_USER:-classflow}:${POSTGRES_PASSWORD:-classflow}@db:5432/${POSTGRES_DB:-classflow}?schema=public
+      CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost:8083}
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET}
+      JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-1d}
+      JWT_REFRESH_EXPIRES_IN: ${JWT_REFRESH_EXPIRES_IN:-30d}
+      JWT_ISSUER: ${JWT_ISSUER:-classflow-api}
+      JWT_AUDIENCE: ${JWT_AUDIENCE:-classflow-client}
+      LOGIN_RATE_LIMIT: ${LOGIN_RATE_LIMIT:-10}
+      REFRESH_RATE_LIMIT: ${REFRESH_RATE_LIMIT:-30}
+      SIGNUP_RATE_LIMIT: ${SIGNUP_RATE_LIMIT:-5}
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        # URL the BROWSER uses to reach the backend. Behind docker compose on one
+        # host, localhost works; for a real server set it to your public API URL.
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:8082/api}
+    restart: unless-stopped
+    depends_on:
+      - backend
+    ports:
+      - "${FRONTEND_PORT:-8083}:3001"
+
+volumes:
+  pgdata:

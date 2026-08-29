@@ -3,6 +3,7 @@
 import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
 import { useMemo, useState } from "react";
+import { ExportButtons } from "@/components/export/export-buttons";
 import { PageHeader } from "@/components/layout/page-header";
 import { DataTable, type DataTableColumn } from "@/components/tables/data-table";
 import { FilterBar } from "@/components/tables/filter-bar";
@@ -11,7 +12,9 @@ import { inputClassName } from "@/components/forms/field";
 import { TablePagination } from "@/components/tables/table-pagination";
 import { useOverdueQuery } from "@/features/dashboard/api";
 import type { OverdueStudent } from "@/features/dashboard/types";
+import { downloadCSV, openPrintWindow } from "@/lib/export";
 import { useI18n } from "@/lib/i18n/provider";
+import { formatDate } from "@/lib/formatters";
 
 const PAGE_SIZE = 10;
 
@@ -38,6 +41,55 @@ export default function OverduePage() {
   }, [filteredItems, page]);
 
   const totalPages = Math.max(1, Math.ceil(filteredItems.length / PAGE_SIZE));
+
+  function handleExportCsv() {
+    const filename = `overdue-${new Date().toISOString().slice(0, 10)}.csv`;
+    downloadCSV(
+      filename,
+      [
+        t("students.columnName"),
+        t("payments.columnGroup"),
+        t("expenses.columnAmount"),
+        t("overdue.dueDate"),
+        t("overdue.daysLate"),
+      ],
+      filteredItems.map((entry) => [
+        entry.studentName,
+        entry.groupName,
+        Number(entry.fee),
+        entry.dueDate,
+        entry.daysOverdue,
+      ]),
+    );
+  }
+
+  function handleExportPdf() {
+    openPrintWindow(
+      t("overdue.title"),
+      t("export.matchingRecords", { count: filteredItems.length }),
+      [],
+      [
+        {
+          table: {
+            headers: [
+              t("students.columnName"),
+              t("payments.columnGroup"),
+              t("expenses.columnAmount"),
+              t("overdue.dueDate"),
+              t("overdue.daysLate"),
+            ],
+            rows: filteredItems.map((entry) => [
+              entry.studentName,
+              entry.groupName,
+              Number(entry.fee),
+              formatDate(entry.dueDate),
+              entry.daysOverdue,
+            ]),
+          },
+        },
+      ],
+    );
+  }
 
   const columns: DataTableColumn<OverdueStudent>[] = [
     {
@@ -89,13 +141,16 @@ export default function OverduePage() {
         title={t("overdue.title")}
         description={t("overdue.description")}
         actions={
-          <Link
-            href="/dashboard"
-            className="flex h-10 items-center gap-2 rounded-lg border border-border px-4 text-sm font-medium text-card-foreground transition-colors hover:bg-muted"
-          >
-            <ArrowLeft className="size-4" aria-hidden />
-            {t("overdue.backToDashboard")}
-          </Link>
+          <>
+            <ExportButtons onExportCsv={handleExportCsv} onExportPdf={handleExportPdf} />
+            <Link
+              href="/dashboard"
+              className="flex h-10 items-center gap-2 rounded-lg border border-border px-4 text-sm font-medium text-card-foreground transition-colors hover:bg-muted"
+            >
+              <ArrowLeft className="size-4" aria-hidden />
+              {t("overdue.backToDashboard")}
+            </Link>
+          </>
         }
       />
 

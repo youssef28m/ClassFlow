@@ -25,6 +25,7 @@ export const listStudentsQuerySchema = z.object({
   pageSize: z.coerce.number().int().min(1).max(100).default(10),
   search: z.string().trim().min(1).max(100).optional(),
   status: z.nativeEnum(StudentStatus).optional(),
+  grade: z.string().trim().min(1).max(50).optional(),
 });
 
 export type ListStudentsQuery = z.infer<typeof listStudentsQuerySchema>;

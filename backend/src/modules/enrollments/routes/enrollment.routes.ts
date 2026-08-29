@@ -12,6 +12,7 @@ import { EnrollmentService } from '../services/enrollment.service.js';
 import {
   createEnrollmentSchema,
   listEnrollmentsQuerySchema,
+  updateEnrollmentDateSchema,
   updateEnrollmentStatusSchema,
 } from '../validation/enrollment.validation.js';
 
@@ -40,6 +41,13 @@ router.patch(
   requireResolvedCenterId,
   validate(updateEnrollmentStatusSchema),
   controller.updateStatus,
+);
+router.patch(
+  '/:id/date',
+  requirePermission('students', 'update'),
+  requireResolvedCenterId,
+  validate(updateEnrollmentDateSchema),
+  controller.updateDate,
 );
 router.delete(
   '/:id',

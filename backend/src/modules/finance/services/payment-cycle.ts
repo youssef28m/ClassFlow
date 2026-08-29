@@ -13,6 +13,7 @@ export const PERIOD_MONTHS: Record<PaymentType, number | null> = {
 };
 
 const MAX_ANCHOR_DAY = 28;
+const DAY_MS = 86_400_000;
 
 export type PaymentStatus = 'PAID' | 'PENDING' | 'OVERDUE';
 
@@ -32,6 +33,12 @@ export interface RecurringEvaluation extends BillingCycle {
  *  - unpaid window already ended          -> OVERDUE (days late since its end)
  *  - unpaid window still running          -> PENDING
  *  - every window up to now paid          -> PAID
+ *
+ * Due-date semantics: a payment made ON the due date settles that window
+ * (the due date is inclusive), and a window is only OVERDUE the day AFTER
+ * its due date. Window starts are exclusive (except the first) so a payment
+ * exactly on a period boundary is credited to the period it closes, never
+ * double-counted.
  */
 export function evaluateRecurring(
   enrollmentDate: Date,
@@ -40,32 +47,35 @@ export function evaluateRecurring(
   now: Date,
 ): RecurringEvaluation {
   const anchorDay = Math.min(enrollmentDate.getUTCDate(), MAX_ANCHOR_DAY);
-  let periodStart = new Date(
+  const firstStart = new Date(
     Date.UTC(enrollmentDate.getUTCFullYear(), enrollmentDate.getUTCMonth(), anchorDay),
   );
+  let periodStart = firstStart;
 
   let guard = 0;
   while (guard < 1200) {
     guard += 1;
     const dueDate = addMonthsClamped(periodStart, periodMonths);
-    const paidInWindow = paymentDates.some(
-      (date) => date >= periodStart && date < dueDate,
-    );
+    const inclusiveEnd = new Date(dueDate.getTime() + DAY_MS);
+    const paidInWindow = paymentDates.some((date) => {
+      const afterStart =
+        periodStart.getTime() === firstStart.getTime()
+          ? date.getTime() >= periodStart.getTime()
+          : date.getTime() > periodStart.getTime();
+      return afterStart && date.getTime() <= dueDate.getTime();
+    });
     if (!paidInWindow) {
-      if (dueDate.getTime() <= now.getTime()) {
+      if (inclusiveEnd.getTime() <= now.getTime()) {
         return {
           status: 'OVERDUE',
           periodStart,
           dueDate,
-          daysOverdue: Math.max(
-            1,
-            Math.floor((now.getTime() - dueDate.getTime()) / 86_400_000),
-          ),
+          daysOverdue: Math.max(1, Math.floor((now.getTime() - inclusiveEnd.getTime()) / DAY_MS)),
         };
       }
       return { status: 'PENDING', periodStart, dueDate, daysOverdue: null };
     }
-    if (dueDate.getTime() > now.getTime()) {
+    if (inclusiveEnd.getTime() > now.getTime()) {
       return { status: 'PAID', periodStart, dueDate, daysOverdue: null };
     }
     periodStart = dueDate;
@@ -78,6 +88,8 @@ export function evaluateRecurring(
  * 20th): each period runs from that day to the same day of the next period
  * ("if the group starts at day 20 he should pay before the 20th of next
  * month"). Clamped to 28 so short months cannot shift the schedule.
+ * The current period is the one whose due date has not passed yet (the due
+ * date itself is the last day to pay).
  */
 export function computeBillingCycle(
   enrollmentDate: Date,
@@ -91,7 +103,7 @@ export function computeBillingCycle(
   let dueDate = addMonthsClamped(periodStart, periodMonths);
 
   let guard = 0;
-  while (dueDate.getTime() <= today.getTime() && guard < 1200) {
+  while (dueDate.getTime() < today.getTime() && guard < 1200) {
     guard += 1;
     periodStart = dueDate;
     dueDate = addMonthsClamped(periodStart, periodMonths);
@@ -112,5 +124,5 @@ export function resolvePaymentStatus(
   today: Date,
 ): PaymentStatus {
   if (hasPaymentInPeriod) return 'PAID';
-  return today.getTime() < dueDate.getTime() ? 'PENDING' : 'OVERDUE';
+  return today.getTime() <= dueDate.getTime() ? 'PENDING' : 'OVERDUE';
 }

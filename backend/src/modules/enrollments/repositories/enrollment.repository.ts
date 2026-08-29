@@ -78,6 +78,14 @@ export class EnrollmentRepository {
     });
   }
 
+  updateDate(id: number, enrollmentDate: Date): Promise<EnrollmentWithRelations | null> {
+    return prisma.enrollment.update({
+      where: { id },
+      data: { enrollmentDate },
+      include: enrollmentInclude,
+    });
+  }
+
   async findByIdDetailed(id: number) {
     return prisma.enrollment.findUnique({
       where: { id },

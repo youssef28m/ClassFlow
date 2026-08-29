@@ -16,35 +16,38 @@ import {
 import { PAYMENT_METHODS } from "@/features/payments/types";
 import { useCreatePayment } from "@/features/payments/hooks";
 import { useEnrollmentsQuery } from "@/features/enrollments/hooks";
-import { useStudentsQuery } from "@/features/students/hooks";
+import { useGroupsQuery } from "@/features/groups/hooks";
 import { ApiError } from "@/lib/api-client";
 import { useI18n } from "@/lib/i18n/provider";
 
 interface RecordPaymentDialogProps {
   open: boolean;
   onClose: () => void;
+  defaultStudentId?: number | null;
+  defaultStudentName?: string | null;
 }
 
-export function RecordPaymentDialog({ open, onClose }: RecordPaymentDialogProps) {
+export function RecordPaymentDialog({
+  open,
+  onClose,
+  defaultStudentId = null,
+  defaultStudentName = null,
+}: RecordPaymentDialogProps) {
   const toast = useToast();
   const createPayment = useCreatePayment();
   const { t, tEnum } = useI18n();
-  const students = useStudentsQuery({
-    pageSize: 100,
-    status: "ACTIVE",
-  });
-  const [selectedStudentId, setSelectedStudentId] = useState<number | null>(null);
-  const enrollments = useEnrollmentsQuery({
-    studentId: selectedStudentId ?? undefined,
-    active: true,
-    pageSize: 100,
-  });
+  const [groupId, setGroupId] = useState("");
+  const groups = useGroupsQuery({ pageSize: 100 });
+  const enrollments = useEnrollmentsQuery(
+    defaultStudentId
+      ? { studentId: defaultStudentId, active: true, pageSize: 100 }
+      : { groupId: groupId ? Number(groupId) : -1, active: true, pageSize: 100 },
+  );
   const [rootError, setRootError] = useState<string | null>(null);
   const { register, handleSubmit, setError, setValue, watch, reset, formState: { errors } } =
     useForm<PaymentFormValues>({
       resolver: zodResolver(paymentFormSchema),
       defaultValues: {
-        studentId: "",
         enrollmentId: "",
         amount: "",
         paymentDate: new Date().toISOString().slice(0, 10),
@@ -53,7 +56,16 @@ export function RecordPaymentDialog({ open, onClose }: RecordPaymentDialogProps)
       },
     });
   const enrollmentIdValue = watch("enrollmentId");
-  const studentIdValue = watch("studentId");
+
+  function applyEnrollment(enrollmentId: string) {
+    const enrollment = (enrollments.data?.items ?? []).find(
+      (item) => item.id === Number(enrollmentId),
+    );
+    if (enrollment) {
+      setValue("enrollmentId", enrollmentId, { shouldValidate: true });
+      setValue("amount", String(Number(enrollment.group.fee)), { shouldValidate: false });
+    }
+  }
 
   const onSubmit = handleSubmit(async (values) => {
     setRootError(null);
@@ -61,7 +73,7 @@ export function RecordPaymentDialog({ open, onClose }: RecordPaymentDialogProps)
       await createPayment.mutateAsync(toPaymentPayload(values));
       toast.success(t("payments.created"));
       reset();
-      setSelectedStudentId(null);
+      setGroupId("");
       onClose();
     } catch (error) {
       if (error instanceof ApiError) {
@@ -78,6 +90,25 @@ export function RecordPaymentDialog({ open, onClose }: RecordPaymentDialogProps)
     }
   });
 
+  const groupOptions =
+    defaultStudentId
+      ? (enrollments.data?.items ?? []).map((e) => ({
+          value: e.id,
+          label: e.group.name,
+          hint: e.group.subject,
+        }))
+      : (groups.data?.items ?? []).map((g) => ({
+          value: g.id,
+          label: g.name,
+          hint: g.subject,
+        }));
+
+  const studentOptions = (enrollments.data?.items ?? []).map((e) => ({
+    value: e.id,
+    label: e.student.fullName,
+    hint: [e.student.grade, e.student.phone].filter(Boolean).join(" · "),
+  }));
+
   return (
     <FormDialog
       open={open}
@@ -91,62 +122,57 @@ export function RecordPaymentDialog({ open, onClose }: RecordPaymentDialogProps)
             {rootError}
           </p>
         ) : null}
+        {defaultStudentId ? (
+          <p className="rounded-lg bg-muted/60 px-3 py-2.5 text-sm text-card-foreground">
+            {t("payments.pickingStudent")}:{" "}
+            <span className="font-medium">{defaultStudentName ?? t("common.loading")}</span>
+          </p>
+        ) : null}
+        {!defaultStudentId ? (
+          <Field label={t("payments.groupLabel")} htmlFor="payment-group" error={errors.enrollmentId?.message}>
+            <SearchableSelect
+              value={groupId}
+              onChange={(val) => {
+                setGroupId(val);
+                setValue("enrollmentId", "", { shouldValidate: false });
+                setValue("amount", "");
+              }}
+              placeholder={t("groups.allGroups")}
+              searchPlaceholder={t("groups.searchPlaceholder")}
+              emptyText={t("groups.emptyFiltered")}
+              loading={groups.isLoading}
+              className="min-w-65"
+              options={groupOptions}
+            />
+          </Field>
+        ) : null}
         <Field
-          label={t("students.columnName")}
-          htmlFor="payment-student"
-          error={errors.studentId?.message ?? errors.enrollmentId?.message}
-          hint={t("payments.hintPickStudent")}
+          label={defaultStudentId ? t("payments.groupLabel") : t("students.columnName")}
+          htmlFor="payment-enrollment"
+          error={errors.enrollmentId?.message}
+          hint={defaultStudentId ? undefined : t("payments.hintPickStudent")}
         >
-          <input type="hidden" {...register("studentId")} />
-          <input type="hidden" {...register("enrollmentId")} />
-          <SearchableSelect
-            value={studentIdValue}
-            onChange={(val) => {
-              setSelectedStudentId(val ? Number(val) : null);
-              setValue("studentId", val, { shouldValidate: true });
-              setValue("enrollmentId", "");
-              setValue("amount", "");
-            }}
-            placeholder={students.isLoading ? t("common.loading") : t("enrollments.namePlaceholder")}
-            searchPlaceholder={t("groups.searchPlaceholder")}
-            emptyText={t("enrollments.noActiveStudents")}
-            loading={students.isLoading}
-            className="min-w-65"
-            options={(students.data?.items ?? []).map((s) => ({
-              value: s.id,
-              label: s.fullName,
-              hint: [s.grade, s.phone].filter(Boolean).join(" · "),
-            }))}
-          />
-        </Field>
-        <Field label={t("payments.groupLabel")} htmlFor="payment-enrollment" error={errors.enrollmentId?.message}>
           <input type="hidden" {...register("enrollmentId")} />
           <SearchableSelect
             value={enrollmentIdValue}
-            onChange={(val) => {
-              setValue("enrollmentId", val, { shouldValidate: true });
-              const enrollment = (enrollments.data?.items ?? []).find(
-                (item) => item.id === Number(val),
-              );
-              if (enrollment) setValue("amount", String(Number(enrollment.group.fee)), { shouldValidate: false });
-            }}
+            onChange={(val) => applyEnrollment(val)}
             placeholder={
-              !selectedStudentId
-                ? t("payments.selectStudentFirst")
-                : enrollments.isLoading
-                  ? t("payments.loadingEnrollments")
+              defaultStudentId
+                ? enrollments.isLoading
+                  ? t("common.loading")
                   : t("payments.selectGroup")
+                : !groupId
+                  ? t("payments.selectGroupFirst")
+                  : enrollments.isLoading
+                    ? t("payments.loadingStudents")
+                    : t("enrollments.namePlaceholder")
             }
             searchPlaceholder={t("groups.searchPlaceholder")}
             emptyText={t("groups.emptyFiltered")}
-            disabled={!selectedStudentId || enrollments.isLoading}
+            disabled={!defaultStudentId && (!groupId || enrollments.isLoading)}
             loading={enrollments.isLoading}
             className="min-w-65"
-            options={(enrollments.data?.items ?? []).map((e) => ({
-              value: e.id,
-              label: e.group.name,
-              hint: e.group.subject,
-            }))}
+            options={defaultStudentId ? groupOptions : studentOptions}
           />
         </Field>
         <div className="grid gap-4 sm:grid-cols-2">
@@ -182,7 +208,7 @@ export function RecordPaymentDialog({ open, onClose }: RecordPaymentDialogProps)
           </button>
           <button
             type="submit"
-            disabled={createPayment.isPending || enrollments.isLoading}
+            disabled={createPayment.isPending}
             className="flex h-10 items-center justify-center gap-2 rounded-lg bg-primary px-5 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:pointer-events-none disabled:opacity-60"
           >
             {createPayment.isPending ? <Loader2 className="size-4 animate-spin" aria-hidden /> : null}

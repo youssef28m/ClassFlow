@@ -4,6 +4,7 @@ import { prisma } from '../../../shared/prisma/prisma-client.js';
 export interface StudentFindManyParams {
   search?: string;
   status?: StudentStatus;
+  grade?: string;
   centerId?: number | null;
   skip: number;
   take: number;
@@ -23,6 +24,20 @@ export class StudentRepository {
   findDuplicate(centerId: number, fullName: string, phone: string): Promise<Student | null> {
     return prisma.student.findFirst({
       where: { centerId, fullName, phone },
+    });
+  }
+
+  findDuplicateByNameAndGrade(
+    centerId: number,
+    fullName: string,
+    grade: string,
+  ): Promise<Student | null> {
+    return prisma.student.findFirst({
+      where: {
+        centerId,
+        fullName: { equals: fullName, mode: 'insensitive' },
+        grade: { equals: grade, mode: 'insensitive' },
+      },
     });
   }
 
@@ -63,6 +78,10 @@ export class StudentRepository {
       where.status = params.status;
     }
 
+    if (params.grade) {
+      where.grade = { equals: params.grade, mode: 'insensitive' };
+    }
+
     const [items, total] = await prisma.$transaction([
       prisma.student.findMany({
         where,
@@ -74,5 +93,15 @@ export class StudentRepository {
     ]);
 
     return { items, total };
+  }
+
+  async findDistinctGrades(centerId: number | null): Promise<string[]> {
+    const rows = await prisma.student.findMany({
+      where: centerId === null || centerId === undefined ? {} : { centerId },
+      select: { grade: true },
+      distinct: ['grade'],
+      orderBy: { grade: 'asc' },
+    });
+    return rows.map((row) => row.grade);
   }
 }

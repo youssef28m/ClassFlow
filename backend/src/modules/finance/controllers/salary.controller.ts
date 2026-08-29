@@ -47,8 +47,6 @@ export class SalaryController {
   };
 
   report = async (req: Request, res: Response): Promise<void> => {
-    res
-      .status(200)
-      .json(await this.service.getReport(req.params.id, mustGetCenterId(req)));
+    res.status(200).json(await this.service.getReport(req.params.id, mustGetCenterId(req)));
   };
 }

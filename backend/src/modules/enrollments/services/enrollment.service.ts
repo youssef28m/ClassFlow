@@ -12,6 +12,7 @@ import { toEnrollmentDTO } from '../types/enrollment.types.js';
 import type {
   CreateEnrollmentInput,
   ListEnrollmentsQuery,
+  UpdateEnrollmentDateInput,
   UpdateEnrollmentStatusInput,
 } from '../validation/enrollment.validation.js';
 
@@ -98,6 +99,19 @@ export class EnrollmentService {
       updated = await this.repository.deactivate(current.id);
     }
 
+    if (!updated) {
+      throw new AppError('Enrollment not found', 404);
+    }
+    return toEnrollmentDTO(updated);
+  }
+
+  async updateDate(
+    id: RouteId,
+    centerId: number,
+    input: UpdateEnrollmentDateInput,
+  ): Promise<EnrollmentDTO> {
+    const current = await this.getOwnedEnrollment(this.parseId(id), centerId);
+    const updated = await this.repository.updateDate(current.id, input.enrollmentDate);
     if (!updated) {
       throw new AppError('Enrollment not found', 404);
     }

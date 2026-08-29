@@ -14,6 +14,12 @@ export const updateEnrollmentStatusSchema = z.object({
 
 export type UpdateEnrollmentStatusInput = z.infer<typeof updateEnrollmentStatusSchema>;
 
+export const updateEnrollmentDateSchema = z.object({
+  enrollmentDate: z.coerce.date(),
+});
+
+export type UpdateEnrollmentDateInput = z.infer<typeof updateEnrollmentDateSchema>;
+
 export const listEnrollmentsQuerySchema = z.object({
   page: z.coerce.number().int().min(1).default(1),
   pageSize: z.coerce.number().int().min(1).max(100).default(10),

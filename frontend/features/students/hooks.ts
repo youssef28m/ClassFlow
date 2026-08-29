@@ -16,6 +16,14 @@ export function useStudentsQuery(filters: StudentFilters) {
   });
 }
 
+export function useStudentGradesQuery() {
+  return useQuery({
+    queryKey: studentKeys.grades(),
+    queryFn: studentsApi.grades,
+    staleTime: 30_000,
+  });
+}
+
 export function useCreateStudent() {
   const queryClient = useQueryClient();
   return useMutation({

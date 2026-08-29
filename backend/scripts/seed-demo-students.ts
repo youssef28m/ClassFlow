@@ -2,12 +2,39 @@ import { StudentStatus } from '../src/generated/prisma/client.js';
 import { prisma } from '../src/shared/prisma/prisma-client.js';
 
 const FIRST_NAMES = [
-  'Ahmed', 'Mariam', 'Omar', 'Nour', 'Youssef', 'Salma', 'Karim', 'Laila', 'Hassan', 'Farah',
-  'Adam', 'Jana', 'Mostafa', 'Hana', 'Ziad', 'Malak', 'Tarek', 'Reem', 'Khaled', 'Aya',
+  'Ahmed',
+  'Mariam',
+  'Omar',
+  'Nour',
+  'Youssef',
+  'Salma',
+  'Karim',
+  'Laila',
+  'Hassan',
+  'Farah',
+  'Adam',
+  'Jana',
+  'Mostafa',
+  'Hana',
+  'Ziad',
+  'Malak',
+  'Tarek',
+  'Reem',
+  'Khaled',
+  'Aya',
 ];
 
 const LAST_NAMES = [
-  'Mohamed', 'Ali', 'Hassan', 'Ibrahim', 'Mahmoud', 'Sayed', 'Fathy', 'Yassin', 'Adel', 'Nabil',
+  'Mohamed',
+  'Ali',
+  'Hassan',
+  'Ibrahim',
+  'Mahmoud',
+  'Sayed',
+  'Fathy',
+  'Yassin',
+  'Adel',
+  'Nabil',
 ];
 
 async function main(): Promise<void> {
@@ -16,7 +43,8 @@ async function main(): Promise<void> {
     orderBy: { id: 'asc' },
     select: { id: true, name: true },
   });
-  if (!center) throw new Error('No active center exists. Create or activate a center before seeding.');
+  if (!center)
+    throw new Error('No active center exists. Create or activate a center before seeding.');
 
   const students = Array.from({ length: 40 }, (_, index) => ({
     fullName: `${FIRST_NAMES[index % FIRST_NAMES.length]} ${LAST_NAMES[Math.floor(index / 2) % LAST_NAMES.length]}`,

@@ -4,11 +4,11 @@ import {
   PaymentType,
   StudentStatus,
 } from '../src/generated/prisma/client.js';
-import { prisma } from '../src/shared/prisma/prisma-client.js';
 import {
   computeBillingCycle,
   PERIOD_MONTHS,
 } from '../src/modules/finance/services/payment-cycle.js';
+import { prisma } from '../src/shared/prisma/prisma-client.js';
 
 const FIRST_NAMES = [
   'أحمد',
@@ -305,9 +305,7 @@ async function main(): Promise<void> {
       const pastWindows = Math.max(1, Math.floor(random() * 5));
       for (let window = 0; window <= pastWindows; window += 1) {
         if (windowStart < new Date(enrollment.enrollmentDate)) break;
-        const paymentDate = new Date(
-          Math.min(windowStart.getTime() + 86_400_000, now.getTime()),
-        );
+        const paymentDate = new Date(Math.min(windowStart.getTime() + 86_400_000, now.getTime()));
         await prisma.payment.create({
           data: {
             enrollmentId: enrollment.id,

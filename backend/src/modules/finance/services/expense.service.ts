@@ -1,5 +1,5 @@
-import { prisma } from '../../../shared/prisma/prisma-client.js';
 import { AppError } from '../../../shared/middleware/error-handler.js';
+import { prisma } from '../../../shared/prisma/prisma-client.js';
 import type { ExpenseRepository } from '../repositories/expense.repository.js';
 import type { ExpenseDTO, ExpensePaginatedResponse } from '../types/expense.types.js';
 import { toExpenseDTO } from '../types/expense.types.js';
@@ -35,10 +35,11 @@ export class ExpenseService {
     const expense = await this.repository.findById(parsedId, centerId);
     if (!expense) throw new AppError('Expense not found', 404);
 
-    if (expense.salaryId) {
+    const salaryId = expense.salaryId;
+    if (salaryId) {
       await prisma.$transaction(async (tx) => {
         await tx.expense.delete({ where: { id: parsedId } });
-        await tx.teacherSalary.delete({ where: { id: expense.salaryId! } });
+        await tx.teacherSalary.delete({ where: { id: salaryId } });
       });
     } else {
       await this.repository.delete(parsedId, centerId);

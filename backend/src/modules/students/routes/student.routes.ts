@@ -24,6 +24,7 @@ const router = Router();
 router.use(authenticate, requireCenterScope);
 
 router.get('/', validateQuery(listStudentsQuerySchema), controller.list);
+router.get('/grades', requireResolvedCenterId, controller.listGrades);
 router.get('/:id', requireResolvedCenterId, controller.getById);
 router.post(
   '/',

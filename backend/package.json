@@ -13,6 +13,9 @@
     "build": "prisma generate && tsc -p tsconfig.json",
     "start": "node dist/server.js",
     "typecheck": "tsc --noEmit",
+    "typecheck:tests": "tsc -p tsconfig.test.json",
+    "test": "vitest run",
+    "test:watch": "vitest",
     "lint": "biome check .",
     "lint:fix": "biome check --write .",
     "format": "biome format --write .",
@@ -39,6 +42,7 @@
     "pg": "^8.13.0",
     "pino": "^9.0.0",
     "pino-http": "^10.0.0",
+    "prisma": "^7.0.0",
     "zod": "^4.0.0"
   },
   "devDependencies": {
@@ -51,8 +55,8 @@
     "@types/node-cron": "^3.0.11",
     "@types/pg": "^8.11.0",
     "pino-pretty": "^13.0.0",
-    "prisma": "^7.0.0",
     "tsx": "^4.19.0",
-    "typescript": "^5.8.0"
+    "typescript": "^5.8.0",
+    "vitest": "^4.1.11"
   }
 }

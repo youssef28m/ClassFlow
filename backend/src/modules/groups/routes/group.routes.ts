@@ -1,5 +1,8 @@
 import { Router } from 'express';
-import { requirePermission } from '../../../shared/authz/require-permission.js';
+import {
+  requireAnyPermission,
+  requirePermission,
+} from '../../../shared/authz/require-permission.js';
 import {
   requireCenterScope,
   requireResolvedCenterId,
@@ -11,6 +14,7 @@ import { GroupRepository } from '../repositories/group.repository.js';
 import { GroupService } from '../services/group.service.js';
 import {
   createGroupSchema,
+  groupPaymentReportQuerySchema,
   listGroupsQuerySchema,
   updateGroupSchema,
 } from '../validation/group.validation.js';
@@ -24,6 +28,17 @@ const router = Router();
 router.use(authenticate, requireCenterScope);
 
 router.get('/', validateQuery(listGroupsQuerySchema), controller.list);
+router.get(
+  '/:id/payment-report',
+  requireAnyPermission(
+    { resource: 'paymentsAndExpenses', action: 'read' },
+    { resource: 'paymentsAndExpenses', action: 'logPayment' },
+    { resource: 'paymentsAndExpenses', action: 'managePayments' },
+  ),
+  requireResolvedCenterId,
+  validateQuery(groupPaymentReportQuerySchema),
+  controller.paymentReport,
+);
 router.get('/:id', requireResolvedCenterId, controller.getById);
 router.post(
   '/',
