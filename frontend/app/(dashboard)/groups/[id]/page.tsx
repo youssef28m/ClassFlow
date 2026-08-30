@@ -145,6 +145,7 @@ export default function GroupDetailPage() {
               capacity: group.maxStudents,
               feeType: tEnum(group.paymentType),
               fee: group.fee,
+              anchor: group.billingAnchorDay,
             })}
             actions={
               canViewReport ? (

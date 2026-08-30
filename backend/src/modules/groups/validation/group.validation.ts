@@ -11,6 +11,12 @@ export const feeSchema = z
   ])
   .refine((value) => Number(value) > 0, 'Fee must be greater than 0');
 
+export const billingAnchorDaySchema = z
+  .number()
+  .int('Billing anchor day must be an integer')
+  .min(1, 'Billing anchor day must be between 1 and 28')
+  .max(28, 'Billing anchor day must be between 1 and 28');
+
 export const createGroupSchema = z.object({
   teacherId: z.number().int().positive('Teacher id must be a positive integer'),
   name: z.string().trim().min(1, 'Name is required').max(100, 'Name is too long'),
@@ -23,6 +29,7 @@ export const createGroupSchema = z.object({
     .int('Max students must be an integer')
     .min(1, 'Max students must be at least 1')
     .max(500, 'Max students is too large'),
+  billingAnchorDay: billingAnchorDaySchema.default(1),
 });
 
 export type CreateGroupInput = z.infer<typeof createGroupSchema>;

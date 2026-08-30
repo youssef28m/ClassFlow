@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Cairo, Geist, Geist_Mono } from "next/font/google";
+import { Geist, Geist_Mono, Zain } from "next/font/google";
 import { Providers } from "@/components/providers";
 import "./globals.css";
 
@@ -13,9 +13,10 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
-const cairo = Cairo({
-  variable: "--font-cairo",
+const zain = Zain({
+  variable: "--font-zain",
   subsets: ["arabic", "latin"],
+  weight: ["200", "300", "400", "700", "800", "900"],
 });
 
 export const metadata: Metadata = {
@@ -30,7 +31,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
       lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} ${cairo.variable} h-full antialiased`}
+      className={`${geistSans.variable} ${geistMono.variable} ${zain.variable} h-full antialiased dark`}
     >
       <body className="flex min-h-full flex-col bg-background text-foreground">
         <Providers>{children}</Providers>

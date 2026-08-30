@@ -1,31 +1,18 @@
 @import "tailwindcss";
 
-:root {
-  color-scheme: light;
-  --background: #ffffff;
-  --foreground: #171717;
-  --card: #ffffff;
-  --card-foreground: #171717;
-  --primary: #4f46e5;
-  --primary-foreground: #ffffff;
-  --muted: #f4f4f5;
-  --muted-foreground: #71717a;
-  --border: #e4e4e7;
-}
+@custom-variant dark (&:where(.dark, .dark *));
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    color-scheme: dark;
-    --background: #0a0a0a;
-    --foreground: #ededed;
-    --card: #141416;
-    --card-foreground: #ededed;
-    --primary: #818cf8;
-    --primary-foreground: #0a0a0a;
-    --muted: #1c1c1f;
-    --muted-foreground: #a1a1aa;
-    --border: #27272a;
-  }
+:root {
+  color-scheme: dark;
+  --background: #0a0a0a;
+  --foreground: #ededed;
+  --card: #141416;
+  --card-foreground: #ededed;
+  --primary: #818cf8;
+  --primary-foreground: #0a0a0a;
+  --muted: #1c1c1f;
+  --muted-foreground: #a1a1aa;
+  --border: #27272a;
 }
 
 @theme inline {
@@ -49,7 +36,7 @@ body {
 }
 
 [dir="rtl"] body {
-  font-family: var(--font-cairo), var(--font-sans), Arial, Helvetica, sans-serif;
+  font-family: var(--font-zain), var(--font-sans), Arial, Helvetica, sans-serif;
 }
 
 select option {

@@ -11,6 +11,7 @@ export interface Group {
   fee: string;
   paymentType: PaymentType;
   maxStudents: number;
+  billingAnchorDay: number;
   createdAt: string;
   updatedAt: string;
 }

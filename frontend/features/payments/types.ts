@@ -26,6 +26,7 @@ export interface PaymentListResponse {
 export interface PaymentFilters {
   page?: number;
   pageSize?: number;
+  search?: string;
   groupId?: number;
   paymentMethod?: PaymentMethod;
   from?: string;

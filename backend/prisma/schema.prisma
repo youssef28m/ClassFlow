@@ -161,6 +161,7 @@ model Group {
   fee         Decimal     @db.Decimal(10, 2)
   paymentType PaymentType @map("payment_type")
   maxStudents Int         @map("max_students")
+  billingAnchorDay Int    @default(1) @map("billing_anchor_day")
   centerId    Int         @map("center_id")
   createdAt   DateTime    @default(now()) @map("created_at")
   updatedAt   DateTime    @updatedAt @map("updated_at")

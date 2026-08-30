@@ -14,6 +14,7 @@ const VALID_FORM = {
   fee: "150",
   paymentType: "MONTHLY",
   maxStudents: "20",
+  billingAnchorDay: "10",
 } as const satisfies GroupFormValues;
 
 describe("groupFormSchema", () => {
@@ -59,7 +60,15 @@ describe("groupFormSchema", () => {
       fee: "150",
       paymentType: "MONTHLY",
       maxStudents: 20,
+      billingAnchorDay: 10,
     });
+  });
+
+  it("enforces billingAnchorDay bounds", () => {
+    expect(groupFormSchema.safeParse({ ...VALID_FORM, billingAnchorDay: "0" }).success).toBe(false);
+    expect(groupFormSchema.safeParse({ ...VALID_FORM, billingAnchorDay: "29" }).success).toBe(false);
+    expect(groupFormSchema.safeParse({ ...VALID_FORM, billingAnchorDay: "1" }).success).toBe(true);
+    expect(groupFormSchema.safeParse({ ...VALID_FORM, billingAnchorDay: "28" }).success).toBe(true);
   });
 
   it("round-trips a DTO into editable values", () => {
@@ -72,12 +81,14 @@ describe("groupFormSchema", () => {
       fee: "200.00",
       paymentType: "TERMLY",
       maxStudents: 15,
+      billingAnchorDay: 10,
       createdAt: "2026-08-01T00:00:00.000Z",
       updatedAt: "2026-08-01T00:00:00.000Z",
     });
     expect(values.teacherId).toBe("7");
     expect(values.fee).toBe("200.00");
     expect(values.maxStudents).toBe("15");
+    expect(values.billingAnchorDay).toBe("10");
     expect(groupFormSchema.safeParse(values).success).toBe(true);
   });
 });

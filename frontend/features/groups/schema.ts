@@ -29,6 +29,14 @@ export const groupFormSchema = z.object({
       (value) => Number(value) >= 1 && Number(value) <= 500,
       "Max students must be between 1 and 500",
     ),
+  billingAnchorDay: z
+    .string()
+    .min(1, "Billing anchor day is required")
+    .regex(/^\d+$/, "Billing anchor day must be a whole number")
+    .refine(
+      (value) => Number(value) >= 1 && Number(value) <= 28,
+      "Billing anchor day must be between 1 and 28",
+    ),
 });
 
 export type GroupFormValues = {
@@ -39,6 +47,7 @@ export type GroupFormValues = {
   fee: string;
   paymentType: PaymentType;
   maxStudents: string;
+  billingAnchorDay: string;
 };
 
 export interface GroupPayload {
@@ -49,6 +58,7 @@ export interface GroupPayload {
   fee: string;
   paymentType: PaymentType;
   maxStudents: number;
+  billingAnchorDay: number;
 }
 
 export function toGroupPayload(values: GroupFormValues): GroupPayload {
@@ -60,6 +70,7 @@ export function toGroupPayload(values: GroupFormValues): GroupPayload {
     fee: values.fee.trim(),
     paymentType: values.paymentType,
     maxStudents: Number(values.maxStudents),
+    billingAnchorDay: Number(values.billingAnchorDay) || 1,
   };
 }
 
@@ -72,5 +83,6 @@ export function toGroupFormValues(group: Group): GroupFormValues {
     fee: group.fee,
     paymentType: group.paymentType,
     maxStudents: String(group.maxStudents),
+    billingAnchorDay: String(group.billingAnchorDay ?? 1),
   };
 }

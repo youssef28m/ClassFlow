@@ -11,7 +11,7 @@ export interface Enrollment {
   createdAt: string;
   updatedAt: string;
   student: { id: number; fullName: string; phone: string | null; grade: string; status: StudentStatus };
-  group: { id: number; name: string; subject: string; room: string; fee: string; paymentType: PaymentType; maxStudents: number };
+  group: { id: number; name: string; subject: string; room: string; fee: string; paymentType: PaymentType; billingAnchorDay: number; maxStudents: number };
 }
 
 export interface EnrollmentListResponse { items: Enrollment[]; meta: PaginationMeta; }

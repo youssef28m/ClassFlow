@@ -2,6 +2,7 @@ import type { Payment, PaymentMethod, Prisma } from '../../../generated/prisma/c
 import { prisma } from '../../../shared/prisma/prisma-client.js';
 
 export interface PaymentFindManyParams {
+  search?: string;
   enrollmentId?: number;
   groupId?: number;
   paymentMethod?: PaymentMethod;
@@ -45,7 +46,16 @@ export class PaymentRepository {
       where: { studentId },
       orderBy: [{ active: 'desc' }, { id: 'asc' }],
       include: {
-        group: { select: { id: true, name: true, subject: true, fee: true, paymentType: true } },
+        group: {
+          select: {
+            id: true,
+            name: true,
+            subject: true,
+            fee: true,
+            paymentType: true,
+            billingAnchorDay: true,
+          },
+        },
       },
     });
   }
@@ -107,6 +117,17 @@ export class PaymentRepository {
     const where: Prisma.PaymentWhereInput = {
       enrollment: params.centerId === null ? {} : { student: { centerId: params.centerId } },
     };
+    if (params.search) {
+      where.enrollment = {
+        ...(where.enrollment as Prisma.EnrollmentWhereInput),
+        student: {
+          ...((where.enrollment as Prisma.EnrollmentWhereInput | undefined)?.student as
+            | Prisma.StudentWhereInput
+            | undefined),
+          fullName: { contains: params.search, mode: 'insensitive' },
+        },
+      };
+    }
     if (params.enrollmentId !== undefined) where.enrollmentId = params.enrollmentId;
     if (params.groupId !== undefined)
       where.enrollment = {

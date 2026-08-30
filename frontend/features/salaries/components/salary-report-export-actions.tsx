@@ -45,7 +45,7 @@ export function SalaryReportExportActions({ report }: { report: SalaryReport }) 
   ];
 
   const printSections: PrintSection[] = report.groups.map((group) => ({
-    heading: `${group.groupName} (${group.subject})`,
+    heading: group.groupName,
     table: {
       headers: [
         t("students.columnName"),

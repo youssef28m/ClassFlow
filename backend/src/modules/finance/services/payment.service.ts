@@ -48,10 +48,11 @@ export class PaymentService {
     query: ListPaymentsQuery,
     centerId: number | null,
   ): Promise<PaginatedResponse<PaymentDTO>> {
-    const { page, pageSize, enrollmentId, groupId, paymentMethod, from, to } = query;
+    const { page, pageSize, search, enrollmentId, groupId, paymentMethod, from, to } = query;
     if (from && to && from > to)
       throw new AppError('The from date must be before the to date', 400);
     const { items, total } = await this.repository.findMany({
+      search,
       enrollmentId,
       groupId,
       paymentMethod,
@@ -126,6 +127,7 @@ export class PaymentService {
         const evaluation = evaluateRecurring(
           enrolledOn,
           periodMonths,
+          enrollment.group.billingAnchorDay,
           paymentDatesByEnrollment.get(enrollment.id) ?? [],
           today,
         );

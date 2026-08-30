@@ -9,6 +9,7 @@ export interface GroupDTO {
   fee: string;
   paymentType: PaymentType;
   maxStudents: number;
+  billingAnchorDay: number;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -35,6 +36,7 @@ export function toGroupDTO(group: Group): GroupDTO {
     fee: group.fee.toString(),
     paymentType: group.paymentType,
     maxStudents: group.maxStudents,
+    billingAnchorDay: group.billingAnchorDay,
     createdAt: group.createdAt,
     updatedAt: group.updatedAt,
   };

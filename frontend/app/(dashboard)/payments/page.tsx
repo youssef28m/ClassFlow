@@ -1,6 +1,6 @@
 "use client";
 
-import { Plus, Trash2 } from "lucide-react";
+import { Plus, Search, Trash2 } from "lucide-react";
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import { ConfirmDialog } from "@/components/feedback/confirm-dialog";
@@ -20,6 +20,10 @@ import {
 import { useGroupsQuery } from "@/features/groups/hooks";
 import { RecordPaymentDialog } from "@/features/payments/components/record-payment-dialog";
 import {
+  currentBillingPeriod,
+  toDateInputValue,
+} from "@/features/payments/billing-cycle";
+import {
   PAYMENT_METHODS,
   type Payment,
   type PaymentMethod,
@@ -29,6 +33,7 @@ import { useAuth } from "@/lib/auth-store";
 import { useI18n } from "@/lib/i18n/provider";
 import { formatDate } from "@/lib/formatters";
 import { can } from "@/lib/permissions";
+import { useDebouncedValue } from "@/lib/use-debounced-value";
 
 const METHOD_TONES: Record<PaymentMethod, BadgeTone> = {
   CASH: "success",
@@ -56,11 +61,13 @@ export default function PaymentsPage() {
   const { user } = useAuth();
   const toast = useToast();
   const { t, tEnum } = useI18n();
+  const [searchText, setSearchText] = useState("");
   const [methodFilter, setMethodFilter] = useState<"ALL" | PaymentMethod>("ALL");
   const [groupFilter, setGroupFilter] = useState<string>("");
   const [fromDate, setFromDate] = useState(DEFAULT_FROM);
   const [toDate, setToDate] = useState(DEFAULT_TO);
   const [page, setPage] = useState(1);
+  const search = useDebouncedValue(searchText);
   const deletePayment = useDeletePayment();
 
   const { data: groupsData } = useGroupsQuery({ pageSize: 100 });
@@ -72,12 +79,13 @@ export default function PaymentsPage() {
     () => ({
       page,
       pageSize: PAGE_SIZE,
+      search: search || undefined,
       groupId: groupFilter ? Number(groupFilter) : undefined,
       paymentMethod: methodFilter === "ALL" ? undefined : methodFilter,
       from: fromDate || undefined,
       to: toDate || undefined,
     }),
-    [page, groupFilter, methodFilter, fromDate, toDate],
+    [page, search, groupFilter, methodFilter, fromDate, toDate],
   );
 
   const { data, isLoading, error, refetch } = usePaymentsQuery(filters);
@@ -191,9 +199,51 @@ export default function PaymentsPage() {
 
       <PermissionGate resource="paymentsAndExpenses" action="read">
         <FilterBar>
+          <div className="relative w-full max-w-xs">
+            <Search
+              className="pointer-events-none absolute start-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground"
+              aria-hidden
+            />
+            <input
+              id="payment-search"
+              type="search"
+              placeholder={t("payments.searchPlaceholder")}
+              value={searchText}
+              onChange={(event) => updateFilters(() => setSearchText(event.target.value))}
+              className={`${inputClassName} ps-9`}
+            />
+          </div>
           <SearchableSelect
             value={groupFilter}
-            onChange={(val) => updateFilters(() => setGroupFilter(val))}
+            onChange={(val) =>
+              updateFilters(() => {
+                setGroupFilter(val);
+                const group = (groupsData?.items ?? []).find((g) => g.id === Number(val));
+                if (group) {
+                  const today = new Date();
+                  const refDate = new Date(
+                    Date.UTC(today.getFullYear(), today.getMonth(), 1),
+                  );
+                  const period = currentBillingPeriod(
+                    refDate,
+                    group.paymentType,
+                    group.billingAnchorDay,
+                    today,
+                  );
+                  if (period) {
+                    setFromDate(toDateInputValue(period.periodStart));
+                    setToDate(
+                      period.dueDate.getTime() < today.getTime()
+                        ? toDateInputValue(period.dueDate)
+                        : toDateInputValue(today),
+                    );
+                  }
+                } else {
+                  setFromDate(DEFAULT_FROM);
+                  setToDate(DEFAULT_TO);
+                }
+              })
+            }
             placeholder={t("groups.allGroups")}
             searchPlaceholder={t("groups.searchPlaceholder")}
             emptyText={t("groups.emptyFiltered")}
@@ -255,6 +305,7 @@ export default function PaymentsPage() {
           error={error ?? null}
           onRetry={() => void refetch()}
           emptyTitle={
+            search ||
             groupFilter ||
             methodFilter !== "ALL" ||
             fromDate !== DEFAULT_FROM ||

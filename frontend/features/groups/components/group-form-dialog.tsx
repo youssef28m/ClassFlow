@@ -6,6 +6,7 @@ import { useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
 import { Field, inputClassName } from "@/components/forms/field";
 import { FormDialog } from "@/components/forms/form-dialog";
+import { SearchableSelect } from "@/components/forms/searchable-select";
 import { useToast } from "@/components/feedback/toast";
 import {
   groupFormSchema,
@@ -35,6 +36,7 @@ function defaultValues(): GroupFormValues {
     fee: "",
     paymentType: "MONTHLY",
     maxStudents: "",
+    billingAnchorDay: "1",
   };
 }
 
@@ -56,6 +58,8 @@ export function GroupFormDialog({ open, onClose, group }: GroupFormDialogProps) 
     register,
     handleSubmit,
     setError,
+    setValue,
+    watch,
     formState: { errors },
   } = useForm<GroupFormValues>({
     resolver: zodResolver(groupFormSchema),
@@ -117,22 +121,25 @@ export function GroupFormDialog({ open, onClose, group }: GroupFormDialogProps) 
         ) : null}
 
         <Field label={t("common.teacher")} htmlFor="teacherId" error={errors.teacherId?.message}>
-          <select
-            id="teacherId"
-            aria-invalid={Boolean(errors.teacherId)}
-            className={inputClassName}
-            {...register("teacherId")}
-          >
-            <option value="">
-              {teachers.isLoading ? t("common.loading") : t("groups.selectTeacherPlaceholder")}
-            </option>
-            {(teachers.data?.items ?? []).map((teacher) => (
-              <option key={teacher.id} value={teacher.id}>
-                {teacher.fullName}
-                {teacher.active ? "" : ` (${t("enum.INACTIVE").toLowerCase()})`}
-              </option>
-            ))}
-          </select>
+          <input type="hidden" {...register("teacherId")} />
+          <SearchableSelect
+            value={watch("teacherId")}
+            onChange={(val) => setValue("teacherId", val, { shouldValidate: true })}
+            placeholder={
+              teachers.isLoading
+                ? t("common.loading")
+                : t("groups.selectTeacherPlaceholder")
+            }
+            searchPlaceholder={t("teachers.searchPlaceholder")}
+            emptyText={t("teachers.emptyFiltered")}
+            loading={teachers.isLoading}
+            className="min-w-65"
+            options={(teachers.data?.items ?? []).map((teacher) => ({
+              value: teacher.id,
+              label: teacher.fullName,
+              hint: teacher.active ? undefined : t("enum.INACTIVE").toLowerCase(),
+            }))}
+          />
         </Field>
 
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -188,6 +195,22 @@ export function GroupFormDialog({ open, onClose, group }: GroupFormDialogProps) 
             />
           </Field>
         </div>
+
+        <Field
+          label={t("groups.fieldBillingAnchorDay")}
+          htmlFor="billingAnchorDay"
+          error={errors.billingAnchorDay?.message}
+        >
+          <input
+            id="billingAnchorDay"
+            type="number"
+            min={1}
+            max={28}
+            aria-invalid={Boolean(errors.billingAnchorDay)}
+            className={inputClassName}
+            {...register("billingAnchorDay")}
+          />
+        </Field>
 
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <Field label={t("groups.columnFee")} htmlFor="fee" error={errors.fee?.message}>

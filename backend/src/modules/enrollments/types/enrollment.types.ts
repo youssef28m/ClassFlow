@@ -18,6 +18,7 @@ export const enrollmentInclude = {
       room: true,
       fee: true,
       paymentType: true,
+      billingAnchorDay: true,
       maxStudents: true,
     },
   },
@@ -50,6 +51,7 @@ export const enrollmentDetailInclude = {
       room: true,
       fee: true,
       paymentType: true,
+      billingAnchorDay: true,
       maxStudents: true,
       centerId: true,
     },
@@ -75,6 +77,7 @@ export interface EnrollmentGroupSummary {
   room: string;
   fee: string;
   paymentType: PaymentType;
+  billingAnchorDay: number;
   maxStudents: number;
 }
 
@@ -125,6 +128,7 @@ export function toEnrollmentDTO(enrollment: EnrollmentWithRelations): Enrollment
       room: enrollment.group.room,
       fee: enrollment.group.fee.toString(),
       paymentType: enrollment.group.paymentType,
+      billingAnchorDay: enrollment.group.billingAnchorDay,
       maxStudents: enrollment.group.maxStudents,
     },
   };

@@ -1,13 +1,16 @@
 "use client";
 
-import { ArrowLeft, CalendarDays, Languages, LogOut, Menu, X } from "lucide-react";
+import {
+  ArrowLeft,
+  CalendarDays,
+  Globe,
+  LogOut,
+  Menu,
+  X,
+} from "lucide-react";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState, type ReactNode } from "react";
-import {
-  ROLE_TONE_CLASSES,
-  navItemsFor,
-  type NavItem,
-} from "@/components/navigation/nav-config";
+import { navItemsFor, type NavItem } from "@/components/navigation/nav-config";
 import { hasPermission, resolveScope } from "@/lib/permissions";
 import { useAuth } from "@/lib/auth-store";
 import { useActingCenter, useCenterScope } from "@/lib/center-scope";
@@ -24,7 +27,7 @@ function LanguageToggle() {
       title={locale === "ar" ? "Switch to English" : "التبديل إلى العربية"}
       className="flex items-center gap-1.5 rounded-lg px-2 py-1.5 text-xs font-semibold text-muted-foreground transition-colors hover:bg-muted hover:text-card-foreground"
     >
-      <Languages className="size-3.5" aria-hidden />
+      <Globe className="size-3.5" aria-hidden />
       {locale === "ar" ? "EN" : "عربي"}
     </button>
   );
@@ -34,7 +37,7 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
   const pathname = usePathname();
   const router = useRouter();
   const { user, logout } = useAuth();
-  const { t, tEnum } = useI18n();
+  const { t } = useI18n();
   const { centerId, setCenterId } = useCenterScope();
   const actingCenter = useActingCenter();
 
@@ -78,9 +81,10 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
         <span className="flex size-8 items-center justify-center rounded-lg bg-primary/10 text-primary">
           <CalendarDays className="size-4.5" aria-hidden />
         </span>
-        <span className="text-lg font-bold tracking-tight text-card-foreground">
+        <span className="min-w-0 flex-1 truncate text-lg font-bold tracking-tight text-card-foreground">
           ClassFlow
         </span>
+        <LanguageToggle />
       </div>
 
       <nav aria-label={t("nav.mainNavigation")} className="scroll-slim flex-1 space-y-1 overflow-y-auto p-3">
@@ -123,35 +127,30 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
 
       {user ? (
         <div className="border-t border-border p-3">
-          <div className="flex items-center gap-3 rounded-lg px-2 py-2">
-            <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-primary/10 text-sm font-semibold text-primary">
-              {user.username.slice(0, 2).toUpperCase()}
-            </span>
-            <div className="min-w-0 flex-1">
-              <p className="truncate text-sm font-medium text-card-foreground">
-                {user.username}
-              </p>
-              <p className="truncate text-xs text-muted-foreground">{scopeLabel}</p>
-            </div>
-          </div>
-          <div className="mt-1 flex items-center justify-between gap-2 px-2 pb-1">
-            <span
-              className={`rounded-full px-2 py-0.5 text-[11px] font-medium ${ROLE_TONE_CLASSES[user.role] ?? ""}`}
-            >
-              {tEnum(user.role)}
-            </span>
-            <LanguageToggle />
+          <div className="flex items-center justify-between">
             <button
               type="button"
               onClick={() => {
                 onNavigate?.();
                 void logout();
               }}
-              className="flex items-center gap-1.5 rounded-lg px-2 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:bg-red-500/10 hover:text-red-600 dark:hover:text-red-400"
+              aria-label={t("common.signOut")}
+              title={t("common.signOut")}
+              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-red-500/10 hover:text-red-600 dark:hover:text-red-400"
             >
-              <LogOut className="size-3.5" aria-hidden />
-              {t("common.signOut")}
+              <LogOut className="size-4 rtl:rotate-180" aria-hidden />
             </button>
+            <div className="flex min-w-0 items-center gap-3">
+              <div className="min-w-0 text-end">
+                <p className="truncate text-sm font-medium text-card-foreground">
+                  {user.username}
+                </p>
+                <p className="truncate text-xs text-muted-foreground">{scopeLabel}</p>
+              </div>
+              <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-primary/10 text-sm font-semibold text-primary">
+                {user.username.slice(0, 2).toUpperCase()}
+              </span>
+            </div>
           </div>
         </div>
       ) : null}

@@ -28,8 +28,25 @@ export interface RecurringEvaluation extends BillingCycle {
 }
 
 /**
- * Walks billing windows from enrollment forward and evaluates the first
- * window without a payment:
+ * The billing anchor is a property of the GROUP, not of any individual
+ * enrollment: a single `anchorDay` (1-28) defines the day-of-month every
+ * period starts on for every student in the group, so all students share the
+ * same due dates regardless of when they joined.
+ *
+ * The first period a student owes is the group period that is current on
+ * their enrollment date (the anchor day falling in the month they joined).
+ * Because the anchor is a day-of-month, a student who joins on/after that day
+ * enters the running period at its anchor day, and a same-day payment settles
+ * that first window. All subsequent periods stay aligned to the group anchor.
+ */
+export function firstPeriodStart(enrollmentDate: Date, anchorDay: number): Date {
+  const clamped = Math.min(anchorDay, MAX_ANCHOR_DAY);
+  return new Date(Date.UTC(enrollmentDate.getUTCFullYear(), enrollmentDate.getUTCMonth(), clamped));
+}
+
+/**
+ * Walks billing windows from the student's first period forward and evaluates
+ * the first window without a payment:
  *  - unpaid window already ended          -> OVERDUE (days late since its end)
  *  - unpaid window still running          -> PENDING
  *  - every window up to now paid          -> PAID
@@ -43,13 +60,11 @@ export interface RecurringEvaluation extends BillingCycle {
 export function evaluateRecurring(
   enrollmentDate: Date,
   periodMonths: number,
+  anchorDay: number,
   paymentDates: readonly Date[],
   now: Date,
 ): RecurringEvaluation {
-  const anchorDay = Math.min(enrollmentDate.getUTCDate(), MAX_ANCHOR_DAY);
-  const firstStart = new Date(
-    Date.UTC(enrollmentDate.getUTCFullYear(), enrollmentDate.getUTCMonth(), anchorDay),
-  );
+  const firstStart = firstPeriodStart(enrollmentDate, anchorDay);
   let periodStart = firstStart;
 
   let guard = 0;
@@ -84,22 +99,17 @@ export function evaluateRecurring(
 }
 
 /**
- * The billing anchor is the day-of-month the student enrolled on (e.g. the
- * 20th): each period runs from that day to the same day of the next period
- * ("if the group starts at day 20 he should pay before the 20th of next
- * month"). Clamped to 28 so short months cannot shift the schedule.
- * The current period is the one whose due date has not passed yet (the due
- * date itself is the last day to pay).
+ * The billing anchor is a property of the GROUP (not the enrollment), so the
+ * current period is the one aligned to the group's anchor day whose due date
+ * has not passed yet (the due date itself is the last day to pay).
  */
 export function computeBillingCycle(
   enrollmentDate: Date,
   periodMonths: number,
+  anchorDay: number,
   today: Date,
 ): BillingCycle {
-  const anchorDay = Math.min(enrollmentDate.getUTCDate(), MAX_ANCHOR_DAY);
-  let periodStart = new Date(
-    Date.UTC(enrollmentDate.getUTCFullYear(), enrollmentDate.getUTCMonth(), anchorDay),
-  );
+  let periodStart = firstPeriodStart(enrollmentDate, anchorDay);
   let dueDate = addMonthsClamped(periodStart, periodMonths);
 
   let guard = 0;

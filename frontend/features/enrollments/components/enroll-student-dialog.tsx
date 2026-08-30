@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { FormDialog } from "@/components/forms/form-dialog";
 import { SearchableSelect } from "@/components/forms/searchable-select";
 import { useToast } from "@/components/feedback/toast";
@@ -31,6 +31,13 @@ export function EnrollStudentDialog({
   const [rootError, setRootError] = useState<string | null>(null);
 
   const students = useStudentsQuery({ pageSize: 100 });
+
+  useEffect(() => {
+    if (open) {
+      void students.refetch();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open]);
 
   const options = useMemo(
     () =>

@@ -15,6 +15,10 @@ import {
 } from "@/features/payments/schema";
 import { PAYMENT_METHODS } from "@/features/payments/types";
 import { useCreatePayment } from "@/features/payments/hooks";
+import {
+  currentBillingPeriod,
+  toDateInputValue,
+} from "@/features/payments/billing-cycle";
 import { useEnrollmentsQuery } from "@/features/enrollments/hooks";
 import { useGroupsQuery } from "@/features/groups/hooks";
 import { ApiError } from "@/lib/api-client";
@@ -64,6 +68,15 @@ export function RecordPaymentDialog({
     if (enrollment) {
       setValue("enrollmentId", enrollmentId, { shouldValidate: true });
       setValue("amount", String(Number(enrollment.group.fee)), { shouldValidate: false });
+      const period = currentBillingPeriod(
+        enrollment.enrollmentDate,
+        enrollment.group.paymentType,
+        enrollment.group.billingAnchorDay,
+        new Date(),
+      );
+      if (period) {
+        setValue("paymentDate", toDateInputValue(period.periodStart), { shouldValidate: false });
+      }
     }
   }
 

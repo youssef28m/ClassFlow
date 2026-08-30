@@ -29,7 +29,9 @@ export class DashboardService {
           id: true,
           enrollmentDate: true,
           student: { select: { id: true, fullName: true } },
-          group: { select: { id: true, name: true, fee: true, paymentType: true } },
+          group: {
+            select: { id: true, name: true, fee: true, paymentType: true, billingAnchorDay: true },
+          },
         },
       }),
       prisma.payment.findMany({
@@ -52,6 +54,7 @@ export class DashboardService {
       const evaluation = evaluateRecurring(
         new Date(enrollment.enrollmentDate),
         periodMonths,
+        enrollment.group.billingAnchorDay,
         paymentDatesByEnrollment.get(enrollment.id) ?? [],
         now,
       );
@@ -155,7 +158,15 @@ export class DashboardService {
               id: true,
               enrollmentDate: true,
               student: { select: { id: true, fullName: true } },
-              group: { select: { id: true, name: true, fee: true, paymentType: true } },
+              group: {
+                select: {
+                  id: true,
+                  name: true,
+                  fee: true,
+                  paymentType: true,
+                  billingAnchorDay: true,
+                },
+              },
             },
           })
         : Promise.resolve([]),
@@ -203,6 +214,7 @@ export class DashboardService {
         const evaluation = evaluateRecurring(
           new Date(enrollment.enrollmentDate),
           periodMonths,
+          enrollment.group.billingAnchorDay,
           paymentDatesByEnrollment.get(enrollment.id) ?? [],
           now,
         );

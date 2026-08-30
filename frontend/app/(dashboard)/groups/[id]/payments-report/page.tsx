@@ -16,8 +16,12 @@ import { PageHeader } from "@/components/layout/page-header";
 import { DataTable, type DataTableColumn } from "@/components/tables/data-table";
 import { FilterBar } from "@/components/tables/filter-bar";
 import { StatusBadge } from "@/components/tables/status-badge";
-import { useGroupPaymentReportQuery } from "@/features/groups/hooks";
-import type { GroupPaymentReportStudent } from "@/features/groups/types";
+import { useGroupPaymentReportQuery, useGroupQuery } from "@/features/groups/hooks";
+import type { Group, GroupPaymentReportStudent } from "@/features/groups/types";
+import {
+  currentBillingPeriod,
+  toDateInputValue,
+} from "@/features/payments/billing-cycle";
 import { formatDate } from "@/lib/formatters";
 import { useI18n } from "@/lib/i18n/provider";
 
@@ -28,24 +32,41 @@ function toISODate(date: Date): string {
   return `${year}-${month}-${day}`;
 }
 
-function monthStartISO(): string {
-  const now = new Date();
-  return toISODate(new Date(now.getFullYear(), now.getMonth(), 1));
+function currentPeriodRange(group: Group): { from: string; to: string } | null {
+  const today = new Date();
+  const refDate = new Date(Date.UTC(today.getFullYear(), today.getMonth(), 1));
+  const period = currentBillingPeriod(
+    refDate,
+    group.paymentType,
+    group.billingAnchorDay,
+    today,
+  );
+  if (!period) return null;
+  const to =
+    period.dueDate.getTime() < today.getTime()
+      ? toDateInputValue(period.dueDate)
+      : toDateInputValue(today);
+  return { from: toDateInputValue(period.periodStart), to };
 }
 
-export default function GroupPaymentsReportPage() {
-  const params = useParams<{ id: string }>();
-  const groupId = params?.id ? Number(params.id) : NaN;
-  const validGroupId = Number.isInteger(groupId) && groupId > 0;
+interface GroupReportPanelProps {
+  groupId: number;
+  group: Group;
+}
 
+function GroupReportPanel({ groupId, group }: GroupReportPanelProps) {
   const { t } = useI18n();
-  const [from, setFrom] = useState(monthStartISO);
-  const [to, setTo] = useState(() => toISODate(new Date()));
-  const [appliedFrom, setAppliedFrom] = useState(monthStartISO);
-  const [appliedTo, setAppliedTo] = useState(() => toISODate(new Date()));
+  const defaultRange = currentPeriodRange(group) ?? {
+    from: toISODate(new Date()),
+    to: toISODate(new Date()),
+  };
+  const [from, setFrom] = useState(defaultRange.from);
+  const [to, setTo] = useState(defaultRange.to);
+  const [appliedFrom, setAppliedFrom] = useState(defaultRange.from);
+  const [appliedTo, setAppliedTo] = useState(defaultRange.to);
   const [rangeError, setRangeError] = useState(false);
 
-  const query = useGroupPaymentReportQuery(validGroupId ? groupId : undefined, {
+  const query = useGroupPaymentReportQuery(groupId, {
     from: appliedFrom || undefined,
     to: appliedTo || undefined,
   });
@@ -125,14 +146,6 @@ export default function GroupPaymentsReportPage() {
 
   return (
     <>
-      <Link
-        href={`/groups/${groupId}`}
-        className="mb-3 inline-flex items-center gap-1.5 text-sm text-muted-foreground transition-colors hover:text-card-foreground"
-      >
-        <ArrowLeft className="size-4 rtl-flip" aria-hidden />
-        {t("groupReport.backToGroup")}
-      </Link>
-
       <PageHeader
         title={t("groupReport.title")}
         description={
@@ -245,6 +258,30 @@ export default function GroupPaymentsReportPage() {
         emptyTitle={query.data ? t("groupReport.noStudents") : t("groupReport.isEmpty")}
         emptyDescription={query.data ? undefined : t("groupReport.meta")}
       />
+    </>
+  );
+}
+
+export default function GroupPaymentsReportPage() {
+  const params = useParams<{ id: string }>();
+  const groupId = params?.id ? Number(params.id) : NaN;
+  const validGroupId = Number.isInteger(groupId) && groupId > 0;
+
+  const { t } = useI18n();
+  const groupQuery = useGroupQuery(validGroupId ? groupId : undefined);
+  const group = groupQuery.data;
+
+  return (
+    <>
+      <Link
+        href={`/groups/${groupId}`}
+        className="mb-3 inline-flex items-center gap-1.5 text-sm text-muted-foreground transition-colors hover:text-card-foreground"
+      >
+        <ArrowLeft className="size-4 rtl-flip" aria-hidden />
+        {t("groupReport.backToGroup")}
+      </Link>
+
+      {group ? <GroupReportPanel key={group.id} groupId={groupId} group={group} /> : null}
     </>
   );
 }

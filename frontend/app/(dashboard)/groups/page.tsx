@@ -134,6 +134,12 @@ export default function GroupsPage() {
       className: "hidden xl:table-cell",
     },
     {
+      key: "billingAnchorDay",
+      header: t("groups.columnBillingAnchorDay"),
+      className: "hidden 2xl:table-cell",
+      render: (group) => <span className="tabular-nums">{group.billingAnchorDay}</span>,
+    },
+    {
       key: "actions",
       header: "",
       className: "w-24 text-end",
