@@ -42,8 +42,8 @@ export function LoginForm() {
   const onSubmit = handleSubmit(async (values) => {
     setFormError(null);
     try {
-      await login(toLoginCredentials(values));
-      router.push("/dashboard");
+      const nextUser = await login(toLoginCredentials(values));
+      router.push(nextUser.role === "SUPERADMIN" ? "/admin" : "/dashboard");
     } catch (error) {
       if (error instanceof ApiError) {
         let hasFieldErrors = false;

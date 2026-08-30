@@ -20,6 +20,8 @@ interface SearchableSelectProps {
   loading?: boolean;
   disabled?: boolean;
   className?: string;
+  /** Fired (debounced) as the user types so parents can server-side search. */
+  onSearch?: (query: string) => void;
 }
 
 export function SearchableSelect({
@@ -32,6 +34,7 @@ export function SearchableSelect({
   loading = false,
   disabled = false,
   className,
+  onSearch,
 }: SearchableSelectProps) {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
@@ -53,6 +56,10 @@ export function SearchableSelect({
         (o.hint && o.hint.toLowerCase().includes(q)),
     );
   }, [options, debouncedQuery]);
+
+  useEffect(() => {
+    onSearch?.(debouncedQuery);
+  }, [debouncedQuery, onSearch]);
 
   const handleSelect = useCallback(
     (optionValue: string) => {

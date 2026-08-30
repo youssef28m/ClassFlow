@@ -1,5 +1,6 @@
 import {
   Banknote,
+  Building2,
   CalendarCheck,
   CalendarRange,
   ClipboardList,
@@ -14,6 +15,7 @@ import {
 } from "lucide-react";
 import type { TranslationKey } from "@/lib/i18n/dictionary";
 import type { Resource } from "@/lib/permissions";
+import type { AuthUser } from "@/types/auth";
 
 export interface NavItem {
   labelKey: TranslationKey;
@@ -23,7 +25,7 @@ export interface NavItem {
   action?: string;
 }
 
-export const NAV_ITEMS: NavItem[] = [
+export const CENTER_NAV_ITEMS: NavItem[] = [
   { labelKey: "nav.dashboard", href: "/dashboard", icon: LayoutDashboard },
   {
     labelKey: "nav.students",
@@ -96,6 +98,26 @@ export const NAV_ITEMS: NavItem[] = [
     action: "read",
   },
 ];
+
+/** Sidebar shown to a SUPERADMIN acting globally (no center scope selected). */
+export const ADMIN_NAV_ITEMS: NavItem[] = [
+  { labelKey: "nav.adminOverview", href: "/admin", icon: LayoutDashboard },
+  { labelKey: "nav.adminCenters", href: "/admin/centers", icon: Building2 },
+  { labelKey: "nav.adminUsers", href: "/admin/users", icon: ShieldCheck },
+];
+
+/**
+ * Choose the sidebar: SUPERADMINs without an active center scope get the
+ * admin navigation; everyone else (including SUPERADMINs acting inside a
+ * center) gets the center navigation.
+ */
+export function navItemsFor(user: AuthUser | null, centerScopeId: number | null): NavItem[] {
+  const isSuperadmin = user?.role === "SUPERADMIN";
+  if (isSuperadmin && centerScopeId === null) {
+    return ADMIN_NAV_ITEMS;
+  }
+  return CENTER_NAV_ITEMS;
+}
 
 export const ROLE_TONE_CLASSES: Record<string, string> = {
   SUPERADMIN: "bg-violet-500/10 text-violet-600 dark:text-violet-400",

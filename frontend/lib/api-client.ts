@@ -97,6 +97,25 @@ function createApiError(status: number, payload: unknown): ApiError {
 
 let accessToken: string | null = null;
 let refreshInFlight: Promise<boolean> | null = null;
+let activeCenterScope: number | null = null;
+
+/**
+ * Center scope for SUPERADMINs. When set, every API request carries
+ * `?centerId=` so the backend scopes data to one center. Callers may still
+ * pass an explicit `centerId` param, which wins over the injected scope.
+ * Never applied to `/auth/*` endpoints (login/refresh are not center-scoped).
+ */
+export function setActiveCenterScope(centerId: number | null): void {
+  activeCenterScope = centerId;
+}
+
+function applyCenterScope(path: string, params?: QueryParams): QueryParams | undefined {
+  if (path.startsWith("/auth/")) return params;
+  if (activeCenterScope === null || activeCenterScope === undefined) return params;
+  const explicit = params?.centerId;
+  if (explicit !== undefined && explicit !== null && explicit !== "") return params;
+  return { ...params, centerId: activeCenterScope };
+}
 
 type SessionListener = (session: AuthSession | null) => void;
 const sessionListeners = new Set<SessionListener>();
@@ -181,7 +200,7 @@ export const apiClient = {
 
     let res: Response;
     try {
-      res = await fetch(buildUrl(API_URL, path, options.params), {
+      res = await fetch(buildUrl(API_URL, path, applyCenterScope(path, options.params)), {
         method: options.method ?? "GET",
         headers,
         body: options.body !== undefined ? JSON.stringify(options.body) : undefined,

@@ -2,6 +2,8 @@ services:
   db:
     image: postgres:16-alpine
     restart: unless-stopped
+    ports:
+      - "${PG_PORT:-5432}:5432"
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-classflow}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-classflow}

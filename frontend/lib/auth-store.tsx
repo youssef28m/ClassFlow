@@ -10,6 +10,7 @@ import {
   type ReactNode,
 } from "react";
 import { apiClient, authApi } from "@/lib/api-client";
+import { resetCenterScope } from "@/lib/center-scope";
 import type {
   AuthSession,
   AuthUser,
@@ -37,6 +38,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [status, setStatus] = useState<AuthStatus>("loading");
 
   const clearSession = useCallback(() => {
+    resetCenterScope();
     apiClient.setAuthToken(null);
     setAccessToken(null);
     setUser(null);

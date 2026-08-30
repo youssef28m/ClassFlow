@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowLeft, Check, FileBarChart2, Pencil, UserPlus, Users, X } from "lucide-react";
+import { ArrowLeft, Check, FileBarChart2, Pencil, UserPlus, X } from "lucide-react";
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import { useParams } from "next/navigation";
@@ -178,13 +178,6 @@ export default function GroupDetailPage() {
                 </p>
               </div>
               <div className="flex shrink-0 items-center gap-2">
-                <Link
-                  href={`/groups/${groupId}/students`}
-                  className="flex h-9 items-center gap-2 rounded-lg border border-border px-3 text-sm font-medium text-card-foreground transition-colors hover:bg-muted"
-                >
-                  <Users className="size-4" aria-hidden />
-                  {t("groupRoster.openButton")}
-                </Link>
                 <PermissionGate resource="students" action="create">
                   <button
                     type="button"
@@ -205,7 +198,8 @@ export default function GroupDetailPage() {
                 {t("groupDetail.noEnrollments")}
               </p>
             ) : (
-              <ul className="mt-4 max-h-96 divide-y divide-border overflow-y-auto rounded-xl border border-border scroll-slim">
+              <>
+                <ul className="mt-4 divide-y divide-border rounded-xl border border-border">
                 {roster.map((enrollment) => (
                   <li
                     key={enrollment.id}
@@ -293,6 +287,10 @@ export default function GroupDetailPage() {
                   </li>
                 ))}
               </ul>
+              <p className="mt-2 text-xs text-muted-foreground">
+                  {t("groupDetail.rosterCount", { count: roster.length })}
+                </p>
+              </>
             )}
           </section>
 

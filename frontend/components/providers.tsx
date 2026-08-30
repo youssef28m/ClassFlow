@@ -4,6 +4,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { useState } from "react";
 import { ToastProvider } from "@/components/feedback/toast";
 import { AuthProvider } from "@/lib/auth-store";
+import { CenterScopeProvider } from "@/lib/center-scope";
 import { LanguageProvider } from "@/lib/i18n/provider";
 
 export function Providers({ children }: { children: React.ReactNode }) {
@@ -22,11 +23,13 @@ export function Providers({ children }: { children: React.ReactNode }) {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <LanguageProvider>
-        <AuthProvider>
-          <ToastProvider>{children}</ToastProvider>
-        </AuthProvider>
-      </LanguageProvider>
+      <CenterScopeProvider>
+        <LanguageProvider>
+          <AuthProvider>
+            <ToastProvider>{children}</ToastProvider>
+          </AuthProvider>
+        </LanguageProvider>
+      </CenterScopeProvider>
     </QueryClientProvider>
   );
 }

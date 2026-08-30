@@ -57,6 +57,7 @@ export class UserRepository {
     const [items, total] = await prisma.$transaction([
       prisma.user.findMany({
         where,
+        include: { center: { select: { name: true } } },
         orderBy: { createdAt: 'desc' },
         skip: params.skip,
         take: params.take,

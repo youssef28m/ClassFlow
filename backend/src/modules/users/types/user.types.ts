@@ -5,6 +5,7 @@ export interface UserDTO {
   username: string;
   role: Role;
   centerId: number | null;
+  centerName: string | null;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -21,12 +22,15 @@ export interface PaginatedResponse<T> {
   meta: PaginationMeta;
 }
 
-export function toUserDTO(user: User): UserDTO {
+export function toUserDTO(
+  user: User & { center?: { name: string } | null },
+): UserDTO {
   return {
     id: user.id,
     username: user.username,
     role: user.role,
     centerId: user.centerId,
+    centerName: user.center?.name ?? null,
     createdAt: user.createdAt,
     updatedAt: user.updatedAt,
   };

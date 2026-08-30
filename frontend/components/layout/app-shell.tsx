@@ -1,11 +1,16 @@
 "use client";
 
-import { CalendarDays, Languages, LogOut, Menu, X } from "lucide-react";
-import { usePathname } from "next/navigation";
+import { ArrowLeft, CalendarDays, Languages, LogOut, Menu, X } from "lucide-react";
+import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState, type ReactNode } from "react";
-import { ROLE_TONE_CLASSES, NAV_ITEMS } from "@/components/navigation/nav-config";
+import {
+  ROLE_TONE_CLASSES,
+  navItemsFor,
+  type NavItem,
+} from "@/components/navigation/nav-config";
 import { hasPermission, resolveScope } from "@/lib/permissions";
 import { useAuth } from "@/lib/auth-store";
+import { useActingCenter, useCenterScope } from "@/lib/center-scope";
 import { useI18n } from "@/lib/i18n/provider";
 import type { Locale } from "@/lib/i18n/dictionary";
 
@@ -27,15 +32,45 @@ function LanguageToggle() {
 
 function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
   const pathname = usePathname();
+  const router = useRouter();
   const { user, logout } = useAuth();
   const { t, tEnum } = useI18n();
+  const { centerId, setCenterId } = useCenterScope();
+  const actingCenter = useActingCenter();
 
-  const visibleItems = NAV_ITEMS.filter(
+  const isSuperadmin = user?.role === "SUPERADMIN";
+  const scoped = isSuperadmin && centerId !== null;
+
+  const visibleItems = navItemsFor(user, centerId).filter(
     (item) =>
       !item.resource ||
       !item.action ||
       hasPermission(user, item.resource, item.action),
   );
+
+  const activeItem = visibleItems.reduce<NavItem | null>((best, item) => {
+    const matches =
+      pathname === item.href || pathname.startsWith(item.href + "/");
+    return matches && (!best || item.href.length > best.href.length)
+      ? item
+      : best;
+  }, null);
+
+  const exitCenter = () => {
+    setCenterId(null);
+    onNavigate?.();
+    void router.push("/admin");
+  };
+
+  const scopeLabel = !user
+    ? ""
+    : scoped
+      ? (actingCenter?.name ?? t("dashboard.center", { id: centerId ?? 0 }))
+      : resolveScope(user) === "all"
+        ? t("dashboard.allCenters")
+        : user.centerId != null
+          ? t("dashboard.center", { id: user.centerId })
+          : t("dashboard.noCenter");
 
   return (
     <div className="flex h-full flex-col">
@@ -48,12 +83,9 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
         </span>
       </div>
 
-      <nav aria-label={t("nav.mainNavigation")} className="flex-1 space-y-1 overflow-y-auto p-3">
+      <nav aria-label={t("nav.mainNavigation")} className="scroll-slim flex-1 space-y-1 overflow-y-auto p-3">
         {visibleItems.map((item) => {
-          const active =
-            item.href === "/dashboard"
-              ? pathname === "/dashboard"
-              : pathname.startsWith(item.href);
+          const active = item === activeItem;
           return (
             <a
               key={item.href}
@@ -73,6 +105,22 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
         })}
       </nav>
 
+      {scoped ? (
+        <div className="border-t border-border p-3">
+          <button
+            type="button"
+            onClick={(event) => {
+              event.preventDefault();
+              exitCenter();
+            }}
+            className="flex w-full items-center gap-3 rounded-lg bg-primary/10 px-3 py-2.5 text-sm font-medium text-primary transition-colors hover:bg-primary/20"
+          >
+            <ArrowLeft className="size-4 shrink-0 rtl:rotate-180" aria-hidden />
+            {t("nav.returnToAdmin")}
+          </button>
+        </div>
+      ) : null}
+
       {user ? (
         <div className="border-t border-border p-3">
           <div className="flex items-center gap-3 rounded-lg px-2 py-2">
@@ -83,13 +131,7 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
               <p className="truncate text-sm font-medium text-card-foreground">
                 {user.username}
               </p>
-              <p className="text-xs text-muted-foreground">
-                {resolveScope(user) === "all"
-                  ? t("dashboard.allCenters")
-                  : user.centerId != null
-                    ? t("dashboard.center", { id: user.centerId })
-                    : t("dashboard.noCenter")}
-              </p>
+              <p className="truncate text-xs text-muted-foreground">{scopeLabel}</p>
             </div>
           </div>
           <div className="mt-1 flex items-center justify-between gap-2 px-2 pb-1">
