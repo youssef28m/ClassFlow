@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import { FormDialog } from "@/components/forms/form-dialog";
 import { SearchableSelect } from "@/components/forms/searchable-select";
 import { useToast } from "@/components/feedback/toast";
@@ -30,14 +30,12 @@ export function EnrollStudentDialog({
   const [selectedId, setSelectedId] = useState("");
   const [rootError, setRootError] = useState<string | null>(null);
 
-  const students = useStudentsQuery({ pageSize: 100 });
-
-  useEffect(() => {
-    if (open) {
-      void students.refetch();
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open]);
+  const [search, setSearch] = useState("");
+  const selectingRef = useRef(false);
+  const students = useStudentsQuery({
+    pageSize: 50,
+    ...(search ? { search } : {}),
+  });
 
   const options = useMemo(
     () =>
@@ -50,6 +48,20 @@ export function EnrollStudentDialog({
         })),
     [students.data, enrolledStudentIds],
   );
+
+  const handleSearch = useCallback((query: string) => {
+    if (!selectingRef.current) {
+      setSearch(query);
+    }
+  }, []);
+
+  const handleChange = useCallback((value: string) => {
+    selectingRef.current = true;
+    setSelectedId(value);
+    requestAnimationFrame(() => {
+      selectingRef.current = false;
+    });
+  }, []);
 
   const selected = useMemo(
     () => options.find((option) => option.value === selectedId),
@@ -98,19 +110,22 @@ export function EnrollStudentDialog({
 
         <SearchableSelect
           value={selectedId}
-          onChange={setSelectedId}
+          onChange={handleChange}
           placeholder={t("enrollDialog.searchPlaceholder")}
           searchPlaceholder={t("enrollDialog.searchPlaceholder")}
           emptyText={t("enrollDialog.allEnrolled")}
           loading={students.isLoading}
           className="w-full"
           options={options}
+          onSearch={handleSearch}
         />
 
         <p className="min-h-5 text-xs text-muted-foreground" aria-live="polite">
           {selected
             ? t("enrollDialog.selected", { name: selected.label })
-            : t("enrollDialog.availableCount", { count: options.length })}
+            : t("enrollDialog.availableCount", {
+                count: students.data?.meta.total ?? options.length,
+              })}
         </p>
 
         <div className="flex justify-end gap-2 pt-2">

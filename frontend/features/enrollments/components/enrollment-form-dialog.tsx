@@ -2,7 +2,7 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Loader2 } from "lucide-react";
-import { useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 import { Field, inputClassName } from "@/components/forms/field";
 import { FormDialog } from "@/components/forms/form-dialog";
@@ -21,16 +21,40 @@ export function EnrollmentFormDialog({ open, onClose }: EnrollmentFormDialogProp
   const toast = useToast();
   const createEnrollment = useCreateEnrollment();
   const { t } = useI18n();
+  const [studentSearch, setStudentSearch] = useState("");
+  const [groupSearch, setGroupSearch] = useState("");
+  const studentSelectingRef = useRef(false);
+  const groupSelectingRef = useRef(false);
   const students = useStudentsQuery({
     pageSize: 100,
     status: "ACTIVE",
+    ...(studentSearch ? { search: studentSearch } : {}),
   });
-  const groups = useGroupsQuery({ pageSize: 100 });
+  const groups = useGroupsQuery({
+    pageSize: 100,
+    ...(groupSearch ? { search: groupSearch } : {}),
+  });
   const [rootError, setRootError] = useState<string | null>(null);
+  const handleStudentSearch = useCallback((q: string) => {
+    if (!studentSelectingRef.current) setStudentSearch(q);
+  }, []);
+  const handleGroupSearch = useCallback((q: string) => {
+    if (!groupSelectingRef.current) setGroupSearch(q);
+  }, []);
   const { register, handleSubmit, setError, setValue, watch, formState: { errors } } = useForm<EnrollmentFormValues>({
     resolver: zodResolver(enrollmentFormSchema),
     defaultValues: { studentId: "", groupId: "", enrollmentDate: new Date().toISOString().slice(0, 10) },
   });
+  const handleStudentChange = useCallback((val: string) => {
+    studentSelectingRef.current = true;
+    setValue("studentId", val, { shouldValidate: true });
+    requestAnimationFrame(() => { studentSelectingRef.current = false; });
+  }, [setValue]);
+  const handleGroupChange = useCallback((val: string) => {
+    groupSelectingRef.current = true;
+    setValue("groupId", val, { shouldValidate: true });
+    requestAnimationFrame(() => { groupSelectingRef.current = false; });
+  }, [setValue]);
   const studentIdValue = watch("studentId");
   const groupIdValue = watch("groupId");
   const onSubmit = handleSubmit(async (values) => {
@@ -55,7 +79,7 @@ export function EnrollmentFormDialog({ open, onClose }: EnrollmentFormDialogProp
         <input type="hidden" {...register("studentId")} />
         <SearchableSelect
           value={studentIdValue}
-          onChange={(val) => setValue("studentId", val, { shouldValidate: true })}
+          onChange={handleStudentChange}
           placeholder={students.isLoading ? t("common.loading") : t("enrollments.namePlaceholder")}
           searchPlaceholder={t("groups.searchPlaceholder")}
           emptyText={t("enrollments.noActiveStudents")}
@@ -66,13 +90,14 @@ export function EnrollmentFormDialog({ open, onClose }: EnrollmentFormDialogProp
             label: s.fullName,
             hint: [s.grade, s.phone].filter(Boolean).join(" · "),
           }))}
+          onSearch={handleStudentSearch}
         />
       </Field>
       <Field label="Group" htmlFor="enrollment-group" error={errors.groupId?.message}>
         <input type="hidden" {...register("groupId")} />
         <SearchableSelect
           value={groupIdValue}
-          onChange={(val) => setValue("groupId", val, { shouldValidate: true })}
+          onChange={handleGroupChange}
           placeholder={groups.isLoading ? t("common.loading") : t("groups.selectTeacherPlaceholder")}
           searchPlaceholder={t("groups.searchPlaceholder")}
           emptyText={t("groups.emptyFiltered")}
@@ -83,6 +108,7 @@ export function EnrollmentFormDialog({ open, onClose }: EnrollmentFormDialogProp
             label: g.name,
             hint: g.subject,
           }))}
+          onSearch={handleGroupSearch}
         />
       </Field>
       <Field label="Enrollment date" htmlFor="enrollment-date" error={errors.enrollmentDate?.message}><input id="enrollment-date" type="date" className={inputClassName} {...register("enrollmentDate")} /></Field>

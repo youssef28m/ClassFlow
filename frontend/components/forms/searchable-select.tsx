@@ -41,6 +41,7 @@ export function SearchableSelect({
   const debouncedQuery = useDebouncedValue(query.trim());
   const rootRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const suppressSearchRef = useRef(false);
 
   const selected = useMemo(
     () => options.find((o) => String(o.value) === value),
@@ -58,6 +59,10 @@ export function SearchableSelect({
   }, [options, debouncedQuery]);
 
   useEffect(() => {
+    if (suppressSearchRef.current) {
+      suppressSearchRef.current = false;
+      return;
+    }
     onSearch?.(debouncedQuery);
   }, [debouncedQuery, onSearch]);
 
@@ -66,6 +71,7 @@ export function SearchableSelect({
       onChange(optionValue === value ? "" : optionValue);
       setOpen(false);
       setQuery("");
+      suppressSearchRef.current = true;
     },
     [onChange, value],
   );

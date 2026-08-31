@@ -2,7 +2,7 @@
 
 import { ClipboardCheck } from "lucide-react";
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import { PermissionGate } from "@/components/feedback/permission-gate";
 import { PageHeader } from "@/components/layout/page-header";
 import { FilterBar } from "@/components/tables/filter-bar";
@@ -27,10 +27,18 @@ const PAGE_SIZE = 10;
 export default function AttendancePage() {
   const { t, tEnum } = useI18n();
   const [groupFilter, setGroupFilter] = useState<"ALL" | number>("ALL");
+  const [groupSearch, setGroupSearch] = useState("");
+  const groupSelectingRef = useRef(false);
   const [statusFilter, setStatusFilter] = useState<"ALL" | "UPCOMING" | "COMPLETED">("ALL");
   const [page, setPage] = useState(1);
+  const handleGroupSearch = useCallback((q: string) => {
+    if (!groupSelectingRef.current) setGroupSearch(q);
+  }, []);
 
-  const groups = useGroupsQuery({ pageSize: 100 });
+  const groups = useGroupsQuery({
+    pageSize: 100,
+    ...(groupSearch ? { search: groupSearch } : {}),
+  });
   const schedules = useSchedulesQuery({ groupId: -1, pageSize: 100 });
 
   const filters = useMemo(
@@ -142,11 +150,13 @@ export default function AttendancePage() {
         <FilterBar>
           <SearchableSelect
             value={groupFilter === "ALL" ? "" : String(groupFilter)}
-            onChange={(val) =>
+            onChange={(val) => {
+              groupSelectingRef.current = true;
               updateFilters(() => {
                 setGroupFilter(val === "" ? "ALL" : Number(val));
-              })
-            }
+              });
+              requestAnimationFrame(() => { groupSelectingRef.current = false; });
+            }}
             placeholder={t("schedules.allGroups")}
             searchPlaceholder={t("groups.searchPlaceholder")}
             emptyText={t("groups.emptyFiltered")}
@@ -157,6 +167,7 @@ export default function AttendancePage() {
               label: g.name,
               hint: g.subject,
             }))}
+            onSearch={handleGroupSearch}
           />
           <select
             id="attendance-status-filter"

@@ -10,6 +10,7 @@ export interface EnrollData {
 }
 
 export interface EnrollmentFindManyParams {
+  search?: string;
   studentId?: number;
   groupId?: number;
   active?: boolean;
@@ -121,6 +122,13 @@ export class EnrollmentRepository {
 
     if (params.active !== undefined) {
       where.active = params.active;
+    }
+
+    if (params.search) {
+      where.student = {
+        ...(where.student as Prisma.StudentWhereInput | undefined),
+        fullName: { contains: params.search, mode: 'insensitive' },
+      };
     }
 
     const [items, total] = await prisma.$transaction([

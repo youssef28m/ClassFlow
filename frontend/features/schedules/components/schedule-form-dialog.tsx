@@ -2,7 +2,7 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Loader2 } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { Field, inputClassName } from "@/components/forms/field";
 import { FormDialog } from "@/components/forms/form-dialog";
@@ -23,13 +23,26 @@ function defaultValues(): ScheduleFormValues { return { groupId: "", dayOfWeek: 
 
 export function ScheduleFormDialog({ open, onClose, schedule }: ScheduleFormDialogProps) {
   const toast = useToast();
-  const groups = useGroupsQuery({ pageSize: 100 });
+  const [groupSearch, setGroupSearch] = useState("");
+  const groupSelectingRef = useRef(false);
+  const groups = useGroupsQuery({
+    pageSize: 100,
+    ...(groupSearch ? { search: groupSearch } : {}),
+  });
   const { t, tEnum } = useI18n();
   const createSchedule = useCreateSchedule();
   const updateSchedule = useUpdateSchedule();
   const [rootError, setRootError] = useState<string | null>(null);
+  const handleGroupSearch = useCallback((q: string) => {
+    if (!groupSelectingRef.current) setGroupSearch(q);
+  }, []);
   const initialValues = useMemo(() => schedule ? toScheduleFormValues(schedule) : defaultValues(), [schedule]);
   const { register, control, watch, handleSubmit, setError, formState: { errors } } = useForm<ScheduleFormValues>({ resolver: zodResolver(scheduleFormSchema), defaultValues: initialValues });
+  const handleGroupChange = useCallback((val: string) => {
+    groupSelectingRef.current = true;
+    register("groupId").onChange({ target: { value: val, name: "groupId" } });
+    requestAnimationFrame(() => { groupSelectingRef.current = false; });
+  }, [register]);
   const groupIdValue = watch("groupId");
   const isSaving = createSchedule.isPending || updateSchedule.isPending;
   const onSubmit = handleSubmit(async (values) => {
@@ -70,7 +83,7 @@ export function ScheduleFormDialog({ open, onClose, schedule }: ScheduleFormDial
         <input type="hidden" {...register("groupId")} />
         <SearchableSelect
           value={groupIdValue}
-          onChange={(val) => { register("groupId").onChange({ target: { value: val, name: "groupId" } }); }}
+          onChange={handleGroupChange}
           placeholder={groups.isLoading ? t("common.loading") : t("schedules.selectGroupPlaceholder")}
           searchPlaceholder={t("groups.searchPlaceholder")}
           emptyText={t("groups.emptyFiltered")}
@@ -82,6 +95,7 @@ export function ScheduleFormDialog({ open, onClose, schedule }: ScheduleFormDial
             label: g.name,
             hint: g.subject,
           }))}
+          onSearch={handleGroupSearch}
         />
       </Field>
       <Field label={t("schedules.day")} htmlFor="schedule-day" error={errors.dayOfWeek?.message}><select id="schedule-day" className={inputClassName} {...register("dayOfWeek")}>{DAYS_OF_WEEK.map((day) => <option key={day} value={day}>{tEnum(day)}</option>)}</select></Field>

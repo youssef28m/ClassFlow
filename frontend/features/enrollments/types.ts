@@ -15,4 +15,4 @@ export interface Enrollment {
 }
 
 export interface EnrollmentListResponse { items: Enrollment[]; meta: PaginationMeta; }
-export interface EnrollmentFilters { page?: number; pageSize?: number; studentId?: number; groupId?: number; active?: boolean; }
+export interface EnrollmentFilters { page?: number; pageSize?: number; search?: string; studentId?: number; groupId?: number; active?: boolean; }

@@ -139,8 +139,9 @@ export class EnrollmentService {
     query: ListEnrollmentsQuery,
     centerId: number | null,
   ): Promise<PaginatedResponse<EnrollmentDTO>> {
-    const { page, pageSize, studentId, groupId, active } = query;
+    const { page, pageSize, search, studentId, groupId, active } = query;
     const { items, total } = await this.repository.findMany({
+      search,
       studentId,
       groupId,
       active,

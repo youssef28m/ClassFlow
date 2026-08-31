@@ -2,7 +2,7 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Loader2 } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 import { Field, inputClassName } from "@/components/forms/field";
 import { FormDialog } from "@/components/forms/form-dialog";
@@ -47,7 +47,15 @@ export function GroupFormDialog({ open, onClose, group }: GroupFormDialogProps) 
   const createGroup = useCreateGroup();
   const updateGroup = useUpdateGroup();
   const [rootError, setRootError] = useState<string | null>(null);
-  const teachers = useTeachersQuery({ pageSize: 100 });
+  const [teacherSearch, setTeacherSearch] = useState("");
+  const teacherSelectingRef = useRef(false);
+  const teachers = useTeachersQuery({
+    pageSize: 100,
+    ...(teacherSearch ? { search: teacherSearch } : {}),
+  });
+  const handleTeacherSearch = useCallback((q: string) => {
+    if (!teacherSelectingRef.current) setTeacherSearch(q);
+  }, []);
 
   const initialValues = useMemo(
     () => (group ? toGroupFormValues(group) : defaultValues()),
@@ -65,6 +73,12 @@ export function GroupFormDialog({ open, onClose, group }: GroupFormDialogProps) 
     resolver: zodResolver(groupFormSchema),
     defaultValues: initialValues,
   });
+
+  const handleTeacherChange = useCallback((val: string) => {
+    teacherSelectingRef.current = true;
+    setValue("teacherId", val, { shouldValidate: true });
+    requestAnimationFrame(() => { teacherSelectingRef.current = false; });
+  }, [setValue]);
 
   const onSubmit = handleSubmit(async (values) => {
     setRootError(null);
@@ -124,7 +138,7 @@ export function GroupFormDialog({ open, onClose, group }: GroupFormDialogProps) 
           <input type="hidden" {...register("teacherId")} />
           <SearchableSelect
             value={watch("teacherId")}
-            onChange={(val) => setValue("teacherId", val, { shouldValidate: true })}
+            onChange={handleTeacherChange}
             placeholder={
               teachers.isLoading
                 ? t("common.loading")
@@ -139,6 +153,7 @@ export function GroupFormDialog({ open, onClose, group }: GroupFormDialogProps) 
               label: teacher.fullName,
               hint: teacher.active ? undefined : t("enum.INACTIVE").toLowerCase(),
             }))}
+            onSearch={handleTeacherSearch}
           />
         </Field>
 

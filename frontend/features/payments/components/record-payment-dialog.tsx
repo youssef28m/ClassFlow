@@ -2,7 +2,7 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Loader2 } from "lucide-react";
-import { useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 import { useToast } from "@/components/feedback/toast";
 import { Field, inputClassName } from "@/components/forms/field";
@@ -15,10 +15,6 @@ import {
 } from "@/features/payments/schema";
 import { PAYMENT_METHODS } from "@/features/payments/types";
 import { useCreatePayment } from "@/features/payments/hooks";
-import {
-  currentBillingPeriod,
-  toDateInputValue,
-} from "@/features/payments/billing-cycle";
 import { useEnrollmentsQuery } from "@/features/enrollments/hooks";
 import { useGroupsQuery } from "@/features/groups/hooks";
 import { ApiError } from "@/lib/api-client";
@@ -41,13 +37,20 @@ export function RecordPaymentDialog({
   const createPayment = useCreatePayment();
   const { t, tEnum } = useI18n();
   const [groupId, setGroupId] = useState("");
-  const groups = useGroupsQuery({ pageSize: 100 });
+  const [groupSearch, setGroupSearch] = useState("");
+  const [enrollmentSearch, setEnrollmentSearch] = useState("");
+  const groups = useGroupsQuery({
+    pageSize: 100,
+    ...(groupSearch ? { search: groupSearch } : {}),
+  });
   const enrollments = useEnrollmentsQuery(
     defaultStudentId
-      ? { studentId: defaultStudentId, active: true, pageSize: 100 }
-      : { groupId: groupId ? Number(groupId) : -1, active: true, pageSize: 100 },
+      ? { studentId: defaultStudentId, active: true, pageSize: 100, ...(enrollmentSearch ? { search: enrollmentSearch } : {}) }
+      : { groupId: groupId ? Number(groupId) : -1, active: true, pageSize: 100, ...(enrollmentSearch ? { search: enrollmentSearch } : {}) },
   );
   const [rootError, setRootError] = useState<string | null>(null);
+  const groupSelectingRef = useRef(false);
+  const enrollmentSelectingRef = useRef(false);
   const { register, handleSubmit, setError, setValue, watch, reset, formState: { errors } } =
     useForm<PaymentFormValues>({
       resolver: zodResolver(paymentFormSchema),
@@ -59,26 +62,32 @@ export function RecordPaymentDialog({
         notes: "",
       },
     });
+  const handleGroupSearch = useCallback((q: string) => {
+    if (!groupSelectingRef.current) setGroupSearch(q);
+  }, []);
+  const handleEnrollmentSearch = useCallback((q: string) => {
+    if (!enrollmentSelectingRef.current) setEnrollmentSearch(q);
+  }, []);
+  const handleGroupChange = useCallback((val: string) => {
+    groupSelectingRef.current = true;
+    setGroupId(val);
+    setValue("enrollmentId", "", { shouldValidate: false });
+    setValue("amount", "");
+    requestAnimationFrame(() => { groupSelectingRef.current = false; });
+  }, [setValue]);
   const enrollmentIdValue = watch("enrollmentId");
 
-  function applyEnrollment(enrollmentId: string) {
+  const handleEnrollmentChange = useCallback((val: string) => {
+    enrollmentSelectingRef.current = true;
+    setValue("enrollmentId", val, { shouldValidate: true });
     const enrollment = (enrollments.data?.items ?? []).find(
-      (item) => item.id === Number(enrollmentId),
+      (item) => item.id === Number(val),
     );
     if (enrollment) {
-      setValue("enrollmentId", enrollmentId, { shouldValidate: true });
       setValue("amount", String(Number(enrollment.group.fee)), { shouldValidate: false });
-      const period = currentBillingPeriod(
-        enrollment.enrollmentDate,
-        enrollment.group.paymentType,
-        enrollment.group.billingAnchorDay,
-        new Date(),
-      );
-      if (period) {
-        setValue("paymentDate", toDateInputValue(period.periodStart), { shouldValidate: false });
-      }
     }
-  }
+    requestAnimationFrame(() => { enrollmentSelectingRef.current = false; });
+  }, [enrollments.data, setValue]);
 
   const onSubmit = handleSubmit(async (values) => {
     setRootError(null);
@@ -145,17 +154,14 @@ export function RecordPaymentDialog({
           <Field label={t("payments.groupLabel")} htmlFor="payment-group" error={errors.enrollmentId?.message}>
             <SearchableSelect
               value={groupId}
-              onChange={(val) => {
-                setGroupId(val);
-                setValue("enrollmentId", "", { shouldValidate: false });
-                setValue("amount", "");
-              }}
+              onChange={handleGroupChange}
               placeholder={t("groups.allGroups")}
               searchPlaceholder={t("groups.searchPlaceholder")}
               emptyText={t("groups.emptyFiltered")}
               loading={groups.isLoading}
               className="min-w-65"
               options={groupOptions}
+              onSearch={handleGroupSearch}
             />
           </Field>
         ) : null}
@@ -168,7 +174,7 @@ export function RecordPaymentDialog({
           <input type="hidden" {...register("enrollmentId")} />
           <SearchableSelect
             value={enrollmentIdValue}
-            onChange={(val) => applyEnrollment(val)}
+            onChange={handleEnrollmentChange}
             placeholder={
               defaultStudentId
                 ? enrollments.isLoading
@@ -186,6 +192,7 @@ export function RecordPaymentDialog({
             loading={enrollments.isLoading}
             className="min-w-65"
             options={defaultStudentId ? groupOptions : studentOptions}
+            onSearch={handleEnrollmentSearch}
           />
         </Field>
         <div className="grid gap-4 sm:grid-cols-2">

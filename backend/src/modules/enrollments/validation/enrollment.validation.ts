@@ -23,6 +23,7 @@ export type UpdateEnrollmentDateInput = z.infer<typeof updateEnrollmentDateSchem
 export const listEnrollmentsQuerySchema = z.object({
   page: z.coerce.number().int().min(1).default(1),
   pageSize: z.coerce.number().int().min(1).max(100).default(10),
+  search: z.string().trim().min(1).max(100).optional(),
   studentId: z.coerce.number().int().positive().optional(),
   groupId: z.coerce.number().int().positive().optional(),
   active: z

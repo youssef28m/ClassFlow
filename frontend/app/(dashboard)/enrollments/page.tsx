@@ -1,7 +1,7 @@
 "use client";
 
 import { Plus, Power, Trash2 } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import { ConfirmDialog } from "@/components/feedback/confirm-dialog";
 import { PermissionGate } from "@/components/feedback/permission-gate";
 import { useToast } from "@/components/feedback/toast";
@@ -33,10 +33,38 @@ export default function EnrollmentsPage() {
   const [activeFilter, setActiveFilter] = useState<"ALL" | "true" | "false">("ALL");
   const [studentId, setStudentId] = useState("");
   const [groupId, setGroupId] = useState("");
+  const [studentSearch, setStudentSearch] = useState("");
+  const [groupSearch, setGroupSearch] = useState("");
+  const studentSelectingRef = useRef(false);
+  const groupSelectingRef = useRef(false);
   const [formOpen, setFormOpen] = useState(false);
   const [deletingEnrollment, setDeletingEnrollment] = useState<Enrollment | null>(null);
-  const students = useStudentsQuery({ pageSize: 100 });
-  const groups = useGroupsQuery({ pageSize: 100 });
+  const students = useStudentsQuery({
+    pageSize: 100,
+    ...(studentSearch ? { search: studentSearch } : {}),
+  });
+  const groups = useGroupsQuery({
+    pageSize: 100,
+    ...(groupSearch ? { search: groupSearch } : {}),
+  });
+  const handleStudentSearch = useCallback((q: string) => {
+    if (!studentSelectingRef.current) setStudentSearch(q);
+  }, []);
+  const handleGroupSearch = useCallback((q: string) => {
+    if (!groupSelectingRef.current) setGroupSearch(q);
+  }, []);
+  const handleStudentChange = useCallback((val: string) => {
+    studentSelectingRef.current = true;
+    setPage(1);
+    setStudentId(val);
+    requestAnimationFrame(() => { studentSelectingRef.current = false; });
+  }, []);
+  const handleGroupChange = useCallback((val: string) => {
+    groupSelectingRef.current = true;
+    setPage(1);
+    setGroupId(val);
+    requestAnimationFrame(() => { groupSelectingRef.current = false; });
+  }, []);
   const filters = useMemo(() => ({ page, pageSize: PAGE_SIZE, studentId: studentId ? Number(studentId) : undefined, groupId: groupId ? Number(groupId) : undefined, active: activeFilter === "ALL" ? undefined : activeFilter === "true" }), [activeFilter, groupId, page, studentId]);
   const { data, isLoading, error, refetch } = useEnrollmentsQuery(filters);
   const setStatus = useSetEnrollmentStatus();
@@ -64,7 +92,7 @@ export default function EnrollmentsPage() {
   ];
   return <>
     <PageHeader title={t("nav.enrollments")} description={t("enrollments.description")} actions={<PermissionGate resource="students" action="create"><button type="button" onClick={() => setFormOpen(true)} className="flex h-10 items-center gap-2 rounded-lg bg-primary px-4 text-sm font-medium text-primary-foreground hover:opacity-90"><Plus className="size-4" aria-hidden />{t("enrollments.add")}</button></PermissionGate>} />
-    <PermissionGate resource="students" action="read"><FilterBar><SearchableSelect value={studentId} onChange={(val) => updateFilters(() => setStudentId(val))} placeholder={t("enrollments.allStudents")} searchPlaceholder={t("groups.searchPlaceholder")} emptyText={t("groups.emptyFiltered")} loading={students.isLoading} className="w-auto min-w-65" options={(students.data?.items ?? []).map((s) => ({ value: s.id, label: s.fullName, hint: s.grade }))} /><SearchableSelect value={groupId} onChange={(val) => updateFilters(() => setGroupId(val))} placeholder={t("schedules.allGroups")} searchPlaceholder={t("groups.searchPlaceholder")} emptyText={t("groups.emptyFiltered")} loading={groups.isLoading} className="w-auto min-w-65" options={(groups.data?.items ?? []).map((g) => ({ value: g.id, label: g.name, hint: g.subject }))} /><select aria-label={t("attendance.filterStatus")} value={activeFilter} onChange={(event) => updateFilters(() => setActiveFilter(event.target.value as typeof activeFilter))} className={`${inputClassName} w-auto`}><option value="ALL">{t("attendance.allStatuses")}</option><option value="true">{t("enum.ACTIVE")}</option><option value="false">{t("enum.INACTIVE")}</option></select></FilterBar>
+    <PermissionGate resource="students" action="read"><FilterBar><SearchableSelect value={studentId} onChange={handleStudentChange} placeholder={t("enrollments.allStudents")} searchPlaceholder={t("groups.searchPlaceholder")} emptyText={t("groups.emptyFiltered")} loading={students.isLoading} className="w-auto min-w-65" options={(students.data?.items ?? []).map((s) => ({ value: s.id, label: s.fullName, hint: s.grade }))} onSearch={handleStudentSearch} /><SearchableSelect value={groupId} onChange={handleGroupChange} placeholder={t("schedules.allGroups")} searchPlaceholder={t("groups.searchPlaceholder")} emptyText={t("groups.emptyFiltered")} loading={groups.isLoading} className="w-auto min-w-65" options={(groups.data?.items ?? []).map((g) => ({ value: g.id, label: g.name, hint: g.subject }))} onSearch={handleGroupSearch} /><select aria-label={t("attendance.filterStatus")} value={activeFilter} onChange={(event) => updateFilters(() => setActiveFilter(event.target.value as typeof activeFilter))} className={`${inputClassName} w-auto`}><option value="ALL">{t("attendance.allStatuses")}</option><option value="true">{t("enum.ACTIVE")}</option><option value="false">{t("enum.INACTIVE")}</option></select></FilterBar>
     <DataTable columns={columns} rows={data?.items} getRowKey={(enrollment) => enrollment.id} isLoading={isLoading} error={error ?? null} onRetry={() => void refetch()} emptyTitle={studentId || groupId || activeFilter !== "ALL" ? t("enrollments.emptyFiltered") : t("enrollments.empty")} emptyDescription={t("enrollments.emptyDescription")} />
     {data && data.meta.totalPages > 0 ? <TablePagination page={data.meta.page} totalPages={data.meta.totalPages} total={data.meta.total} onPageChange={setPage} /> : null}</PermissionGate>
     <EnrollmentFormDialog key={String(formOpen)} open={formOpen} onClose={() => setFormOpen(false)} />

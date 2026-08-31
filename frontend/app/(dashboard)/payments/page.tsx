@@ -1,7 +1,7 @@
 "use client";
 
 import { Plus, Search, Trash2 } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { ConfirmDialog } from "@/components/feedback/confirm-dialog";
 import { PermissionGate } from "@/components/feedback/permission-gate";
@@ -64,13 +64,21 @@ export default function PaymentsPage() {
   const [searchText, setSearchText] = useState("");
   const [methodFilter, setMethodFilter] = useState<"ALL" | PaymentMethod>("ALL");
   const [groupFilter, setGroupFilter] = useState<string>("");
+  const [groupSearch, setGroupSearch] = useState("");
+  const groupSelectingRef = useRef(false);
   const [fromDate, setFromDate] = useState(DEFAULT_FROM);
   const [toDate, setToDate] = useState(DEFAULT_TO);
   const [page, setPage] = useState(1);
   const search = useDebouncedValue(searchText);
   const deletePayment = useDeletePayment();
 
-  const { data: groupsData } = useGroupsQuery({ pageSize: 100 });
+  const { data: groupsData } = useGroupsQuery({
+    pageSize: 100,
+    ...(groupSearch ? { search: groupSearch } : {}),
+  });
+  const handleGroupSearch = useCallback((q: string) => {
+    if (!groupSelectingRef.current) setGroupSearch(q);
+  }, []);
 
   const [dialogOpen, setDialogOpen] = useState(false);
   const [deletingPayment, setDeletingPayment] = useState<Payment | null>(null);
@@ -215,7 +223,8 @@ export default function PaymentsPage() {
           </div>
           <SearchableSelect
             value={groupFilter}
-            onChange={(val) =>
+            onChange={(val) => {
+              groupSelectingRef.current = true;
               updateFilters(() => {
                 setGroupFilter(val);
                 const group = (groupsData?.items ?? []).find((g) => g.id === Number(val));
@@ -242,8 +251,9 @@ export default function PaymentsPage() {
                   setFromDate(DEFAULT_FROM);
                   setToDate(DEFAULT_TO);
                 }
-              })
-            }
+              });
+              requestAnimationFrame(() => { groupSelectingRef.current = false; });
+            }}
             placeholder={t("groups.allGroups")}
             searchPlaceholder={t("groups.searchPlaceholder")}
             emptyText={t("groups.emptyFiltered")}
@@ -254,6 +264,7 @@ export default function PaymentsPage() {
               label: g.name,
               hint: g.subject,
             }))}
+            onSearch={handleGroupSearch}
           />
           <select
             id="payment-method-filter"
