@@ -26,8 +26,6 @@ ClassFlow is a full-stack application for managing the daily operations and fina
 - **Salaries** — calculate teacher salaries from student payments (adjustable percentage), bulk pay, auto-calculation on 1st of each month, detailed report per teacher with per-student payment breakdown
 - **Dashboard** — net collected amount (payments − expenses), recent payments, late students, overdue payments
 - **Overdue payments** — dedicated page listing students with outstanding balances
-- **SearchableSelect** — reusable searchable dropdown component used across all group and student selectors
-- **i18n** — full English and Arabic translations
 - **Multi-tenant** — center-scoped data isolation
 - **RBAC** — role-based permissions (Super Admin, Admin, Teacher, Accountant, Receptionist)
 
