@@ -46,5 +46,5 @@ export const studentKeys = {
   lists: () => [...studentKeys.all, "list"] as const,
   list: (filters: StudentFilters) => [...studentKeys.lists(), filters] as const,
   grades: () => [...studentKeys.all, "grades"] as const,
-  details: () => [...studentKeys.all, "detail"] as const,
+  detail: (id: number | null) => [...studentKeys.all, "detail", id] as const,
 };

@@ -24,6 +24,14 @@ export function useStudentGradesQuery() {
   });
 }
 
+export function useStudentQuery(id: number | null) {
+  return useQuery({
+    queryKey: studentKeys.detail(id),
+    queryFn: () => studentsApi.get(id as number),
+    enabled: id !== null,
+  });
+}
+
 export function useCreateStudent() {
   const queryClient = useQueryClient();
   return useMutation({
@@ -43,8 +51,10 @@ export function useUpdateStudent() {
       id: number;
       payload: Partial<StudentPayload>;
     }) => studentsApi.update(id, payload),
-    onSuccess: () =>
-      queryClient.invalidateQueries({ queryKey: studentKeys.lists() }),
+    onSuccess: (_data, variables) => {
+      queryClient.invalidateQueries({ queryKey: studentKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: studentKeys.detail(variables.id) });
+    },
   });
 }
 

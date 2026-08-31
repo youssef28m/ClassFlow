@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowLeft, CalendarDays, GraduationCap, Phone, Plus } from "lucide-react";
+import { ArrowLeft, CalendarDays, GraduationCap, Phone, Plus, SquarePen } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 import { useParams } from "next/navigation";
@@ -8,6 +8,8 @@ import { ErrorState } from "@/components/feedback/error-state";
 import { StatusBadge, type BadgeTone } from "@/components/tables/status-badge";
 import { useStudentPaymentSummary } from "@/features/payments/hooks";
 import { RecordPaymentDialog } from "@/features/payments/components/record-payment-dialog";
+import { useStudentQuery } from "@/features/students/hooks";
+import { StudentFormDialog } from "@/features/students/components/student-form-dialog";
 import type { EnrollmentPaymentEntry } from "@/features/payments/payment-status";
 import { useAuth } from "@/lib/auth-store";
 import { useI18n } from "@/lib/i18n/provider";
@@ -36,10 +38,13 @@ export default function StudentDetailPage() {
   const { user } = useAuth();
   const { t, tEnum } = useI18n();
   const [paymentOpen, setPaymentOpen] = useState(false);
+  const [editOpen, setEditOpen] = useState(false);
   const summary = useStudentPaymentSummary(Number.isInteger(studentId) ? studentId : null);
+  const studentQuery = useStudentQuery(Number.isInteger(studentId) ? studentId : null);
   const canRecordPayment =
     can(user, "paymentsAndExpenses", "logPayment") ||
     can(user, "paymentsAndExpenses", "managePayments");
+  const canEdit = can(user, "students", "update");
 
   if (summary.isLoading) {
     return <p className="mt-6 text-sm text-muted-foreground">{t("common.loading")}</p>;
@@ -82,6 +87,18 @@ export default function StudentDetailPage() {
             >
               {tEnum(student.status)}
             </StatusBadge>
+            {canEdit ? (
+              <button
+                type="button"
+                aria-label={t("common.edit")}
+                title={t("common.edit")}
+                onClick={() => setEditOpen(true)}
+                disabled={!studentQuery.data}
+                className="flex size-8 items-center justify-center rounded-lg border border-border text-muted-foreground transition-colors hover:bg-muted hover:text-card-foreground disabled:pointer-events-none disabled:opacity-60"
+              >
+                <SquarePen className="size-4" aria-hidden />
+              </button>
+            ) : null}
           </div>
           {canRecordPayment ? (
             <button
@@ -172,6 +189,17 @@ export default function StudentDetailPage() {
         }}
         defaultStudentId={student.id}
         defaultStudentName={student.fullName}
+      />
+
+      <StudentFormDialog
+        key={`edit-${editOpen}-${student.id}`}
+        open={editOpen}
+        onClose={() => {
+          setEditOpen(false);
+          void summary.refetch();
+          void studentQuery.refetch();
+        }}
+        student={studentQuery.data ?? null}
       />
     </>
   );
