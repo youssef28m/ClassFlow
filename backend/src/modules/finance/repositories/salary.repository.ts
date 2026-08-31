@@ -58,7 +58,7 @@ export class SalaryRepository {
     const [items, total] = await prisma.$transaction([
       prisma.teacherSalary.findMany({
         where,
-        orderBy: [{ salaryYear: 'desc' }, { salaryMonth: 'desc' }],
+        orderBy: [{ paymentDate: 'desc' }, { id: 'desc' }],
         skip: params.skip,
         take: params.take,
         include: { teacher: { select: { fullName: true } } },

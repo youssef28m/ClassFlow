@@ -21,8 +21,23 @@ export class ExpenseService {
   }
 
   async update(id: RouteId, centerId: number, input: UpdateExpenseInput): Promise<ExpenseDTO> {
-    const expense = await this.repository.update(this.parseId(id), centerId, input);
+    const expenseId = this.parseId(id);
+    const existing = await this.repository.findById(expenseId, centerId);
+    if (!existing) throw new AppError('Expense not found', 404);
+
+    const expense = await this.repository.update(expenseId, centerId, input);
     if (!expense) throw new AppError('Expense not found', 404);
+
+    if (existing.salaryId) {
+      await prisma.teacherSalary.update({
+        where: { id: existing.salaryId },
+        data: {
+          ...(input.amount !== undefined ? { amount: Number(input.amount) } : {}),
+          ...(input.expenseDate !== undefined ? { paymentDate: input.expenseDate } : {}),
+        },
+      });
+    }
+
     return toExpenseDTO(expense);
   }
 

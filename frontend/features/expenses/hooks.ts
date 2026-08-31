@@ -39,7 +39,10 @@ export function useUpdateExpense() {
       id: number;
       payload: Partial<ExpensePayload>;
     }) => expensesApi.update(id, payload),
-    onSuccess: () => invalidateExpenses(queryClient),
+    onSuccess: () => {
+      invalidateExpenses(queryClient);
+      queryClient.invalidateQueries({ queryKey: salaryKeys.all });
+    },
   });
 }
 
