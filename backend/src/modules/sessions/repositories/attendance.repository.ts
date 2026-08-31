@@ -69,10 +69,7 @@ export class AttendanceRepository {
     return [...tallies.values()].sort((a, b) => a.fullName.localeCompare(b.fullName));
   }
 
-  async replaceForSession(
-    sessionId: number,
-    records: AttendanceWrite[],
-  ): Promise<AttendanceWithStudent[]> {
+  async replaceForSession(sessionId: number, records: AttendanceWrite[]): Promise<AttendanceWithStudent[]> {
     return prisma.$transaction(async (tx) => {
       const enrollmentIds = records.map((record) => record.enrollmentId);
       await tx.attendance.deleteMany({

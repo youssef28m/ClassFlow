@@ -7,9 +7,7 @@ export class DashboardController {
   constructor(private readonly service: DashboardService) {}
 
   getOverview = async (req: Request, res: Response): Promise<void> => {
-    res
-      .status(200)
-      .json(await this.service.getOverview(req.user as AuthUser, mustGetCenterId(req)));
+    res.status(200).json(await this.service.getOverview(req.user as AuthUser, mustGetCenterId(req)));
   };
 
   getOverdue = async (req: Request, res: Response): Promise<void> => {

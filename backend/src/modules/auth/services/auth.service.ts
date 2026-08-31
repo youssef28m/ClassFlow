@@ -3,12 +3,7 @@ import { AppError } from '../../../shared/middleware/error-handler.js';
 import type { AuthRepository, UserWithCenter } from '../repositories/auth.repository.js';
 import type { AuthUser, TokenPair } from '../types/auth.types.js';
 import type { LoginInput, SignupInput } from '../validation/auth.validation.js';
-import {
-  hashRefreshToken,
-  signAccessToken,
-  signRefreshToken,
-  verifyRefreshToken,
-} from './jwt.service.js';
+import { hashRefreshToken, signAccessToken, signRefreshToken, verifyRefreshToken } from './jwt.service.js';
 import { hashPassword, verifyPassword } from './password.service.js';
 
 export class AuthService {

@@ -18,10 +18,7 @@ const percentageSchema = z
       .trim()
       .regex(/^\d{1,3}(\.\d{1,2})?$/, 'Percentage must have up to 2 decimal places'),
   ])
-  .refine(
-    (value) => Number(value) > 0 && Number(value) <= 100,
-    'Percentage must be between 0.01 and 100',
-  );
+  .refine((value) => Number(value) > 0 && Number(value) <= 100, 'Percentage must be between 0.01 and 100');
 
 export const calculateSalarySchema = z.object({
   teacherId: z.coerce.number().int().positive().optional(),

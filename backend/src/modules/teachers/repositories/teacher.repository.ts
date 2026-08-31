@@ -20,11 +20,7 @@ export class TeacherRepository {
     });
   }
 
-  async update(
-    id: number,
-    centerId: number,
-    data: Prisma.TeacherUncheckedUpdateInput,
-  ): Promise<Teacher | null> {
+  async update(id: number, centerId: number, data: Prisma.TeacherUncheckedUpdateInput): Promise<Teacher | null> {
     const result = await prisma.teacher.updateMany({ where: { id, centerId }, data });
     if (result.count === 0) {
       return null;

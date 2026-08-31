@@ -3,11 +3,7 @@ import { AppError } from '../../../shared/middleware/error-handler.js';
 import type { ScheduleRepository } from '../repositories/schedule.repository.js';
 import type { PaginatedResponse, ScheduleDTO } from '../types/schedule.types.js';
 import { toScheduleDTO } from '../types/schedule.types.js';
-import type {
-  CreateScheduleInput,
-  ListSchedulesQuery,
-  UpdateScheduleInput,
-} from '../validation/schedule.validation.js';
+import type { CreateScheduleInput, ListSchedulesQuery, UpdateScheduleInput } from '../validation/schedule.validation.js';
 
 type RouteId = string | string[] | undefined;
 
@@ -66,10 +62,7 @@ export class ScheduleService {
     }
   }
 
-  async list(
-    query: ListSchedulesQuery,
-    centerId: number | null,
-  ): Promise<PaginatedResponse<ScheduleDTO>> {
+  async list(query: ListSchedulesQuery, centerId: number | null): Promise<PaginatedResponse<ScheduleDTO>> {
     const { page, pageSize, groupId, dayOfWeek } = query;
     const { items, total } = await this.repository.findMany({
       groupId,

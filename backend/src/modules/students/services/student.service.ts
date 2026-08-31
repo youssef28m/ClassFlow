@@ -3,17 +3,12 @@ import { AppError } from '../../../shared/middleware/error-handler.js';
 import type { StudentRepository } from '../repositories/student.repository.js';
 import type { PaginatedResponse, StudentDTO } from '../types/student.types.js';
 import { toStudentDTO } from '../types/student.types.js';
-import type {
-  CreateStudentInput,
-  ListStudentsQuery,
-  UpdateStudentInput,
-} from '../validation/student.validation.js';
+import type { CreateStudentInput, ListStudentsQuery, UpdateStudentInput } from '../validation/student.validation.js';
 
 type RouteId = string | string[] | undefined;
 
 const DUPLICATE_MESSAGE = 'A student with this name and phone already exists in this center';
-const DUPLICATE_NAME_GRADE_MESSAGE =
-  'A student with this name and grade already exists in this center';
+const DUPLICATE_NAME_GRADE_MESSAGE = 'A student with this name and grade already exists in this center';
 
 export class StudentService {
   constructor(private readonly repository: StudentRepository) {}
@@ -88,20 +83,13 @@ export class StudentService {
       }
     }
 
-    const nameGradeDuplicate = await this.repository.findDuplicateByNameAndGrade(
-      centerId,
-      fullName,
-      grade,
-    );
+    const nameGradeDuplicate = await this.repository.findDuplicateByNameAndGrade(centerId, fullName, grade);
     if (nameGradeDuplicate && nameGradeDuplicate.id !== excludeId) {
       throw new AppError(DUPLICATE_NAME_GRADE_MESSAGE, 409);
     }
   }
 
-  async list(
-    query: ListStudentsQuery,
-    centerId: number | null,
-  ): Promise<PaginatedResponse<StudentDTO>> {
+  async list(query: ListStudentsQuery, centerId: number | null): Promise<PaginatedResponse<StudentDTO>> {
     const { page, pageSize, search, status, grade } = query;
     const { items, total } = await this.repository.findMany({
       search,

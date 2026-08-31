@@ -29,16 +29,10 @@ export const updateScheduleSchema = z
     startTime: timeSchema.optional(),
     endTime: timeSchema.optional(),
   })
-  .refine(
-    (value) =>
-      value.startTime === undefined ||
-      value.endTime === undefined ||
-      value.startTime < value.endTime,
-    {
-      message: 'End time must be after start time',
-      path: ['endTime'],
-    },
-  );
+  .refine((value) => value.startTime === undefined || value.endTime === undefined || value.startTime < value.endTime, {
+    message: 'End time must be after start time',
+    path: ['endTime'],
+  });
 
 export type UpdateScheduleInput = z.infer<typeof updateScheduleSchema>;
 

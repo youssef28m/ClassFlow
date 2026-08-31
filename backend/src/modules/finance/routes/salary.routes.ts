@@ -1,9 +1,6 @@
 import { Router } from 'express';
 import { requirePermission } from '../../../shared/authz/require-permission.js';
-import {
-  requireCenterScope,
-  requireResolvedCenterId,
-} from '../../../shared/middleware/require-center-scope.js';
+import { requireCenterScope, requireResolvedCenterId } from '../../../shared/middleware/require-center-scope.js';
 import { validate, validateQuery } from '../../../shared/middleware/validate.js';
 import { authenticate } from '../../auth/middleware/authenticate.js';
 import { SalaryController } from '../controllers/salary.controller.js';
@@ -36,18 +33,8 @@ router.get(
   validateQuery(calculateSalarySchema),
   controller.calculate,
 );
-router.get(
-  '/:id/report',
-  requirePermission('teachersAndSalaries', 'manageSalaries'),
-  requireResolvedCenterId,
-  controller.report,
-);
-router.get(
-  '/:id',
-  requirePermission('teachersAndSalaries', 'manageSalaries'),
-  requireResolvedCenterId,
-  controller.getById,
-);
+router.get('/:id/report', requirePermission('teachersAndSalaries', 'manageSalaries'), requireResolvedCenterId, controller.report);
+router.get('/:id', requirePermission('teachersAndSalaries', 'manageSalaries'), requireResolvedCenterId, controller.getById);
 router.post(
   '/',
   requirePermission('teachersAndSalaries', 'manageSalaries'),
@@ -69,11 +56,6 @@ router.patch(
   validate(updateSalarySchema),
   controller.update,
 );
-router.delete(
-  '/:id',
-  requirePermission('teachersAndSalaries', 'manageSalaries'),
-  requireResolvedCenterId,
-  controller.delete,
-);
+router.delete('/:id', requirePermission('teachersAndSalaries', 'manageSalaries'), requireResolvedCenterId, controller.delete);
 
 export default router;

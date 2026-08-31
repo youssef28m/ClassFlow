@@ -7,14 +7,7 @@ export class SalaryController {
   constructor(private readonly service: SalaryService) {}
 
   calculate = async (req: Request, res: Response): Promise<void> => {
-    res
-      .status(200)
-      .json(
-        await this.service.calculate(
-          req.query as unknown as CalculateSalaryInput,
-          mustGetCenterId(req),
-        ),
-      );
+    res.status(200).json(await this.service.calculate(req.query as unknown as CalculateSalaryInput, mustGetCenterId(req)));
   };
 
   pay = async (req: Request, res: Response): Promise<void> => {
@@ -39,11 +32,7 @@ export class SalaryController {
   };
 
   list = async (req: Request, res: Response): Promise<void> => {
-    res
-      .status(200)
-      .json(
-        await this.service.list(req.query as unknown as ListSalariesQuery, req.centerId ?? null),
-      );
+    res.status(200).json(await this.service.list(req.query as unknown as ListSalariesQuery, req.centerId ?? null));
   };
 
   report = async (req: Request, res: Response): Promise<void> => {

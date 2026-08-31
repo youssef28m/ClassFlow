@@ -28,25 +28,10 @@ router.get('/', validateQuery(listCentersQuerySchema), controller.list);
 router.get('/:id', controller.getById);
 
 // Writes: matrix grants create/update/delete on centers to SUPERADMIN only.
-router.post(
-  '/',
-  requirePermission('centers', 'create'),
-  validate(createCenterSchema),
-  controller.create,
-);
-router.patch(
-  '/:id',
-  requirePermission('centers', 'update'),
-  validate(updateCenterSchema),
-  controller.update,
-);
+router.post('/', requirePermission('centers', 'create'), validate(createCenterSchema), controller.create);
+router.patch('/:id', requirePermission('centers', 'update'), validate(updateCenterSchema), controller.update);
 router.patch('/:id/deactivate', requirePermission('centers', 'update'), controller.deactivate);
 // Registering users is a `users` action, not a center action.
-router.post(
-  '/:id/users',
-  requirePermission('users', 'create'),
-  validate(createCenterUserSchema),
-  controller.registerUser,
-);
+router.post('/:id/users', requirePermission('users', 'create'), validate(createCenterUserSchema), controller.registerUser);
 
 export default router;

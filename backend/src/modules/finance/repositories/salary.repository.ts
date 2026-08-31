@@ -30,11 +30,7 @@ export class SalaryRepository {
     return prisma.teacherSalary.findFirst({ where: { id, teacher: { centerId } } });
   }
 
-  async update(
-    id: number,
-    centerId: number,
-    data: Prisma.TeacherSalaryUncheckedUpdateInput,
-  ): Promise<TeacherSalary | null> {
+  async update(id: number, centerId: number, data: Prisma.TeacherSalaryUncheckedUpdateInput): Promise<TeacherSalary | null> {
     const result = await prisma.teacherSalary.updateMany({
       where: { id, teacher: { centerId } },
       data,
@@ -72,12 +68,7 @@ export class SalaryRepository {
     return { items, total };
   }
 
-  async sumPaymentsByTeacher(
-    centerId: number,
-    from: Date,
-    to: Date,
-    teacherId?: number,
-  ): Promise<PaymentSumByTeacher[]> {
+  async sumPaymentsByTeacher(centerId: number, from: Date, to: Date, teacherId?: number): Promise<PaymentSumByTeacher[]> {
     const results = await prisma.payment.groupBy({
       by: ['enrollmentId'],
       where: {
@@ -114,9 +105,7 @@ export class SalaryRepository {
     for (const result of results) {
       const info = enrollmentToTeacher.get(result.enrollmentId);
       if (!info) continue;
-      const amount =
-        result._sum.amount ??
-        new (await import('../../../generated/prisma/client.js')).Prisma.Decimal(0);
+      const amount = result._sum.amount ?? new (await import('../../../generated/prisma/client.js')).Prisma.Decimal(0);
       const existing = teacherSums.get(info.teacherId);
       if (existing) {
         existing.total = existing.total.add(amount);
@@ -132,11 +121,7 @@ export class SalaryRepository {
     }));
   }
 
-  findExisting(
-    teacherId: number,
-    salaryMonth: number,
-    salaryYear: number,
-  ): Promise<TeacherSalary | null> {
+  findExisting(teacherId: number, salaryMonth: number, salaryYear: number): Promise<TeacherSalary | null> {
     return prisma.teacherSalary.findUnique({
       where: { teacherId_salaryMonth_salaryYear: { teacherId, salaryMonth, salaryYear } },
     });

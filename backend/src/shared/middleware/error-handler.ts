@@ -15,12 +15,7 @@ export class AppError extends Error {
   }
 }
 
-export function errorHandler(
-  error: unknown,
-  req: Request,
-  res: Response,
-  _next: NextFunction,
-): void {
+export function errorHandler(error: unknown, req: Request, res: Response, _next: NextFunction): void {
   const isOperational = error instanceof AppError;
   let statusCode = isOperational ? error.statusCode : 500;
   let message = isOperational ? error.message : 'Internal server error';
@@ -35,8 +30,6 @@ export function errorHandler(
   res.status(statusCode).json({
     status: 'error',
     message,
-    ...(env.NODE_ENV === 'production'
-      ? {}
-      : { stack: error instanceof Error ? error.stack : undefined }),
+    ...(env.NODE_ENV === 'production' ? {} : { stack: error instanceof Error ? error.stack : undefined }),
   });
 }

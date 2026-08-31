@@ -8,15 +8,7 @@ export class PaymentController {
   constructor(private readonly service: PaymentService) {}
 
   studentSummary = async (req: Request, res: Response): Promise<void> => {
-    res
-      .status(200)
-      .json(
-        await this.service.studentSummary(
-          req.params.studentId,
-          mustGetCenterId(req),
-          req.user as AuthUser,
-        ),
-      );
+    res.status(200).json(await this.service.studentSummary(req.params.studentId, mustGetCenterId(req), req.user as AuthUser));
   };
 
   create = async (req: Request, res: Response): Promise<void> => {
@@ -37,10 +29,6 @@ export class PaymentController {
   };
 
   list = async (req: Request, res: Response): Promise<void> => {
-    res
-      .status(200)
-      .json(
-        await this.service.list(req.query as unknown as ListPaymentsQuery, req.centerId ?? null),
-      );
+    res.status(200).json(await this.service.list(req.query as unknown as ListPaymentsQuery, req.centerId ?? null));
   };
 }

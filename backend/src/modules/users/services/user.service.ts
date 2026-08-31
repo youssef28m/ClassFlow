@@ -6,11 +6,7 @@ import type { AuthUser } from '../../auth/types/auth.types.js';
 import type { UserRepository } from '../repositories/user.repository.js';
 import type { PaginatedResponse, UserDTO } from '../types/user.types.js';
 import { toUserDTO } from '../types/user.types.js';
-import type {
-  CreateUserInput,
-  ListUsersQuery,
-  UpdateUserInput,
-} from '../validation/user.validation.js';
+import type { CreateUserInput, ListUsersQuery, UpdateUserInput } from '../validation/user.validation.js';
 
 type RouteId = string | string[] | undefined;
 
@@ -43,12 +39,7 @@ export class UserService {
     return toUserDTO(user);
   }
 
-  async update(
-    id: RouteId,
-    centerId: number,
-    input: UpdateUserInput,
-    actor: AuthUser,
-  ): Promise<UserDTO> {
+  async update(id: RouteId, centerId: number, input: UpdateUserInput, actor: AuthUser): Promise<UserDTO> {
     const userId = this.parseId(id);
     const currentUser = await this.repository.findById(userId, centerId);
     if (!currentUser) {
@@ -117,11 +108,7 @@ export class UserService {
     };
   }
 
-  private async assertUsernameAvailable(
-    username: string,
-    centerId: number,
-    excludedUserId?: number,
-  ): Promise<void> {
+  private async assertUsernameAvailable(username: string, centerId: number, excludedUserId?: number): Promise<void> {
     const existing = await this.repository.findByUsername(username, centerId);
     if (existing && existing.id !== excludedUserId) {
       throw new AppError('Username is already taken', 409);

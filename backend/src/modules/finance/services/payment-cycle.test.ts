@@ -1,13 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import {
-  computeBillingCycle,
-  evaluateRecurring,
-  firstPeriodStart,
-  resolvePaymentStatus,
-} from './payment-cycle.js';
+import { computeBillingCycle, evaluateRecurring, firstPeriodStart, resolvePaymentStatus } from './payment-cycle.js';
 
-const utcMidnight = (year: number, month: number, day: number): Date =>
-  new Date(Date.UTC(year, month, day));
+const utcMidnight = (year: number, month: number, day: number): Date => new Date(Date.UTC(year, month, day));
 
 describe('firstPeriodStart', () => {
   it('starts at the anchor day when the enrollment day equals it', () => {
@@ -52,79 +46,39 @@ describe('evaluateRecurring', () => {
   });
 
   it('returns PAID with no overdue for a payment inside the window', () => {
-    const result = evaluateRecurring(
-      utcMidnight(2026, 0, 1),
-      1,
-      1,
-      [utcMidnight(2026, 0, 10)],
-      utcMidnight(2026, 0, 20),
-    );
+    const result = evaluateRecurring(utcMidnight(2026, 0, 1), 1, 1, [utcMidnight(2026, 0, 10)], utcMidnight(2026, 0, 20));
     expect(result.status).toBe('PAID');
     expect(result.daysOverdue).toBeNull();
   });
 
   it('treats a payment made on the due date as settling that window', () => {
-    const result = evaluateRecurring(
-      utcMidnight(2026, 0, 1),
-      1,
-      1,
-      [utcMidnight(2026, 1, 1)],
-      utcMidnight(2026, 1, 1),
-    );
+    const result = evaluateRecurring(utcMidnight(2026, 0, 1), 1, 1, [utcMidnight(2026, 1, 1)], utcMidnight(2026, 1, 1));
     expect(result.status).toBe('PAID');
   });
 
   it('credits a period-boundary payment to the window it closes, not double-counted', () => {
     // One payment on Feb 1 settles the Jan 1 -> Feb 1 window only; the next
     // window (Feb 1 -> Mar 1) must remain PENDING.
-    const result = evaluateRecurring(
-      utcMidnight(2026, 0, 1),
-      1,
-      1,
-      [utcMidnight(2026, 1, 1)],
-      utcMidnight(2026, 1, 10),
-    );
+    const result = evaluateRecurring(utcMidnight(2026, 0, 1), 1, 1, [utcMidnight(2026, 1, 1)], utcMidnight(2026, 1, 10));
     expect(result.status).toBe('PENDING');
     expect(result.dueDate).toEqual(utcMidnight(2026, 2, 1));
   });
 
   it('walks all paid windows and reports the current one when everything is settled', () => {
-    const paymentDates = [
-      utcMidnight(2026, 0, 1),
-      utcMidnight(2026, 1, 5),
-      utcMidnight(2026, 2, 9),
-    ];
-    const result = evaluateRecurring(
-      utcMidnight(2026, 0, 1),
-      1,
-      1,
-      paymentDates,
-      utcMidnight(2026, 2, 15),
-    );
+    const paymentDates = [utcMidnight(2026, 0, 1), utcMidnight(2026, 1, 5), utcMidnight(2026, 2, 9)];
+    const result = evaluateRecurring(utcMidnight(2026, 0, 1), 1, 1, paymentDates, utcMidnight(2026, 2, 15));
     expect(result.status).toBe('PAID');
     expect(result.periodStart).toEqual(utcMidnight(2026, 2, 1));
   });
 
   it('stops at the first unpaid window even when later payments exist', () => {
-    const result = evaluateRecurring(
-      utcMidnight(2026, 0, 1),
-      1,
-      1,
-      [utcMidnight(2026, 0, 25)],
-      utcMidnight(2026, 2, 5),
-    );
+    const result = evaluateRecurring(utcMidnight(2026, 0, 1), 1, 1, [utcMidnight(2026, 0, 25)], utcMidnight(2026, 2, 5));
     expect(result.status).toBe('OVERDUE');
     expect(result.dueDate).toEqual(utcMidnight(2026, 2, 1));
   });
 
   it('counts a payment on the enrollment day for the very first window', () => {
-    const result = evaluateRecurring(
-      utcMidnight(2026, 0, 1),
-      1,
-      1,
-      [utcMidnight(2026, 0, 1)],
-      utcMidnight(2026, 0, 20),
-    );
+    const result = evaluateRecurring(utcMidnight(2026, 0, 1), 1, 1, [utcMidnight(2026, 0, 1)], utcMidnight(2026, 0, 20));
     expect(result.status).toBe('PAID');
   });
 
@@ -141,13 +95,7 @@ describe('evaluateRecurring', () => {
     // Enroll Aug 25 in a group anchored day 7, pay Aug 25 on joining: the
     // first period (Aug 7 -> Sep 7) was current when they joined, so this
     // payment settles it instead of leaving them PENDING.
-    const result = evaluateRecurring(
-      utcMidnight(2026, 7, 25),
-      1,
-      7,
-      [utcMidnight(2026, 7, 25)],
-      utcMidnight(2026, 7, 30),
-    );
+    const result = evaluateRecurring(utcMidnight(2026, 7, 25), 1, 7, [utcMidnight(2026, 7, 25)], utcMidnight(2026, 7, 30));
     expect(result.status).toBe('PAID');
     expect(result.periodStart).toEqual(utcMidnight(2026, 7, 7));
     expect(result.dueDate).toEqual(utcMidnight(2026, 8, 7));
@@ -176,45 +124,25 @@ describe('evaluateRecurring', () => {
 
 describe('computeBillingCycle', () => {
   it('returns the upcoming window before the due date', () => {
-    const { periodStart, dueDate } = computeBillingCycle(
-      utcMidnight(2026, 0, 20),
-      1,
-      20,
-      utcMidnight(2026, 0, 5),
-    );
+    const { periodStart, dueDate } = computeBillingCycle(utcMidnight(2026, 0, 20), 1, 20, utcMidnight(2026, 0, 5));
     expect(periodStart).toEqual(utcMidnight(2026, 0, 20));
     expect(dueDate).toEqual(utcMidnight(2026, 1, 20));
   });
 
   it('keeps the running window current on the due date itself', () => {
-    const { periodStart, dueDate } = computeBillingCycle(
-      utcMidnight(2026, 0, 20),
-      1,
-      20,
-      utcMidnight(2026, 1, 20),
-    );
+    const { periodStart, dueDate } = computeBillingCycle(utcMidnight(2026, 0, 20), 1, 20, utcMidnight(2026, 1, 20));
     expect(periodStart).toEqual(utcMidnight(2026, 0, 20));
     expect(dueDate).toEqual(utcMidnight(2026, 1, 20));
   });
 
   it('advances to the next window the day after the due date', () => {
-    const { periodStart, dueDate } = computeBillingCycle(
-      utcMidnight(2026, 0, 20),
-      1,
-      20,
-      utcMidnight(2026, 1, 21),
-    );
+    const { periodStart, dueDate } = computeBillingCycle(utcMidnight(2026, 0, 20), 1, 20, utcMidnight(2026, 1, 21));
     expect(periodStart).toEqual(utcMidnight(2026, 1, 20));
     expect(dueDate).toEqual(utcMidnight(2026, 2, 20));
   });
 
   it('advances across multiple periods', () => {
-    const { periodStart, dueDate } = computeBillingCycle(
-      utcMidnight(2026, 0, 20),
-      1,
-      20,
-      utcMidnight(2026, 4, 21),
-    );
+    const { periodStart, dueDate } = computeBillingCycle(utcMidnight(2026, 0, 20), 1, 20, utcMidnight(2026, 4, 21));
     expect(periodStart).toEqual(utcMidnight(2026, 4, 20));
     expect(dueDate).toEqual(utcMidnight(2026, 5, 20));
   });

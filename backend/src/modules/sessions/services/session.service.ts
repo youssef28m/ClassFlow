@@ -2,12 +2,7 @@ import { DayOfWeek, Prisma } from '../../../generated/prisma/client.js';
 import { AppError } from '../../../shared/middleware/error-handler.js';
 import type { AttendanceRepository } from '../repositories/attendance.repository.js';
 import type { SessionRepository } from '../repositories/session.repository.js';
-import type {
-  AttendanceDTO,
-  AttendanceSummaryEntryDTO,
-  PaginatedResponse,
-  SessionDTO,
-} from '../types/session.types.js';
+import type { AttendanceDTO, AttendanceSummaryEntryDTO, PaginatedResponse, SessionDTO } from '../types/session.types.js';
 import { toAttendanceDTO, toSessionDTO } from '../types/session.types.js';
 import type {
   AttendanceSummaryQuery,
@@ -35,11 +30,7 @@ export class SessionService {
   ) {}
 
   async create(input: CreateSessionInput, centerId: number): Promise<SessionDTO> {
-    const schedule = await this.repository.findScheduleInGroup(
-      input.scheduleId,
-      input.groupId,
-      centerId,
-    );
+    const schedule = await this.repository.findScheduleInGroup(input.scheduleId, input.groupId, centerId);
     if (!schedule) throw new AppError('Schedule not found for this group', 400);
     if (WEEKDAYS[input.sessionDate.getUTCDay()] !== schedule.dayOfWeek) {
       throw new AppError('Session date does not match the schedule day', 400);
@@ -72,13 +63,9 @@ export class SessionService {
     if (!deleted) throw new AppError('Session not found', 404);
   }
 
-  async list(
-    query: ListSessionsQuery,
-    centerId: number | null,
-  ): Promise<PaginatedResponse<SessionDTO>> {
+  async list(query: ListSessionsQuery, centerId: number | null): Promise<PaginatedResponse<SessionDTO>> {
     const { page, pageSize, groupId, scheduleId, completed, from, to } = query;
-    if (from && to && from > to)
-      throw new AppError('The from date must be before the to date', 400);
+    if (from && to && from > to) throw new AppError('The from date must be before the to date', 400);
     const { items, total } = await this.repository.findMany({
       groupId,
       scheduleId,
@@ -101,33 +88,20 @@ export class SessionService {
     return records.map(toAttendanceDTO);
   }
 
-  async attendanceSummary(
-    query: AttendanceSummaryQuery,
-    centerId: number,
-  ): Promise<AttendanceSummaryEntryDTO[]> {
+  async attendanceSummary(query: AttendanceSummaryQuery, centerId: number): Promise<AttendanceSummaryEntryDTO[]> {
     return this.attendanceRepository.summarizeForGroup(query.groupId, centerId);
   }
 
-  async recordAttendance(
-    sessionId: RouteId,
-    centerId: number,
-    input: RecordAttendanceInput,
-  ): Promise<AttendanceDTO[]> {
+  async recordAttendance(sessionId: RouteId, centerId: number, input: RecordAttendanceInput): Promise<AttendanceDTO[]> {
     const context = await this.getContext(sessionId, centerId);
     const enrollmentIds = input.records.map((record) => record.enrollmentId);
     if (new Set(enrollmentIds).size !== enrollmentIds.length) {
       throw new AppError('Each enrollment can appear only once', 400);
     }
 
-    const validIds = await this.attendanceRepository.findActiveEnrollmentIds(
-      enrollmentIds,
-      context.groupId,
-    );
+    const validIds = await this.attendanceRepository.findActiveEnrollmentIds(enrollmentIds, context.groupId);
     if (validIds.length !== enrollmentIds.length) {
-      throw new AppError(
-        'All attendance records must belong to active enrollments in this group',
-        400,
-      );
+      throw new AppError('All attendance records must belong to active enrollments in this group', 400);
     }
 
     const records = await this.attendanceRepository.replaceForSession(context.id, input.records);

@@ -3,11 +3,7 @@ import { prisma } from '../../../shared/prisma/prisma-client.js';
 import type { ExpenseRepository } from '../repositories/expense.repository.js';
 import type { ExpenseDTO, ExpensePaginatedResponse } from '../types/expense.types.js';
 import { toExpenseDTO } from '../types/expense.types.js';
-import type {
-  CreateExpenseInput,
-  ListExpensesQuery,
-  UpdateExpenseInput,
-} from '../validation/expense.validation.js';
+import type { CreateExpenseInput, ListExpensesQuery, UpdateExpenseInput } from '../validation/expense.validation.js';
 
 type RouteId = string | string[] | undefined;
 

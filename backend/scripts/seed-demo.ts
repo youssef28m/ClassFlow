@@ -1,13 +1,5 @@
-import {
-  DayOfWeek,
-  PaymentMethod,
-  PaymentType,
-  StudentStatus,
-} from '../src/generated/prisma/client.js';
-import {
-  computeBillingCycle,
-  PERIOD_MONTHS,
-} from '../src/modules/finance/services/payment-cycle.js';
+import { DayOfWeek, PaymentMethod, PaymentType, StudentStatus } from '../src/generated/prisma/client.js';
+import { computeBillingCycle, PERIOD_MONTHS } from '../src/modules/finance/services/payment-cycle.js';
 import { prisma } from '../src/shared/prisma/prisma-client.js';
 
 const FIRST_NAMES = [
@@ -33,29 +25,11 @@ const FIRST_NAMES = [
   'آية',
 ];
 
-const LAST_NAMES = [
-  'محمد',
-  'علي',
-  'حسن',
-  'إبراهيم',
-  'محمود',
-  'سيد',
-  'فتحي',
-  'ياسين',
-  'عادل',
-  'نبيل',
-];
+const LAST_NAMES = ['محمد', 'علي', 'حسن', 'إبراهيم', 'محمود', 'سيد', 'فتحي', 'ياسين', 'عادل', 'نبيل'];
 
 const SCHOOLS = ['مدرسة النور', 'مدرسة المستقبل اللغوية', 'الأكاديمية الحديثة'];
 
-const GRADES = [
-  'الصف الرابع',
-  'الصف الخامس',
-  'الصف السادس',
-  'الأول الإعدادي',
-  'الثاني الإعدادي',
-  'الثالث الإعدادي',
-];
+const GRADES = ['الصف الرابع', 'الصف الخامس', 'الصف السادس', 'الأول الإعدادي', 'الثاني الإعدادي', 'الثالث الإعدادي'];
 
 const TEACHERS = [
   { fullName: 'منى عبد الرحمن', specialization: 'الرياضيات' },
@@ -157,11 +131,7 @@ function occurrenceDates(day: DayOfWeek, weeksAhead: number): string[] {
     dates.push(new Date(cursor - (offset + index * 7) * 86_400_000).toISOString().slice(0, 10));
   }
   if (weeksAhead > 0) {
-    dates.push(
-      new Date(cursor - offset * 86_400_000 + weeksAhead * 7 * 86_400_000)
-        .toISOString()
-        .slice(0, 10),
-    );
+    dates.push(new Date(cursor - offset * 86_400_000 + weeksAhead * 7 * 86_400_000).toISOString().slice(0, 10));
   }
   return dates;
 }
@@ -172,8 +142,7 @@ async function main(): Promise<void> {
     orderBy: { id: 'asc' },
     select: { id: true, name: true },
   });
-  if (!center)
-    throw new Error('No active center exists. Create or activate a center before seeding.');
+  if (!center) throw new Error('No active center exists. Create or activate a center before seeding.');
 
   console.log(`Seeding demo data into "${center.name}" (id=${center.id})…`);
 
@@ -251,9 +220,7 @@ async function main(): Promise<void> {
   for (const [groupIndex, group] of createdGroups.entries()) {
     for (let seat = 0; seat < 10; seat += 1) {
       const student = activeStudents[(groupIndex * 7 + seat) % activeStudents.length];
-      const existing = enrollments.some(
-        (enrollment) => enrollment.studentId === student.id && enrollment.groupId === group.id,
-      );
+      const existing = enrollments.some((enrollment) => enrollment.studentId === student.id && enrollment.groupId === group.id);
       if (existing) continue;
       // every 5th seat enrolled ~37 days ago so some billing periods have
       // already lapsed (drives OVERDUE/PENDING/PAID spread in the demo data)
@@ -290,8 +257,7 @@ async function main(): Promise<void> {
     const group = groupsById.get(enrollment.groupId);
     if (!group) continue;
     const periodMonths = PERIOD_MONTHS[group.paymentType];
-    const isLongLapsed =
-      now.getTime() - new Date(enrollment.enrollmentDate).getTime() > 40 * 86_400_000;
+    const isLongLapsed = now.getTime() - new Date(enrollment.enrollmentDate).getTime() > 40 * 86_400_000;
     // every 4th recurring enrollment stays unpaid; of the long-lapsed ones,
     // half stay unpaid (OVERDUE demo) and half pay their history
     const isLapsedUnpaid = isLongLapsed && index % 2 === 0;

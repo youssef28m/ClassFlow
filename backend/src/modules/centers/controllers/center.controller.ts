@@ -28,10 +28,7 @@ export class CenterController {
   };
 
   list = async (req: Request, res: Response): Promise<void> => {
-    const result = await this.service.list(
-      req.query as unknown as ListCentersQuery,
-      this.getUser(req),
-    );
+    const result = await this.service.list(req.query as unknown as ListCentersQuery, this.getUser(req));
     res.status(200).json(result);
   };
 

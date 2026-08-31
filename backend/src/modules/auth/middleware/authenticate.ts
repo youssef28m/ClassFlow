@@ -5,11 +5,7 @@ import { type AccessTokenPayload, verifyAccessToken } from '../services/jwt.serv
 
 const repository = new AuthRepository();
 
-export async function authenticate(
-  req: Request,
-  _res: Response,
-  next: NextFunction,
-): Promise<void> {
+export async function authenticate(req: Request, _res: Response, next: NextFunction): Promise<void> {
   const header = req.headers.authorization;
   if (!header?.startsWith('Bearer ')) {
     throw new AppError('Missing bearer token', 401);

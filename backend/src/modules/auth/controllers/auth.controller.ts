@@ -1,11 +1,7 @@
 import type { Request, Response } from 'express';
 import { AppError } from '../../../shared/middleware/error-handler.js';
 import type { AuthService } from '../services/auth.service.js';
-import {
-  clearRefreshCookie,
-  REFRESH_COOKIE_NAME,
-  setRefreshCookie,
-} from '../services/cookie.service.js';
+import { clearRefreshCookie, REFRESH_COOKIE_NAME, setRefreshCookie } from '../services/cookie.service.js';
 
 export class AuthController {
   constructor(private readonly service: AuthService) {}

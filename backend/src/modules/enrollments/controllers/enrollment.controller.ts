@@ -17,11 +17,7 @@ export class EnrollmentController {
   };
 
   updateStatus = async (req: Request, res: Response): Promise<void> => {
-    const enrollment = await this.service.updateStatus(
-      req.params.id,
-      mustGetCenterId(req),
-      req.body,
-    );
+    const enrollment = await this.service.updateStatus(req.params.id, mustGetCenterId(req), req.body);
     res.status(200).json(enrollment);
   };
 
@@ -36,10 +32,7 @@ export class EnrollmentController {
   };
 
   list = async (req: Request, res: Response): Promise<void> => {
-    const result = await this.service.list(
-      req.query as unknown as ListEnrollmentsQuery,
-      req.centerId ?? null,
-    );
+    const result = await this.service.list(req.query as unknown as ListEnrollmentsQuery, req.centerId ?? null);
     res.status(200).json(result);
   };
 }

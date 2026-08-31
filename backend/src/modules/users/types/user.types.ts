@@ -22,9 +22,7 @@ export interface PaginatedResponse<T> {
   meta: PaginationMeta;
 }
 
-export function toUserDTO(
-  user: User & { center?: { name: string } | null },
-): UserDTO {
+export function toUserDTO(user: User & { center?: { name: string } | null }): UserDTO {
   return {
     id: user.id,
     username: user.username,

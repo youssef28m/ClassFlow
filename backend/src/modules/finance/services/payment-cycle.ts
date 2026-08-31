@@ -103,12 +103,7 @@ export function evaluateRecurring(
  * current period is the one aligned to the group's anchor day whose due date
  * has not passed yet (the due date itself is the last day to pay).
  */
-export function computeBillingCycle(
-  enrollmentDate: Date,
-  periodMonths: number,
-  anchorDay: number,
-  today: Date,
-): BillingCycle {
+export function computeBillingCycle(enrollmentDate: Date, periodMonths: number, anchorDay: number, today: Date): BillingCycle {
   let periodStart = firstPeriodStart(enrollmentDate, anchorDay);
   let dueDate = addMonthsClamped(periodStart, periodMonths);
 
@@ -128,11 +123,7 @@ function addMonthsClamped(date: Date, months: number): Date {
   return new Date(Date.UTC(year, month, Math.min(date.getUTCDate(), lastDayOfTarget)));
 }
 
-export function resolvePaymentStatus(
-  hasPaymentInPeriod: boolean,
-  dueDate: Date,
-  today: Date,
-): PaymentStatus {
+export function resolvePaymentStatus(hasPaymentInPeriod: boolean, dueDate: Date, today: Date): PaymentStatus {
   if (hasPaymentInPeriod) return 'PAID';
   return today.getTime() <= dueDate.getTime() ? 'PENDING' : 'OVERDUE';
 }

@@ -9,11 +9,7 @@ import type {
   StudentPaymentSummaryDTO,
 } from '../types/payment.types.js';
 import { toPaymentDTO } from '../types/payment.types.js';
-import type {
-  CreatePaymentInput,
-  ListPaymentsQuery,
-  UpdatePaymentInput,
-} from '../validation/payment.validation.js';
+import type { CreatePaymentInput, ListPaymentsQuery, UpdatePaymentInput } from '../validation/payment.validation.js';
 import { evaluateRecurring, PERIOD_MONTHS } from './payment-cycle.js';
 
 type RouteId = string | string[] | undefined;
@@ -44,13 +40,9 @@ export class PaymentService {
     }
   }
 
-  async list(
-    query: ListPaymentsQuery,
-    centerId: number | null,
-  ): Promise<PaginatedResponse<PaymentDTO>> {
+  async list(query: ListPaymentsQuery, centerId: number | null): Promise<PaginatedResponse<PaymentDTO>> {
     const { page, pageSize, search, enrollmentId, groupId, paymentMethod, from, to } = query;
-    if (from && to && from > to)
-      throw new AppError('The from date must be before the to date', 400);
+    if (from && to && from > to) throw new AppError('The from date must be before the to date', 400);
     const { items, total } = await this.repository.findMany({
       search,
       enrollmentId,
@@ -75,11 +67,7 @@ export class PaymentService {
    * a payment made inside the window marks it PAID, otherwise it is PENDING
    * until the due date passes and OVERDUE afterwards.
    */
-  async studentSummary(
-    studentIdRaw: RouteId,
-    centerId: number,
-    user: AuthUser,
-  ): Promise<StudentPaymentSummaryDTO> {
+  async studentSummary(studentIdRaw: RouteId, centerId: number, user: AuthUser): Promise<StudentPaymentSummaryDTO> {
     if (!this.canSeePaymentStatus(user)) {
       throw new AppError('You do not have permission to view payment summaries', 403);
     }
@@ -105,10 +93,7 @@ export class PaymentService {
     for (const payment of payments) {
       const amount = Number(payment.amount);
       totalPaid += amount;
-      totalByEnrollment.set(
-        payment.enrollmentId,
-        (totalByEnrollment.get(payment.enrollmentId) ?? 0) + amount,
-      );
+      totalByEnrollment.set(payment.enrollmentId, (totalByEnrollment.get(payment.enrollmentId) ?? 0) + amount);
       const existing = lastPaymentByEnrollment.get(payment.enrollmentId);
       if (!existing || payment.paymentDate > existing) {
         lastPaymentByEnrollment.set(payment.enrollmentId, payment.paymentDate);

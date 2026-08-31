@@ -71,18 +71,14 @@ export class DashboardService {
       }
     }
 
-    overdue.sort(
-      (a, b) => b.daysOverdue - a.daysOverdue || a.studentName.localeCompare(b.studentName),
-    );
+    overdue.sort((a, b) => b.daysOverdue - a.daysOverdue || a.studentName.localeCompare(b.studentName));
 
     return { items: overdue, total: overdue.length };
   }
 
   async getOverview(user: AuthUser, centerId: number): Promise<DashboardOverviewDTO> {
     const now = new Date();
-    const todayStart = new Date(
-      Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()),
-    );
+    const todayStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
     const tomorrowStart = new Date(todayStart.getTime() + 86_400_000);
     const trendStart = new Date(todayStart.getTime() - (TREND_DAYS - 1) * 86_400_000);
     const monthStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1));
@@ -104,88 +100,79 @@ export class DashboardService {
       attendanceRecords: { select: { status: true } },
     } as const;
 
-    const revenueStart = new Date(
-      Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - (REVENUE_MONTHS - 1), 1),
-    );
+    const revenueStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - (REVENUE_MONTHS - 1), 1));
 
-    const [
-      todaySessions,
-      trendSessions,
-      monthAggregate,
-      monthExpenses,
-      recurringEnrollments,
-      periodPayments,
-      revenuePayments,
-    ] = await Promise.all([
-      prisma.session.findMany({
-        where: { group: { centerId }, sessionDate: { gte: todayStart, lt: tomorrowStart } },
-        select: sessionSelect,
-      }),
-      prisma.session.findMany({
-        where: {
-          group: { centerId },
-          sessionDate: { gte: trendStart, lt: tomorrowStart },
-        },
-        select: { sessionDate: true, attendanceRecords: { select: { status: true } } },
-      }),
-      can(user, 'paymentsAndExpenses', 'read')
-        ? prisma.payment.aggregate({
-            where: {
-              enrollment: { student: { centerId } },
-              paymentDate: { gte: monthStart, lt: nextMonthStart },
-            },
-            _sum: { amount: true },
-            _count: true,
-          })
-        : Promise.resolve(null),
-      can(user, 'paymentsAndExpenses', 'read')
-        ? prisma.expense.aggregate({
-            where: {
-              centerId,
-              expenseDate: { gte: monthStart, lt: nextMonthStart },
-            },
-            _sum: { amount: true },
-          })
-        : Promise.resolve(null),
-      canSeePayments
-        ? prisma.enrollment.findMany({
-            where: {
-              active: true,
-              student: { centerId },
-              group: { paymentType: { not: 'PER_SESSION' } },
-            },
-            select: {
-              id: true,
-              enrollmentDate: true,
-              student: { select: { id: true, fullName: true } },
-              group: {
-                select: {
-                  id: true,
-                  name: true,
-                  fee: true,
-                  paymentType: true,
-                  billingAnchorDay: true,
+    const [todaySessions, trendSessions, monthAggregate, monthExpenses, recurringEnrollments, periodPayments, revenuePayments] =
+      await Promise.all([
+        prisma.session.findMany({
+          where: { group: { centerId }, sessionDate: { gte: todayStart, lt: tomorrowStart } },
+          select: sessionSelect,
+        }),
+        prisma.session.findMany({
+          where: {
+            group: { centerId },
+            sessionDate: { gte: trendStart, lt: tomorrowStart },
+          },
+          select: { sessionDate: true, attendanceRecords: { select: { status: true } } },
+        }),
+        can(user, 'paymentsAndExpenses', 'read')
+          ? prisma.payment.aggregate({
+              where: {
+                enrollment: { student: { centerId } },
+                paymentDate: { gte: monthStart, lt: nextMonthStart },
+              },
+              _sum: { amount: true },
+              _count: true,
+            })
+          : Promise.resolve(null),
+        can(user, 'paymentsAndExpenses', 'read')
+          ? prisma.expense.aggregate({
+              where: {
+                centerId,
+                expenseDate: { gte: monthStart, lt: nextMonthStart },
+              },
+              _sum: { amount: true },
+            })
+          : Promise.resolve(null),
+        canSeePayments
+          ? prisma.enrollment.findMany({
+              where: {
+                active: true,
+                student: { centerId },
+                group: { paymentType: { not: 'PER_SESSION' } },
+              },
+              select: {
+                id: true,
+                enrollmentDate: true,
+                student: { select: { id: true, fullName: true } },
+                group: {
+                  select: {
+                    id: true,
+                    name: true,
+                    fee: true,
+                    paymentType: true,
+                    billingAnchorDay: true,
+                  },
                 },
               },
-            },
-          })
-        : Promise.resolve([]),
-      canSeePayments
-        ? prisma.payment.findMany({
-            where: { enrollment: { active: true, student: { centerId } } },
-            select: { enrollmentId: true, paymentDate: true },
-          })
-        : Promise.resolve([]),
-      canSeePayments
-        ? prisma.payment.findMany({
-            where: {
-              enrollment: { student: { centerId } },
-              paymentDate: { gte: revenueStart, lt: nextMonthStart },
-            },
-            select: { amount: true, paymentDate: true },
-          })
-        : Promise.resolve([]),
-    ]);
+            })
+          : Promise.resolve([]),
+        canSeePayments
+          ? prisma.payment.findMany({
+              where: { enrollment: { active: true, student: { centerId } } },
+              select: { enrollmentId: true, paymentDate: true },
+            })
+          : Promise.resolve([]),
+        canSeePayments
+          ? prisma.payment.findMany({
+              where: {
+                enrollment: { student: { centerId } },
+                paymentDate: { gte: revenueStart, lt: nextMonthStart },
+              },
+              select: { amount: true, paymentDate: true },
+            })
+          : Promise.resolve([]),
+      ]);
 
     let monthCollected: DashboardOverviewDTO['monthCollected'] = null;
     if (monthAggregate) {
@@ -230,9 +217,7 @@ export class DashboardService {
           });
         }
       }
-      overdue.sort(
-        (a, b) => b.daysOverdue - a.daysOverdue || a.studentName.localeCompare(b.studentName),
-      );
+      overdue.sort((a, b) => b.daysOverdue - a.daysOverdue || a.studentName.localeCompare(b.studentName));
       overdueStudents = { items: overdue.slice(0, OVERDUE_LIST_LIMIT), total: overdue.length };
     }
 
@@ -256,9 +241,7 @@ export class DashboardService {
 
     return {
       monthlyRevenue,
-      todaySessions: todaySessions
-        .map(toTodaySessionDTO)
-        .sort((a, b) => a.startTime.localeCompare(b.startTime)),
+      todaySessions: todaySessions.map(toTodaySessionDTO).sort((a, b) => a.startTime.localeCompare(b.startTime)),
       attendanceTrend: buildTrend(trendSessions, trendStart.getTime(), TREND_DAYS),
       monthCollected,
       overdueStudents,

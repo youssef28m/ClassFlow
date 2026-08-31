@@ -20,10 +20,7 @@ export function startSalaryScheduler(): void {
       for (const center of centers) {
         try {
           const result = await service.payAllForPreviousMonth(center.id);
-          logger.info(
-            { centerId: center.id, centerName: center.name, ...result },
-            'Salary cron completed for center',
-          );
+          logger.info({ centerId: center.id, centerName: center.name, ...result }, 'Salary cron completed for center');
         } catch (error) {
           logger.error({ centerId: center.id, error }, 'Salary cron failed for center');
         }

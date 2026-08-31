@@ -93,11 +93,7 @@ export class PaymentRepository {
     });
   }
 
-  async update(
-    id: number,
-    centerId: number,
-    data: Prisma.PaymentUncheckedUpdateInput,
-  ): Promise<Payment | null> {
+  async update(id: number, centerId: number, data: Prisma.PaymentUncheckedUpdateInput): Promise<Payment | null> {
     const result = await prisma.payment.updateMany({
       where: { id, enrollment: { student: { centerId } } },
       data,
@@ -121,9 +117,7 @@ export class PaymentRepository {
       where.enrollment = {
         ...(where.enrollment as Prisma.EnrollmentWhereInput),
         student: {
-          ...((where.enrollment as Prisma.EnrollmentWhereInput | undefined)?.student as
-            | Prisma.StudentWhereInput
-            | undefined),
+          ...((where.enrollment as Prisma.EnrollmentWhereInput | undefined)?.student as Prisma.StudentWhereInput | undefined),
           fullName: { contains: params.search, mode: 'insensitive' },
         },
       };

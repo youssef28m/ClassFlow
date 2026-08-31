@@ -52,10 +52,7 @@ export type CenterScopeFilter = Record<string, unknown>;
  * Pass `null` for SUPERADMIN requests operating across all centers to get an
  * empty fragment (no scoping applied).
  */
-export function applyCenterScope<M extends ScopedModel>(
-  model: M,
-  centerId: number | null,
-): CenterScopeFilter {
+export function applyCenterScope<M extends ScopedModel>(model: M, centerId: number | null): CenterScopeFilter {
   if (centerId === null) return {};
 
   const path = CENTER_RELATION_PATH[model];
@@ -71,11 +68,7 @@ export function applyCenterScope<M extends ScopedModel>(
  * SUPERADMIN-aware: 'all'-scope actors pass any resource; 'center'-scope
  * actors must match. Responds with 404 so callers cannot probe existence.
  */
-export function assertCanAccessCenter(
-  actorScope: 'all' | 'center',
-  actorCenterId: number | null,
-  ownerCenterId: number,
-): void {
+export function assertCanAccessCenter(actorScope: 'all' | 'center', actorCenterId: number | null, ownerCenterId: number): void {
   if (actorScope === 'all') return;
   if (actorCenterId !== ownerCenterId) {
     throw new AppError('Resource not found', 404);

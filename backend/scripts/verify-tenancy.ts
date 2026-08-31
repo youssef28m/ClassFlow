@@ -104,28 +104,19 @@ async function main(): Promise<void> {
     const tokenRoot = await login(baseUrl, 'root');
     console.log('Setup: logged in as center A admin, center B admin, center C user, SUPERADMIN');
 
-    ok(
-      tokenA !== tokenB,
-      'two centers may each have a user named "admin" (per-center username uniqueness)',
-    );
+    ok(tokenA !== tokenB, 'two centers may each have a user named "admin" (per-center username uniqueness)');
 
     const duplicate = await request(baseUrl, `/api/centers/${centerA.id}/users`, tokenRoot, {
       method: 'POST',
       body: JSON.stringify({ username: 'admin', password: PASSWORD }),
     });
-    ok(
-      duplicate.status === 409,
-      `registering a duplicate "admin" in center A returns 409 (got ${duplicate.status})`,
-    );
+    ok(duplicate.status === 409, `registering a duplicate "admin" in center A returns 409 (got ${duplicate.status})`);
 
     const newUser = await request(baseUrl, `/api/centers/${centerA.id}/users`, tokenRoot, {
       method: 'POST',
       body: JSON.stringify({ username: 'manager-x', password: PASSWORD, role: 'MANAGER' }),
     });
-    ok(
-      newUser.status === 201 && newUser.body.role === 'MANAGER',
-      'SUPERADMIN can create a MANAGER user for a center',
-    );
+    ok(newUser.status === 201 && newUser.body.role === 'MANAGER', 'SUPERADMIN can create a MANAGER user for a center');
 
     const createStudentA = await request(baseUrl, '/api/students', tokenA, {
       method: 'POST',
@@ -139,26 +130,17 @@ async function main(): Promise<void> {
       }),
     });
     const studentAId = createStudentA.body.id as number;
-    ok(
-      createStudentA.status === 201,
-      `center A admin can create a student (got ${createStudentA.status})`,
-    );
+    ok(createStudentA.status === 201, `center A admin can create a student (got ${createStudentA.status})`);
 
     const storedStudentA = await prisma.student.findUniqueOrThrow({ where: { id: studentAId } });
-    ok(
-      storedStudentA.centerId === centerA.id,
-      'student stored with token center (body centerId=9999 ignored)',
-    );
+    ok(storedStudentA.centerId === centerA.id, 'student stored with token center (body centerId=9999 ignored)');
 
     const createTeacherA = await request(baseUrl, '/api/teachers', tokenA, {
       method: 'POST',
       body: JSON.stringify({ fullName: 'Mr A', phone: '200', specialization: 'Math', salary: 500 }),
     });
     const teacherAId = createTeacherA.body.id as number;
-    ok(
-      createTeacherA.status === 201,
-      `center A admin can create a teacher (got ${createTeacherA.status})`,
-    );
+    ok(createTeacherA.status === 201, `center A admin can create a teacher (got ${createTeacherA.status})`);
 
     const createStudentB = await request(baseUrl, '/api/students', tokenB, {
       method: 'POST',
@@ -171,39 +153,24 @@ async function main(): Promise<void> {
       }),
     });
     const studentBId = createStudentB.body.id as number;
-    ok(
-      createStudentB.status === 201,
-      `center B admin can create a student (got ${createStudentB.status})`,
-    );
+    ok(createStudentB.status === 201, `center B admin can create a student (got ${createStudentB.status})`);
 
     const crossGet = await request(baseUrl, `/api/students/${studentAId}`, tokenB);
-    ok(
-      crossGet.status === 404,
-      `center B cannot fetch center A student by id (got ${crossGet.status})`,
-    );
+    ok(crossGet.status === 404, `center B cannot fetch center A student by id (got ${crossGet.status})`);
 
     const crossPatch = await request(baseUrl, `/api/students/${studentAId}`, tokenB, {
       method: 'PATCH',
       body: JSON.stringify({ fullName: 'Hacked' }),
     });
-    ok(
-      crossPatch.status === 404,
-      `center B cannot update center A student (got ${crossPatch.status})`,
-    );
+    ok(crossPatch.status === 404, `center B cannot update center A student (got ${crossPatch.status})`);
 
     const crossDelete = await request(baseUrl, `/api/students/${studentAId}`, tokenB, {
       method: 'DELETE',
     });
-    ok(
-      crossDelete.status === 404,
-      `center B cannot delete center A student (got ${crossDelete.status})`,
-    );
+    ok(crossDelete.status === 404, `center B cannot delete center A student (got ${crossDelete.status})`);
 
     const crossTeacherGet = await request(baseUrl, `/api/teachers/${teacherAId}`, tokenB);
-    ok(
-      crossTeacherGet.status === 404,
-      `center B cannot fetch center A teacher by id (got ${crossTeacherGet.status})`,
-    );
+    ok(crossTeacherGet.status === 404, `center B cannot fetch center A teacher by id (got ${crossTeacherGet.status})`);
 
     const afterCross = await prisma.student.findUnique({ where: { id: studentAId } });
     ok(afterCross !== null, 'center A student still exists after center B attempted write');
@@ -227,9 +194,7 @@ async function main(): Promise<void> {
     const centerAScope = await request(baseUrl, `/api/students?centerId=${centerA.id}`, tokenRoot);
     const centerAIds = (centerAScope.body.items as Array<{ id: number }>).map((s) => s.id);
     ok(
-      centerAScope.status === 200 &&
-        centerAIds.includes(studentAId) &&
-        !centerAIds.includes(studentBId),
+      centerAScope.status === 200 && centerAIds.includes(studentAId) && !centerAIds.includes(studentBId),
       'SUPERADMIN can scope list to a single center via centerId query',
     );
 
@@ -260,33 +225,21 @@ async function main(): Promise<void> {
         joinDate: '2026-03-01',
       }),
     });
-    ok(
-      superNoCenter.status === 400,
-      `SUPERADMIN write without centerId returns 400 (got ${superNoCenter.status})`,
-    );
+    ok(superNoCenter.status === 400, `SUPERADMIN write without centerId returns 400 (got ${superNoCenter.status})`);
 
     const deactivate = await request(baseUrl, `/api/centers/${centerC.id}/deactivate`, tokenRoot, {
       method: 'PATCH',
     });
-    ok(
-      deactivate.status === 200 && deactivate.body.active === false,
-      'SUPERADMIN can deactivate a center',
-    );
+    ok(deactivate.status === 200 && deactivate.body.active === false, 'SUPERADMIN can deactivate a center');
 
     const loginBlocked = await request(baseUrl, '/api/auth/login', null, {
       method: 'POST',
       body: JSON.stringify({ username: 'user-c', password: PASSWORD, centerId: centerC.id }),
     });
-    ok(
-      loginBlocked.status === 403,
-      `login for deactivated center is blocked (got ${loginBlocked.status})`,
-    );
+    ok(loginBlocked.status === 403, `login for deactivated center is blocked (got ${loginBlocked.status})`);
 
     const apiBlocked = await request(baseUrl, '/api/students', tokenC);
-    ok(
-      apiBlocked.status === 403,
-      `authenticated requests for deactivated center are blocked (got ${apiBlocked.status})`,
-    );
+    ok(apiBlocked.status === 403, `authenticated requests for deactivated center are blocked (got ${apiBlocked.status})`);
   } finally {
     server.close();
     await cleanup();

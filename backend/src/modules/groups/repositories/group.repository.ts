@@ -1,9 +1,4 @@
-import type {
-  Group,
-  PaymentType,
-  Prisma,
-  StudentStatus,
-} from '../../../generated/prisma/client.js';
+import type { Group, PaymentType, Prisma, StudentStatus } from '../../../generated/prisma/client.js';
 import { prisma } from '../../../shared/prisma/prisma-client.js';
 
 export interface GroupFindManyParams {
@@ -39,11 +34,7 @@ export class GroupRepository {
     });
   }
 
-  async update(
-    id: number,
-    centerId: number,
-    data: Prisma.GroupUncheckedUpdateInput,
-  ): Promise<Group | null> {
+  async update(id: number, centerId: number, data: Prisma.GroupUncheckedUpdateInput): Promise<Group | null> {
     const result = await prisma.group.updateMany({ where: { id, centerId }, data });
     if (result.count === 0) {
       return null;

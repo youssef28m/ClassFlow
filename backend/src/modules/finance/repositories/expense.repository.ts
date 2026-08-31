@@ -19,11 +19,7 @@ export class ExpenseRepository {
     return prisma.expense.findFirst({ where: { id, centerId } });
   }
 
-  async update(
-    id: number,
-    centerId: number,
-    data: Prisma.ExpenseUncheckedUpdateInput,
-  ): Promise<Expense | null> {
+  async update(id: number, centerId: number, data: Prisma.ExpenseUncheckedUpdateInput): Promise<Expense | null> {
     const result = await prisma.expense.updateMany({ where: { id, centerId }, data });
     if (result.count === 0) return null;
     return prisma.expense.findUniqueOrThrow({ where: { id } });

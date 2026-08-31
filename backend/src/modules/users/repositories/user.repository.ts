@@ -22,11 +22,7 @@ export class UserRepository {
     return prisma.user.findFirst({ where: { username, centerId } });
   }
 
-  async update(
-    id: number,
-    centerId: number,
-    data: Prisma.UserUncheckedUpdateInput,
-  ): Promise<User | null> {
+  async update(id: number, centerId: number, data: Prisma.UserUncheckedUpdateInput): Promise<User | null> {
     const result = await prisma.user.updateMany({ where: { id, centerId }, data });
     if (result.count === 0) {
       return null;

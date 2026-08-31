@@ -1,9 +1,6 @@
 import { Router } from 'express';
 import { requirePermission } from '../../../shared/authz/require-permission.js';
-import {
-  requireCenterScope,
-  requireResolvedCenterId,
-} from '../../../shared/middleware/require-center-scope.js';
+import { requireCenterScope, requireResolvedCenterId } from '../../../shared/middleware/require-center-scope.js';
 import { validate, validateQuery } from '../../../shared/middleware/validate.js';
 import { authenticate } from '../../auth/middleware/authenticate.js';
 import { EnrollmentController } from '../controllers/enrollment.controller.js';
@@ -49,11 +46,6 @@ router.patch(
   validate(updateEnrollmentDateSchema),
   controller.updateDate,
 );
-router.delete(
-  '/:id',
-  requirePermission('students', 'delete'),
-  requireResolvedCenterId,
-  controller.delete,
-);
+router.delete('/:id', requirePermission('students', 'delete'), requireResolvedCenterId, controller.delete);
 
 export default router;

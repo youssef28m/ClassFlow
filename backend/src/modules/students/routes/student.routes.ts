@@ -1,19 +1,12 @@
 import { Router } from 'express';
 import { requirePermission } from '../../../shared/authz/require-permission.js';
-import {
-  requireCenterScope,
-  requireResolvedCenterId,
-} from '../../../shared/middleware/require-center-scope.js';
+import { requireCenterScope, requireResolvedCenterId } from '../../../shared/middleware/require-center-scope.js';
 import { validate, validateQuery } from '../../../shared/middleware/validate.js';
 import { authenticate } from '../../auth/middleware/authenticate.js';
 import { StudentController } from '../controllers/student.controller.js';
 import { StudentRepository } from '../repositories/student.repository.js';
 import { StudentService } from '../services/student.service.js';
-import {
-  createStudentSchema,
-  listStudentsQuerySchema,
-  updateStudentSchema,
-} from '../validation/student.validation.js';
+import { createStudentSchema, listStudentsQuerySchema, updateStudentSchema } from '../validation/student.validation.js';
 
 const repository = new StudentRepository();
 const service = new StudentService(repository);
@@ -40,11 +33,6 @@ router.patch(
   validate(updateStudentSchema),
   controller.update,
 );
-router.delete(
-  '/:id',
-  requirePermission('students', 'delete'),
-  requireResolvedCenterId,
-  controller.delete,
-);
+router.delete('/:id', requirePermission('students', 'delete'), requireResolvedCenterId, controller.delete);
 
 export default router;

@@ -108,9 +108,7 @@ describe('createSalarySchema amount handling', () => {
       percentage: 70,
       paymentDate: '2026-03-01',
     };
-    expect(createSalarySchema.parse({ ...base, amount: '1500.50', paymentSum: '800' }).amount).toBe(
-      '1500.50',
-    );
+    expect(createSalarySchema.parse({ ...base, amount: '1500.50', paymentSum: '800' }).amount).toBe('1500.50');
   });
 
   it('rejects a string amount with 3 decimals', () => {
@@ -121,9 +119,7 @@ describe('createSalarySchema amount handling', () => {
       percentage: 70,
       paymentDate: '2026-03-01',
     };
-    expect(() =>
-      createSalarySchema.parse({ ...base, amount: '1500.505', paymentSum: '800' }),
-    ).toThrow();
+    expect(() => createSalarySchema.parse({ ...base, amount: '1500.505', paymentSum: '800' })).toThrow();
   });
 
   it('rejects zero and negative amounts', () => {

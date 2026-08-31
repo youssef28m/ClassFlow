@@ -24,18 +24,7 @@ const FIRST_NAMES = [
   'Aya',
 ];
 
-const LAST_NAMES = [
-  'Mohamed',
-  'Ali',
-  'Hassan',
-  'Ibrahim',
-  'Mahmoud',
-  'Sayed',
-  'Fathy',
-  'Yassin',
-  'Adel',
-  'Nabil',
-];
+const LAST_NAMES = ['Mohamed', 'Ali', 'Hassan', 'Ibrahim', 'Mahmoud', 'Sayed', 'Fathy', 'Yassin', 'Adel', 'Nabil'];
 
 async function main(): Promise<void> {
   const center = await prisma.center.findFirst({
@@ -43,8 +32,7 @@ async function main(): Promise<void> {
     orderBy: { id: 'asc' },
     select: { id: true, name: true },
   });
-  if (!center)
-    throw new Error('No active center exists. Create or activate a center before seeding.');
+  if (!center) throw new Error('No active center exists. Create or activate a center before seeding.');
 
   const students = Array.from({ length: 40 }, (_, index) => ({
     fullName: `${FIRST_NAMES[index % FIRST_NAMES.length]} ${LAST_NAMES[Math.floor(index / 2) % LAST_NAMES.length]}`,

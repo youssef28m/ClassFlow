@@ -2,12 +2,7 @@ import { StudentStatus } from '../../../generated/prisma/client.js';
 import { AppError } from '../../../shared/middleware/error-handler.js';
 import { assertCenterScope } from '../../../shared/tenant/tenant-guard.js';
 import type { EnrollmentRepository } from '../repositories/enrollment.repository.js';
-import type {
-  EnrollmentDetail,
-  EnrollmentDTO,
-  EnrollmentWithRelations,
-  PaginatedResponse,
-} from '../types/enrollment.types.js';
+import type { EnrollmentDetail, EnrollmentDTO, EnrollmentWithRelations, PaginatedResponse } from '../types/enrollment.types.js';
 import { toEnrollmentDTO } from '../types/enrollment.types.js';
 import type {
   CreateEnrollmentInput,
@@ -44,11 +39,7 @@ export class EnrollmentService {
     }
 
     if (existing) {
-      const reactivated = await this.repository.activate(
-        existing.id,
-        input.groupId,
-        group.maxStudents,
-      );
+      const reactivated = await this.repository.activate(existing.id, input.groupId, group.maxStudents);
       if (!reactivated) {
         throw new AppError(GROUP_FULL_MESSAGE, 400);
       }
@@ -74,11 +65,7 @@ export class EnrollmentService {
     return toEnrollmentDTO(enrollment);
   }
 
-  async updateStatus(
-    id: RouteId,
-    centerId: number,
-    input: UpdateEnrollmentStatusInput,
-  ): Promise<EnrollmentDTO> {
+  async updateStatus(id: RouteId, centerId: number, input: UpdateEnrollmentStatusInput): Promise<EnrollmentDTO> {
     const current = await this.getOwnedEnrollment(this.parseId(id), centerId);
 
     if (input.active === current.active) {
@@ -87,11 +74,7 @@ export class EnrollmentService {
 
     let updated: EnrollmentWithRelations | null;
     if (input.active) {
-      updated = await this.repository.activate(
-        current.id,
-        current.groupId,
-        current.group.maxStudents,
-      );
+      updated = await this.repository.activate(current.id, current.groupId, current.group.maxStudents);
       if (!updated) {
         throw new AppError(GROUP_FULL_MESSAGE, 400);
       }
@@ -105,11 +88,7 @@ export class EnrollmentService {
     return toEnrollmentDTO(updated);
   }
 
-  async updateDate(
-    id: RouteId,
-    centerId: number,
-    input: UpdateEnrollmentDateInput,
-  ): Promise<EnrollmentDTO> {
+  async updateDate(id: RouteId, centerId: number, input: UpdateEnrollmentDateInput): Promise<EnrollmentDTO> {
     const current = await this.getOwnedEnrollment(this.parseId(id), centerId);
     const updated = await this.repository.updateDate(current.id, input.enrollmentDate);
     if (!updated) {
@@ -123,10 +102,7 @@ export class EnrollmentService {
 
     const paymentCount = await this.repository.countPayments(enrollment.id);
     if (paymentCount > 0) {
-      throw new AppError(
-        'Cannot delete an enrollment with recorded payments; deactivate it instead',
-        409,
-      );
+      throw new AppError('Cannot delete an enrollment with recorded payments; deactivate it instead', 409);
     }
 
     const deleted = await this.repository.delete(enrollment.id);
@@ -135,10 +111,7 @@ export class EnrollmentService {
     }
   }
 
-  async list(
-    query: ListEnrollmentsQuery,
-    centerId: number | null,
-  ): Promise<PaginatedResponse<EnrollmentDTO>> {
+  async list(query: ListEnrollmentsQuery, centerId: number | null): Promise<PaginatedResponse<EnrollmentDTO>> {
     const { page, pageSize, search, studentId, groupId, active } = query;
     const { items, total } = await this.repository.findMany({
       search,

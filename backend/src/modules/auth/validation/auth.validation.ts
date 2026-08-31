@@ -9,15 +9,8 @@ export const loginSchema = z.object({
 export type LoginInput = z.infer<typeof loginSchema>;
 
 export const signupSchema = z.object({
-  username: z
-    .string()
-    .trim()
-    .min(3, 'Username must be at least 3 characters')
-    .max(50, 'Username is too long'),
-  password: z
-    .string()
-    .min(8, 'Password must be at least 8 characters')
-    .max(128, 'Password is too long'),
+  username: z.string().trim().min(3, 'Username must be at least 3 characters').max(50, 'Username is too long'),
+  password: z.string().min(8, 'Password must be at least 8 characters').max(128, 'Password is too long'),
   centerId: z.coerce.number().int().positive().optional(),
 });
 

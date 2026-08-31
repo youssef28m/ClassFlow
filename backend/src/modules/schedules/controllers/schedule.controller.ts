@@ -24,10 +24,6 @@ export class ScheduleController {
   };
 
   list = async (req: Request, res: Response): Promise<void> => {
-    res
-      .status(200)
-      .json(
-        await this.service.list(req.query as unknown as ListSchedulesQuery, req.centerId ?? null),
-      );
+    res.status(200).json(await this.service.list(req.query as unknown as ListSchedulesQuery, req.centerId ?? null));
   };
 }

@@ -77,9 +77,7 @@ interface SessionWithAttendance {
 }
 
 export function toTodaySessionDTO(session: SessionWithAttendance): TodaySessionDTO {
-  const presentCount = session.attendanceRecords.filter(
-    (record) => record.status === 'PRESENT',
-  ).length;
+  const presentCount = session.attendanceRecords.filter((record) => record.status === 'PRESENT').length;
   return {
     id: session.id,
     groupId: session.groupId,

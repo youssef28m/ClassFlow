@@ -40,11 +40,7 @@ export function requireAnyPermission(...permissions: PermissionCheck[]) {
     if (!user) {
       throw new AppError('Unauthorized', 401);
     }
-    if (
-      !permissions.some(({ resource, action }) =>
-        can(user, resource, action as ActionsOf<typeof resource>),
-      )
-    ) {
+    if (!permissions.some(({ resource, action }) => can(user, resource, action as ActionsOf<typeof resource>))) {
       throw new AppError('Forbidden: insufficient permissions', 403);
     }
     next();

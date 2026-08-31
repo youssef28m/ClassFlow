@@ -27,10 +27,7 @@ export class StudentController {
   };
 
   list = async (req: Request, res: Response): Promise<void> => {
-    const result = await this.service.list(
-      req.query as unknown as ListStudentsQuery,
-      req.centerId ?? null,
-    );
+    const result = await this.service.list(req.query as unknown as ListStudentsQuery, req.centerId ?? null);
     res.status(200).json(result);
   };
 

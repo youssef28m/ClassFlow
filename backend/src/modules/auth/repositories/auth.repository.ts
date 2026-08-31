@@ -18,12 +18,7 @@ export class AuthRepository {
     });
   }
 
-  create(data: {
-    username: string;
-    passwordHash: string;
-    role: Role;
-    centerId: number;
-  }): Promise<User> {
+  create(data: { username: string; passwordHash: string; role: Role; centerId: number }): Promise<User> {
     return prisma.user.create({ data });
   }
 
@@ -36,11 +31,7 @@ export class AuthRepository {
     return center?.id ?? null;
   }
 
-  createRefreshToken(data: {
-    tokenHash: string;
-    userId: number;
-    expiresAt: Date;
-  }): Promise<RefreshToken> {
+  createRefreshToken(data: { tokenHash: string; userId: number; expiresAt: Date }): Promise<RefreshToken> {
     return prisma.refreshToken.create({ data });
   }
 

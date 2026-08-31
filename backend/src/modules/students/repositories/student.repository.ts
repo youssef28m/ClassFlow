@@ -27,11 +27,7 @@ export class StudentRepository {
     });
   }
 
-  findDuplicateByNameAndGrade(
-    centerId: number,
-    fullName: string,
-    grade: string,
-  ): Promise<Student | null> {
+  findDuplicateByNameAndGrade(centerId: number, fullName: string, grade: string): Promise<Student | null> {
     return prisma.student.findFirst({
       where: {
         centerId,
@@ -41,11 +37,7 @@ export class StudentRepository {
     });
   }
 
-  async update(
-    id: number,
-    centerId: number,
-    data: Prisma.StudentUncheckedUpdateInput,
-  ): Promise<Student | null> {
+  async update(id: number, centerId: number, data: Prisma.StudentUncheckedUpdateInput): Promise<Student | null> {
     const result = await prisma.student.updateMany({ where: { id, centerId }, data });
     if (result.count === 0) {
       return null;

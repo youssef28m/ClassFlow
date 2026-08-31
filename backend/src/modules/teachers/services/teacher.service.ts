@@ -2,11 +2,7 @@ import { AppError } from '../../../shared/middleware/error-handler.js';
 import type { TeacherRepository } from '../repositories/teacher.repository.js';
 import type { PaginatedResponse, TeacherDTO } from '../types/teacher.types.js';
 import { toTeacherDTO } from '../types/teacher.types.js';
-import type {
-  CreateTeacherInput,
-  ListTeachersQuery,
-  UpdateTeacherInput,
-} from '../validation/teacher.validation.js';
+import type { CreateTeacherInput, ListTeachersQuery, UpdateTeacherInput } from '../validation/teacher.validation.js';
 
 type RouteId = string | string[] | undefined;
 
@@ -41,10 +37,7 @@ export class TeacherService {
     }
   }
 
-  async list(
-    query: ListTeachersQuery,
-    centerId: number | null,
-  ): Promise<PaginatedResponse<TeacherDTO>> {
+  async list(query: ListTeachersQuery, centerId: number | null): Promise<PaginatedResponse<TeacherDTO>> {
     const { page, pageSize, search, active } = query;
     const { items, total } = await this.repository.findMany({
       search,

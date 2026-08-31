@@ -4,32 +4,16 @@ import { Role } from '../../../generated/prisma/client.js';
 const userRoleSchema = z.enum(Role);
 
 export const createUserSchema = z.object({
-  username: z
-    .string()
-    .trim()
-    .min(3, 'Username must be at least 3 characters')
-    .max(50, 'Username is too long'),
-  password: z
-    .string()
-    .min(8, 'Password must be at least 8 characters')
-    .max(128, 'Password is too long'),
+  username: z.string().trim().min(3, 'Username must be at least 3 characters').max(50, 'Username is too long'),
+  password: z.string().min(8, 'Password must be at least 8 characters').max(128, 'Password is too long'),
   role: userRoleSchema,
 });
 
 export type CreateUserInput = z.infer<typeof createUserSchema>;
 
 export const updateUserSchema = z.object({
-  username: z
-    .string()
-    .trim()
-    .min(3, 'Username must be at least 3 characters')
-    .max(50, 'Username is too long')
-    .optional(),
-  password: z
-    .string()
-    .min(8, 'Password must be at least 8 characters')
-    .max(128, 'Password is too long')
-    .optional(),
+  username: z.string().trim().min(3, 'Username must be at least 3 characters').max(50, 'Username is too long').optional(),
+  password: z.string().min(8, 'Password must be at least 8 characters').max(128, 'Password is too long').optional(),
   role: userRoleSchema.optional(),
 });
 

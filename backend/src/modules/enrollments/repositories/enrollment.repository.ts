@@ -51,11 +51,7 @@ export class EnrollmentRepository {
     });
   }
 
-  async activate(
-    id: number,
-    groupId: number,
-    maxStudents: number,
-  ): Promise<EnrollmentWithRelations | null> {
+  async activate(id: number, groupId: number, maxStudents: number): Promise<EnrollmentWithRelations | null> {
     return prisma.$transaction(async (tx) => {
       const activeCount = await tx.enrollment.count({
         where: { groupId, active: true },
@@ -103,9 +99,7 @@ export class EnrollmentRepository {
     return result.count > 0;
   }
 
-  async findMany(
-    params: EnrollmentFindManyParams,
-  ): Promise<{ items: EnrollmentWithRelations[]; total: number }> {
+  async findMany(params: EnrollmentFindManyParams): Promise<{ items: EnrollmentWithRelations[]; total: number }> {
     const where: Prisma.EnrollmentWhereInput = {};
 
     if (params.centerId !== null && params.centerId !== undefined) {

@@ -39,13 +39,7 @@ export const RESOURCE_ACTIONS = {
   centers: ['read', 'create', 'update', 'delete'],
   users: ['read', 'create', 'update', 'delete'],
   students: ['read', 'create', 'update', 'delete'],
-  teachersAndSalaries: [
-    'readTeachers',
-    'createTeacher',
-    'updateTeacher',
-    'deleteTeacher',
-    'manageSalaries',
-  ],
+  teachersAndSalaries: ['readTeachers', 'createTeacher', 'updateTeacher', 'deleteTeacher', 'manageSalaries'],
   groupsAndSessions: [
     'read',
     'manageGroups', // create/update/delete groups (delete confirmed allowed for MANAGER)
@@ -90,13 +84,7 @@ export const PERMISSIONS: PermissionTable = {
     students: { scope: 'all', actions: ['read', 'create', 'update', 'delete'] },
     teachersAndSalaries: {
       scope: 'all',
-      actions: [
-        'readTeachers',
-        'createTeacher',
-        'updateTeacher',
-        'deleteTeacher',
-        'manageSalaries',
-      ],
+      actions: ['readTeachers', 'createTeacher', 'updateTeacher', 'deleteTeacher', 'manageSalaries'],
     },
     groupsAndSessions: {
       scope: 'all',
@@ -116,13 +104,7 @@ export const PERMISSIONS: PermissionTable = {
     students: { scope: 'center', actions: ['read', 'create', 'update', 'delete'] },
     teachersAndSalaries: {
       scope: 'center',
-      actions: [
-        'readTeachers',
-        'createTeacher',
-        'updateTeacher',
-        'deleteTeacher',
-        'manageSalaries',
-      ],
+      actions: ['readTeachers', 'createTeacher', 'updateTeacher', 'deleteTeacher', 'manageSalaries'],
     },
     groupsAndSessions: {
       scope: 'center',
@@ -141,13 +123,7 @@ export const PERMISSIONS: PermissionTable = {
     students: { scope: 'center', actions: ['read', 'create', 'update', 'delete'] },
     teachersAndSalaries: {
       scope: 'center',
-      actions: [
-        'readTeachers',
-        'createTeacher',
-        'updateTeacher',
-        'deleteTeacher',
-        'manageSalaries',
-      ],
+      actions: ['readTeachers', 'createTeacher', 'updateTeacher', 'deleteTeacher', 'manageSalaries'],
     },
     groupsAndSessions: {
       scope: 'center',
@@ -210,11 +186,7 @@ assertUniformRoleScopes();
  * `user` must be the already-authenticated `req.user` (JWT verification
  * happens elsewhere; this never inspects tokens).
  */
-export function can<R extends Resource>(
-  user: AuthUser,
-  resource: R,
-  action: ActionsOf<R>,
-): boolean {
+export function can<R extends Resource>(user: AuthUser, resource: R, action: ActionsOf<R>): boolean {
   const grant = PERMISSIONS[user.role][resource];
   return grant?.actions.includes(action) === true;
 }

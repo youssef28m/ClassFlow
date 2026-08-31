@@ -49,12 +49,7 @@ export function toCenterDTO(center: {
   };
 }
 
-export function toCenterUserDTO(user: {
-  id: number;
-  username: string;
-  role: Role;
-  centerId: number | null;
-}): CenterUserDTO {
+export function toCenterUserDTO(user: { id: number; username: string; role: Role; centerId: number | null }): CenterUserDTO {
   return {
     id: user.id,
     username: user.username,

@@ -2,12 +2,7 @@ import { Prisma } from '../../../generated/prisma/client.js';
 import { AppError } from '../../../shared/middleware/error-handler.js';
 import { prisma } from '../../../shared/prisma/prisma-client.js';
 import type { SalaryRepository } from '../repositories/salary.repository.js';
-import type {
-  SalaryCalculationResultDTO,
-  SalaryDTO,
-  SalaryPaginatedResponse,
-  SalaryReportDTO,
-} from '../types/salary.types.js';
+import type { SalaryCalculationResultDTO, SalaryDTO, SalaryPaginatedResponse, SalaryReportDTO } from '../types/salary.types.js';
 import { toSalaryDTO } from '../types/salary.types.js';
 import type {
   CalculateSalaryInput,
@@ -21,10 +16,7 @@ type RouteId = string | string[] | undefined;
 export class SalaryService {
   constructor(private readonly repository: SalaryRepository) {}
 
-  async calculate(
-    input: CalculateSalaryInput,
-    centerId: number,
-  ): Promise<SalaryCalculationResultDTO> {
+  async calculate(input: CalculateSalaryInput, centerId: number): Promise<SalaryCalculationResultDTO> {
     const { from, to, teacherId, percentage } = input;
     if (from > to) {
       throw new AppError('The from date must be before the to date', 400);

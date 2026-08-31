@@ -1,9 +1,5 @@
 import { Router } from 'express';
-import {
-  loginLimiter,
-  refreshLimiter,
-  signupLimiter,
-} from '../../../shared/middleware/rate-limit.js';
+import { loginLimiter, refreshLimiter, signupLimiter } from '../../../shared/middleware/rate-limit.js';
 import { validate } from '../../../shared/middleware/validate.js';
 import { AuthController } from '../controllers/auth.controller.js';
 import { authenticate } from '../middleware/authenticate.js';

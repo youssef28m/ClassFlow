@@ -24,11 +24,7 @@ export class ScheduleRepository {
     return prisma.group.findFirst({ where: { id: groupId, centerId }, select: { id: true } });
   }
 
-  async update(
-    id: number,
-    centerId: number,
-    data: Prisma.GroupScheduleUncheckedUpdateInput,
-  ): Promise<GroupSchedule | null> {
+  async update(id: number, centerId: number, data: Prisma.GroupScheduleUncheckedUpdateInput): Promise<GroupSchedule | null> {
     const result = await prisma.groupSchedule.updateMany({
       where: { id, group: { centerId } },
       data,
@@ -48,9 +44,7 @@ export class ScheduleRepository {
     return prisma.session.count({ where: { scheduleId: id } });
   }
 
-  async findMany(
-    params: ScheduleFindManyParams,
-  ): Promise<{ items: GroupSchedule[]; total: number }> {
+  async findMany(params: ScheduleFindManyParams): Promise<{ items: GroupSchedule[]; total: number }> {
     const where: Prisma.GroupScheduleWhereInput = {
       group: {
         ...(params.centerId === null ? {} : { centerId: params.centerId }),

@@ -1,22 +1,12 @@
 import { Router } from 'express';
-import {
-  requireAnyPermission,
-  requirePermission,
-} from '../../../shared/authz/require-permission.js';
-import {
-  requireCenterScope,
-  requireResolvedCenterId,
-} from '../../../shared/middleware/require-center-scope.js';
+import { requireAnyPermission, requirePermission } from '../../../shared/authz/require-permission.js';
+import { requireCenterScope, requireResolvedCenterId } from '../../../shared/middleware/require-center-scope.js';
 import { validate, validateQuery } from '../../../shared/middleware/validate.js';
 import { authenticate } from '../../auth/middleware/authenticate.js';
 import { PaymentController } from '../controllers/payment.controller.js';
 import { PaymentRepository } from '../repositories/payment.repository.js';
 import { PaymentService } from '../services/payment.service.js';
-import {
-  createPaymentSchema,
-  listPaymentsQuerySchema,
-  updatePaymentSchema,
-} from '../validation/payment.validation.js';
+import { createPaymentSchema, listPaymentsQuerySchema, updatePaymentSchema } from '../validation/payment.validation.js';
 
 const repository = new PaymentRepository();
 const service = new PaymentService(repository);
@@ -34,18 +24,8 @@ router.get(
   requireResolvedCenterId,
   controller.studentSummary,
 );
-router.get(
-  '/',
-  requirePermission('paymentsAndExpenses', 'read'),
-  validateQuery(listPaymentsQuerySchema),
-  controller.list,
-);
-router.get(
-  '/:id',
-  requirePermission('paymentsAndExpenses', 'read'),
-  requireResolvedCenterId,
-  controller.getById,
-);
+router.get('/', requirePermission('paymentsAndExpenses', 'read'), validateQuery(listPaymentsQuerySchema), controller.list);
+router.get('/:id', requirePermission('paymentsAndExpenses', 'read'), requireResolvedCenterId, controller.getById);
 router.post(
   '/',
   requireAnyPermission(
@@ -66,11 +46,6 @@ router.patch(
   validate(updatePaymentSchema),
   controller.update,
 );
-router.delete(
-  '/:id',
-  requirePermission('paymentsAndExpenses', 'managePayments'),
-  requireResolvedCenterId,
-  controller.delete,
-);
+router.delete('/:id', requirePermission('paymentsAndExpenses', 'managePayments'), requireResolvedCenterId, controller.delete);
 
 export default router;

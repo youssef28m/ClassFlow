@@ -19,12 +19,7 @@ export class UserController {
   };
 
   update = async (req: Request, res: Response): Promise<void> => {
-    const user = await this.service.update(
-      req.params.id,
-      mustGetCenterId(req),
-      req.body,
-      this.getUser(req),
-    );
+    const user = await this.service.update(req.params.id, mustGetCenterId(req), req.body, this.getUser(req));
     res.status(200).json(user);
   };
 
@@ -34,10 +29,7 @@ export class UserController {
   };
 
   list = async (req: Request, res: Response): Promise<void> => {
-    const result = await this.service.list(
-      req.query as unknown as ListUsersQuery,
-      req.centerId ?? null,
-    );
+    const result = await this.service.list(req.query as unknown as ListUsersQuery, req.centerId ?? null);
     res.status(200).json(result);
   };
 

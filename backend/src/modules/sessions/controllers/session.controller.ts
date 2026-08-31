@@ -1,10 +1,7 @@
 import type { Request, Response } from 'express';
 import { mustGetCenterId } from '../../../shared/middleware/require-center-scope.js';
 import type { SessionService } from '../services/session.service.js';
-import type {
-  AttendanceSummaryQuery,
-  ListSessionsQuery,
-} from '../validation/session.validation.js';
+import type { AttendanceSummaryQuery, ListSessionsQuery } from '../validation/session.validation.js';
 
 export class SessionController {
   constructor(private readonly service: SessionService) {}
@@ -27,11 +24,7 @@ export class SessionController {
   };
 
   list = async (req: Request, res: Response): Promise<void> => {
-    res
-      .status(200)
-      .json(
-        await this.service.list(req.query as unknown as ListSessionsQuery, req.centerId ?? null),
-      );
+    res.status(200).json(await this.service.list(req.query as unknown as ListSessionsQuery, req.centerId ?? null));
   };
 
   listAttendance = async (req: Request, res: Response): Promise<void> => {
@@ -41,17 +34,10 @@ export class SessionController {
   attendanceSummary = async (req: Request, res: Response): Promise<void> => {
     res
       .status(200)
-      .json(
-        await this.service.attendanceSummary(
-          req.query as unknown as AttendanceSummaryQuery,
-          mustGetCenterId(req),
-        ),
-      );
+      .json(await this.service.attendanceSummary(req.query as unknown as AttendanceSummaryQuery, mustGetCenterId(req)));
   };
 
   recordAttendance = async (req: Request, res: Response): Promise<void> => {
-    res
-      .status(200)
-      .json(await this.service.recordAttendance(req.params.id, mustGetCenterId(req), req.body));
+    res.status(200).json(await this.service.recordAttendance(req.params.id, mustGetCenterId(req), req.body));
   };
 }

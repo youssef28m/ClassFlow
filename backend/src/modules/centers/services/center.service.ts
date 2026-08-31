@@ -75,11 +75,7 @@ export class CenterService {
     };
   }
 
-  async registerUser(
-    id: RouteId,
-    input: CreateCenterUserInput,
-    actor: AuthUser,
-  ): Promise<CenterUserDTO> {
+  async registerUser(id: RouteId, input: CreateCenterUserInput, actor: AuthUser): Promise<CenterUserDTO> {
     const centerId = this.parseId(id);
 
     assertOwnCenter(actor, centerId);

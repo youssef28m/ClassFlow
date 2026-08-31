@@ -1,14 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { Role } from '../../generated/prisma/client.js';
 import type { AuthUser } from '../../modules/auth/types/auth.types.js';
-import {
-  type ActionsOf,
-  can,
-  canManageUserAccount,
-  RESOURCES,
-  type Resource,
-  resolveScope,
-} from './permissions.js';
+import { type ActionsOf, can, canManageUserAccount, RESOURCES, type Resource, resolveScope } from './permissions.js';
 
 const user = (role: Role): AuthUser => ({ id: 1, username: 'tester', role, centerId: 1 });
 
@@ -19,27 +12,9 @@ function grantedActions(role: Role): Array<[Resource, string]> {
     centers: ['read', 'create', 'update', 'delete'],
     users: ['read', 'create', 'update', 'delete'],
     students: ['read', 'create', 'update', 'delete'],
-    teachersAndSalaries: [
-      'readTeachers',
-      'createTeacher',
-      'updateTeacher',
-      'deleteTeacher',
-      'manageSalaries',
-    ],
-    groupsAndSessions: [
-      'read',
-      'manageGroups',
-      'manageSchedules',
-      'manageSessions',
-      'markAttendance',
-    ],
-    paymentsAndExpenses: [
-      'read',
-      'logPayment',
-      'managePayments',
-      'createExpense',
-      'manageExpenses',
-    ],
+    teachersAndSalaries: ['readTeachers', 'createTeacher', 'updateTeacher', 'deleteTeacher', 'manageSalaries'],
+    groupsAndSessions: ['read', 'manageGroups', 'manageSchedules', 'manageSessions', 'markAttendance'],
+    paymentsAndExpenses: ['read', 'logPayment', 'managePayments', 'createExpense', 'manageExpenses'],
   };
   for (const resource of RESOURCES) {
     for (const action of table[resource]) {
@@ -61,31 +36,13 @@ describe('permission matrix', () => {
         expect(can(user('SUPERADMIN'), resource, action)).toBe(true);
       }
     }
-    for (const action of [
-      'read',
-      'manageGroups',
-      'manageSchedules',
-      'manageSessions',
-      'markAttendance',
-    ] as const) {
+    for (const action of ['read', 'manageGroups', 'manageSchedules', 'manageSessions', 'markAttendance'] as const) {
       expect(can(user('SUPERADMIN'), 'groupsAndSessions', action)).toBe(true);
     }
-    for (const action of [
-      'readTeachers',
-      'createTeacher',
-      'updateTeacher',
-      'deleteTeacher',
-      'manageSalaries',
-    ] as const) {
+    for (const action of ['readTeachers', 'createTeacher', 'updateTeacher', 'deleteTeacher', 'manageSalaries'] as const) {
       expect(can(user('SUPERADMIN'), 'teachersAndSalaries', action)).toBe(true);
     }
-    for (const action of [
-      'read',
-      'logPayment',
-      'managePayments',
-      'createExpense',
-      'manageExpenses',
-    ] as const) {
+    for (const action of ['read', 'logPayment', 'managePayments', 'createExpense', 'manageExpenses'] as const) {
       expect(can(user('SUPERADMIN'), 'paymentsAndExpenses', action)).toBe(true);
     }
     expect(grantedActions('SUPERADMIN').length).toBeGreaterThan(24);

@@ -1,12 +1,6 @@
 import { Router } from 'express';
-import {
-  requireAnyPermission,
-  requirePermission,
-} from '../../../shared/authz/require-permission.js';
-import {
-  requireCenterScope,
-  requireResolvedCenterId,
-} from '../../../shared/middleware/require-center-scope.js';
+import { requireAnyPermission, requirePermission } from '../../../shared/authz/require-permission.js';
+import { requireCenterScope, requireResolvedCenterId } from '../../../shared/middleware/require-center-scope.js';
 import { validate, validateQuery } from '../../../shared/middleware/validate.js';
 import { authenticate } from '../../auth/middleware/authenticate.js';
 import { GroupController } from '../controllers/group.controller.js';
@@ -54,11 +48,6 @@ router.patch(
   validate(updateGroupSchema),
   controller.update,
 );
-router.delete(
-  '/:id',
-  requirePermission('groupsAndSessions', 'manageGroups'),
-  requireResolvedCenterId,
-  controller.delete,
-);
+router.delete('/:id', requirePermission('groupsAndSessions', 'manageGroups'), requireResolvedCenterId, controller.delete);
 
 export default router;
