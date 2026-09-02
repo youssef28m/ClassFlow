@@ -81,45 +81,53 @@ export class PaymentService {
     ]);
 
     const today = new Date();
-    const paymentDatesByEnrollment = new Map<number, Date[]>();
+    const paymentsByEnrollment = new Map<number, { amount: number; paymentDate: Date }[]>();
     for (const payment of payments) {
-      const list = paymentDatesByEnrollment.get(payment.enrollmentId) ?? [];
-      list.push(payment.paymentDate);
-      paymentDatesByEnrollment.set(payment.enrollmentId, list);
-    }
-    const totalByEnrollment = new Map<number, number>();
-    const lastPaymentByEnrollment = new Map<number, Date>();
-    let totalPaid = 0;
-    for (const payment of payments) {
-      const amount = Number(payment.amount);
-      totalPaid += amount;
-      totalByEnrollment.set(payment.enrollmentId, (totalByEnrollment.get(payment.enrollmentId) ?? 0) + amount);
-      const existing = lastPaymentByEnrollment.get(payment.enrollmentId);
-      if (!existing || payment.paymentDate > existing) {
-        lastPaymentByEnrollment.set(payment.enrollmentId, payment.paymentDate);
-      }
+      const list = paymentsByEnrollment.get(payment.enrollmentId) ?? [];
+      list.push({ amount: Number(payment.amount), paymentDate: payment.paymentDate });
+      paymentsByEnrollment.set(payment.enrollmentId, list);
     }
 
     const entries: EnrollmentPaymentEntryDTO[] = enrollments.map((enrollment) => {
       const periodMonths = PERIOD_MONTHS[enrollment.group.paymentType];
       const enrolledOn = new Date(enrollment.enrollmentDate);
+      const enrollmentPayments = paymentsByEnrollment.get(enrollment.id) ?? [];
       let status: EnrollmentPaymentEntryDTO['status'] = null;
       let periodStart: string | null = null;
       let dueDate: string | null = null;
       let daysOverdue: number | null = null;
+      let periodPaid = 0;
+      let lastPaymentDate: Date | null = null;
 
       if (periodMonths !== null && enrollment.active) {
         const evaluation = evaluateRecurring(
           enrolledOn,
           periodMonths,
           enrollment.group.billingAnchorDay,
-          paymentDatesByEnrollment.get(enrollment.id) ?? [],
+          enrollmentPayments.map((p) => p.paymentDate),
           today,
         );
         status = evaluation.status;
         periodStart = evaluation.periodStart.toISOString().slice(0, 10);
         dueDate = evaluation.dueDate.toISOString().slice(0, 10);
         daysOverdue = evaluation.daysOverdue;
+
+        for (const p of enrollmentPayments) {
+          const afterStart = p.paymentDate.getTime() > evaluation.periodStart.getTime();
+          const beforeDue = p.paymentDate.getTime() <= evaluation.dueDate.getTime();
+          if (afterStart && beforeDue) {
+            periodPaid += p.amount;
+          }
+          if (!lastPaymentDate || p.paymentDate > lastPaymentDate) {
+            lastPaymentDate = p.paymentDate;
+          }
+        }
+      } else {
+        for (const p of enrollmentPayments) {
+          if (!lastPaymentDate || p.paymentDate > lastPaymentDate) {
+            lastPaymentDate = p.paymentDate;
+          }
+        }
       }
 
       return {
@@ -131,8 +139,8 @@ export class PaymentService {
         paymentType: enrollment.group.paymentType,
         active: enrollment.active,
         enrolledOn,
-        totalPaid: (totalByEnrollment.get(enrollment.id) ?? 0).toFixed(2),
-        lastPaymentDate: lastPaymentByEnrollment.get(enrollment.id) ?? null,
+        totalPaid: periodPaid.toFixed(2),
+        lastPaymentDate,
         periodStart,
         dueDate,
         status,
@@ -156,7 +164,7 @@ export class PaymentService {
         overdueCount: entries.filter((entry) => entry.status === 'OVERDUE').length,
         pendingCount: entries.filter((entry) => entry.status === 'PENDING').length,
         paidCount: entries.filter((entry) => entry.status === 'PAID').length,
-        totalPaid: totalPaid.toFixed(2),
+        totalPaid: entries.reduce((sum, entry) => sum + Number(entry.totalPaid), 0).toFixed(2),
       },
     };
   }
