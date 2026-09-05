@@ -1,3 +1,5 @@
+import type { PaymentMethod } from '../../../generated/prisma/client.js';
+
 export interface TodaySessionDTO {
   id: number;
   groupId: number;
@@ -37,15 +39,29 @@ export interface OverdueStudentDTO {
 export interface OverdueStudentsDTO {
   items: OverdueStudentDTO[];
   total: number;
+  outstandingAmount: string;
 }
 
 export interface MonthlyRevenuePointDTO {
   month: string;
+  payments: string;
+  expenses: string;
   total: string;
+}
+
+export interface RecentPaymentDTO {
+  id: number;
+  studentId: number;
+  studentName: string;
+  groupName: string;
+  amount: string;
+  paymentDate: string;
+  paymentMethod: PaymentMethod;
 }
 
 export interface DashboardOverviewDTO {
   monthlyRevenue: MonthlyRevenuePointDTO[] | null;
+  recentPayments: RecentPaymentDTO[];
   todaySessions: TodaySessionDTO[];
   attendanceTrend: AttendanceTrendPointDTO[];
   monthCollected: MonthCollectedDTO | null;

@@ -127,6 +127,13 @@ export default function PaymentsPage() {
       render: (payment) => formatDate(payment.paymentDate),
     },
     {
+      key: "targetPeriodStart",
+      header: t("payments.columnPeriod"),
+      className: "whitespace-nowrap",
+      render: (payment) =>
+        payment.targetPeriodStart ? formatDate(payment.targetPeriodStart) : "—",
+    },
+    {
       key: "studentName",
       header: t("students.columnName"),
       render: (payment) => (

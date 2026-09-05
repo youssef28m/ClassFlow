@@ -24,6 +24,15 @@ router.get(
   requireResolvedCenterId,
   controller.studentSummary,
 );
+router.get(
+  '/available-periods/:enrollmentId',
+  requireAnyPermission(
+    { resource: 'paymentsAndExpenses', action: 'read' },
+    { resource: 'paymentsAndExpenses', action: 'logPayment' },
+  ),
+  requireResolvedCenterId,
+  controller.availablePeriods,
+);
 router.get('/', requirePermission('paymentsAndExpenses', 'read'), validateQuery(listPaymentsQuerySchema), controller.list);
 router.get('/:id', requirePermission('paymentsAndExpenses', 'read'), requireResolvedCenterId, controller.getById);
 router.post(

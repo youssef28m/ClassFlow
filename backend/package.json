@@ -23,6 +23,10 @@
     "prisma:migrate": "prisma migrate dev",
     "prisma:deploy": "prisma migrate deploy",
     "prisma:studio": "prisma studio",
+    "backup": "bash scripts/backup-db.sh",
+    "backup:list": "bash scripts/backup-db.sh --list",
+    "restore": "bash scripts/backup-db.sh --restore",
+    "backup:cloud": "bash scripts/backup-cloud.sh",
     "create:superadmin": "tsx scripts/create-superadmin.ts",
     "seed:students": "tsx scripts/seed-demo-students.ts",
     "seed:demo": "tsx scripts/seed-demo.ts"

@@ -17,7 +17,24 @@ export class PaymentRepository {
   findActiveEnrollmentInCenter(enrollmentId: number, centerId: number) {
     return prisma.enrollment.findFirst({
       where: { id: enrollmentId, active: true, student: { centerId }, group: { centerId } },
-      select: { id: true },
+      select: {
+        id: true,
+        enrollmentDate: true,
+        group: {
+          select: {
+            paymentType: true,
+            billingAnchorDay: true,
+          },
+        },
+      },
+    });
+  }
+
+  findPaymentsForEnrollment(enrollmentId: number) {
+    return prisma.payment.findMany({
+      where: { enrollmentId },
+      orderBy: { paymentDate: 'asc' },
+      select: { amount: true, paymentDate: true, targetPeriodStart: true },
     });
   }
 
@@ -64,7 +81,7 @@ export class PaymentRepository {
     return prisma.payment.findMany({
       where: { enrollment: { studentId } },
       orderBy: { paymentDate: 'desc' },
-      select: { enrollmentId: true, amount: true, paymentDate: true },
+      select: { enrollmentId: true, amount: true, paymentDate: true, targetPeriodStart: true },
     });
   }
 

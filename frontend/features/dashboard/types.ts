@@ -1,3 +1,5 @@
+import type { PaymentMethod } from "@/features/payments/types";
+
 export interface TodaySession {
   id: number;
   groupId: number;
@@ -37,15 +39,29 @@ export interface OverdueStudent {
 export interface OverdueStudents {
   items: OverdueStudent[];
   total: number;
+  outstandingAmount: string;
 }
 
 export interface MonthlyRevenuePoint {
   month: string;
+  payments: string;
+  expenses: string;
   total: string;
+}
+
+export interface RecentPayment {
+  id: number;
+  studentId: number;
+  studentName: string;
+  groupName: string;
+  amount: string;
+  paymentDate: string;
+  paymentMethod: PaymentMethod;
 }
 
 export interface DashboardOverview {
   monthlyRevenue: MonthlyRevenuePoint[] | null;
+  recentPayments: RecentPayment[];
   todaySessions: TodaySession[];
   attendanceTrend: AttendanceTrendPoint[];
   monthCollected: MonthCollected | null;

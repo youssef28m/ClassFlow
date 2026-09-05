@@ -214,7 +214,10 @@ export default function StudentDetailPage() {
           </span>
         </td>
         <td className="hidden px-4 py-3 md:table-cell">{entry.subject}</td>
-        <td className="tabular-nums">{Number(entry.totalPaid).toLocaleString()}</td>
+        <td className="tabular-nums">
+          {Number(entry.totalPaid).toLocaleString()}{" "}
+          <span className="text-muted-foreground">{t("payments.currency")}</span>
+        </td>
         <td className="hidden sm:table-cell">{tEnum(entry.paymentType)}</td>
         <td className="hidden whitespace-nowrap px-4 py-3 tabular-nums lg:table-cell">
           {entry.periodStart && entry.dueDate

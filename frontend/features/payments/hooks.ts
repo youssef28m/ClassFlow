@@ -6,7 +6,10 @@ import type { PaymentFilters, PaymentPayload } from "@/features/payments/types";
 export function useStudentPaymentSummary(studentId: number | null) {
   return useQuery({
     queryKey: [...paymentKeys.all, "summary", studentId] as const,
-    queryFn: () => paymentsApi.studentSummary(studentId as number),
+    queryFn: () => {
+      if (studentId === null) throw new Error("studentId is required");
+      return paymentsApi.studentSummary(studentId);
+    },
     enabled: studentId !== null,
   });
 }
@@ -16,6 +19,17 @@ export function usePaymentsQuery(filters: PaymentFilters) {
     queryKey: paymentKeys.list(filters),
     queryFn: () => paymentsApi.list(filters),
     placeholderData: keepPreviousData,
+  });
+}
+
+export function useAvailablePeriods(enrollmentId: number | null) {
+  return useQuery({
+    queryKey: paymentKeys.availablePeriods(enrollmentId as number),
+    queryFn: () => {
+      if (enrollmentId === null) throw new Error("enrollmentId is required");
+      return paymentsApi.availablePeriods(enrollmentId);
+    },
+    enabled: enrollmentId !== null && enrollmentId > 0,
   });
 }
 

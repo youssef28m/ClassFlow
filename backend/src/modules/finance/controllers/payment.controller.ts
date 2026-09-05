@@ -11,6 +11,10 @@ export class PaymentController {
     res.status(200).json(await this.service.studentSummary(req.params.studentId, mustGetCenterId(req), req.user as AuthUser));
   };
 
+  availablePeriods = async (req: Request, res: Response): Promise<void> => {
+    res.status(200).json(await this.service.availablePeriods(req.params.enrollmentId, mustGetCenterId(req)));
+  };
+
   create = async (req: Request, res: Response): Promise<void> => {
     res.status(201).json(await this.service.create(req.body, mustGetCenterId(req)));
   };

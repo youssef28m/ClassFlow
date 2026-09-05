@@ -13,6 +13,7 @@ export interface Payment {
   amount: string;
   paymentDate: string;
   paymentMethod: PaymentMethod;
+  targetPeriodStart: string | null;
   notes: string | null;
   createdAt: string;
   updatedAt: string;
@@ -38,5 +39,13 @@ export interface PaymentPayload {
   amount: string;
   paymentDate: string;
   paymentMethod: PaymentMethod;
+  targetPeriodStart: string | null;
   notes?: string | null;
+}
+
+export interface AvailablePeriod {
+  periodStart: string;
+  dueDate: string;
+  status: "PAID" | "PENDING" | "OVERDUE" | "UNPAID";
+  totalPaid: number;
 }

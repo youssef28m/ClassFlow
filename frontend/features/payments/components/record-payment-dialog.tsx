@@ -2,7 +2,7 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Loader2 } from "lucide-react";
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 import { useToast } from "@/components/feedback/toast";
 import { Field, inputClassName } from "@/components/forms/field";
@@ -14,17 +14,82 @@ import {
   type PaymentFormValues,
 } from "@/features/payments/schema";
 import { PAYMENT_METHODS } from "@/features/payments/types";
-import { useCreatePayment } from "@/features/payments/hooks";
+import { useAvailablePeriods, useCreatePayment } from "@/features/payments/hooks";
 import { useEnrollmentsQuery } from "@/features/enrollments/hooks";
 import { useGroupsQuery } from "@/features/groups/hooks";
 import { ApiError } from "@/lib/api-client";
 import { useI18n } from "@/lib/i18n/provider";
+import type { TranslationKey } from "@/lib/i18n/dictionary";
+import type { PaymentType } from "@/features/groups/types";
 
 interface RecordPaymentDialogProps {
   open: boolean;
   onClose: () => void;
   defaultStudentId?: number | null;
   defaultStudentName?: string | null;
+}
+
+type PeriodStatus = "PAID" | "PENDING" | "OVERDUE" | "UNPAID";
+
+const FIELD_ERROR_KEYS: Record<string, "payments.error.enrollmentId" | "payments.error.amountPositive" | "payments.error.amountDecimal" | "payments.error.amountLarge" | "payments.error.notesLong"> = {
+  "Enrollment id must be a positive integer": "payments.error.enrollmentId",
+  "Amount must be greater than 0": "payments.error.amountPositive",
+  "Amount must have up to 2 decimal places": "payments.error.amountDecimal",
+  "Amount is too large": "payments.error.amountLarge",
+  "Notes are too long": "payments.error.notesLong",
+};
+
+function translateFieldMessage(message: string, t: (key: TranslationKey) => string): string {
+  const key = FIELD_ERROR_KEYS[message];
+  return key ? t(key) : message;
+}
+
+function periodStatusKey(status: PeriodStatus): "payments.periodStatusPaid" | "payments.periodStatusPending" | "payments.periodStatusOverdue" | "payments.periodStatusUnpaid" {
+  switch (status) {
+    case "PAID":
+      return "payments.periodStatusPaid";
+    case "PENDING":
+      return "payments.periodStatusPending";
+    case "OVERDUE":
+      return "payments.periodStatusOverdue";
+    case "UNPAID":
+      return "payments.periodStatusUnpaid";
+  }
+}
+
+function periodLabel(
+  periodStart: string,
+  dueDate: string,
+  paymentType: PaymentType,
+  index: number,
+  locale: string,
+  termWord: string,
+): string {
+  // Parse the calendar-date strings as UTC so the month/year rendered by the
+  // UTC formatters is not shifted by the browser's local timezone (e.g. a UTC+3
+  // local-midnight Aug 1 would otherwise render as July 31 -> "July"). This
+  // matches the parsing used by lib/formatters.ts formatDate().
+  const start = new Date(periodStart + "T00:00:00Z");
+  const end = new Date(dueDate + "T00:00:00Z");
+  const startTime = start.getTime();
+  if (Number.isNaN(startTime)) return periodStart;
+
+  const monthFmt = new Intl.DateTimeFormat(locale === "ar" ? "ar-EG" : "en-GB", { month: "long", year: "numeric", timeZone: "UTC" });
+  const shortFmt = new Intl.DateTimeFormat(locale === "ar" ? "ar-EG" : "en-GB", { month: "short", timeZone: "UTC" });
+  const fullFmt = new Intl.DateTimeFormat(locale === "ar" ? "ar-EG" : "en-GB", { month: "short", year: "numeric", timeZone: "UTC" });
+
+  if (paymentType === "MONTHLY") {
+    return monthFmt.format(start);
+  }
+  if (paymentType === "TERMLY") {
+    return `${termWord} ${index + 1} (${shortFmt.format(start)} – ${fullFmt.format(end)})`;
+  }
+  if (paymentType === "YEARLY") {
+    const startYear = start.getUTCFullYear();
+    const endYear = end.getUTCFullYear();
+    return `${startYear}–${endYear}`;
+  }
+  return `#${index + 1} (${fullFmt.format(start)})`;
 }
 
 export function RecordPaymentDialog({
@@ -35,7 +100,7 @@ export function RecordPaymentDialog({
 }: RecordPaymentDialogProps) {
   const toast = useToast();
   const createPayment = useCreatePayment();
-  const { t, tEnum } = useI18n();
+  const { t, tEnum, locale } = useI18n();
   const [groupId, setGroupId] = useState("");
   const [groupSearch, setGroupSearch] = useState("");
   const [enrollmentSearch, setEnrollmentSearch] = useState("");
@@ -59,6 +124,7 @@ export function RecordPaymentDialog({
         amount: "",
         paymentDate: new Date().toISOString().slice(0, 10),
         paymentMethod: "CASH",
+        targetPeriodStart: "",
         notes: "",
       },
     });
@@ -73,9 +139,13 @@ export function RecordPaymentDialog({
     setGroupId(val);
     setValue("enrollmentId", "", { shouldValidate: false });
     setValue("amount", "");
+    setValue("targetPeriodStart", "");
     requestAnimationFrame(() => { groupSelectingRef.current = false; });
   }, [setValue]);
   const enrollmentIdValue = watch("enrollmentId");
+  const selectedEnrollment = (enrollments.data?.items ?? []).find(
+    (item) => item.id === Number(enrollmentIdValue),
+  );
 
   const handleEnrollmentChange = useCallback((val: string) => {
     enrollmentSelectingRef.current = true;
@@ -86,13 +156,49 @@ export function RecordPaymentDialog({
     if (enrollment) {
       setValue("amount", String(Number(enrollment.group.fee)), { shouldValidate: false });
     }
+    setValue("targetPeriodStart", "");
     requestAnimationFrame(() => { enrollmentSelectingRef.current = false; });
   }, [enrollments.data, setValue]);
+
+  const availablePeriods = useAvailablePeriods(
+    enrollmentIdValue ? Number(enrollmentIdValue) : null,
+  );
+
+  const periodOptions = useMemo(() => {
+    const periods = availablePeriods.data ?? [];
+    const type = selectedEnrollment?.group.paymentType;
+    const termWord = t("payments.periodTerm");
+    return periods.map((p, index) => ({
+      value: p.periodStart,
+      dueDate: p.dueDate,
+      label: periodLabel(p.periodStart, p.dueDate, type ?? "MONTHLY", index, locale, termWord),
+      hint:
+        p.status === "PAID"
+          ? `${t("payments.periodStatusPaid")} · ${p.totalPaid}`
+          : t(periodStatusKey(p.status)),
+    }));
+  }, [availablePeriods.data, selectedEnrollment, t, locale]);
+
+  // The current (running) period is the one whose window spans today. Periods
+  // are ordered oldest -> newest with ISO dates, so it is the first whose due
+  // date has not passed yet. Defaulting to it saves the admin from having to
+  // open the select each time.
+  const defaultPeriodValue = useMemo(() => {
+    const today = new Date().toISOString().slice(0, 10);
+    return periodOptions.find((option) => option.dueDate >= today)?.value ?? "";
+  }, [periodOptions]);
+
+  const periodValue = watch("targetPeriodStart");
+  const effectivePeriodValue = periodValue || defaultPeriodValue;
 
   const onSubmit = handleSubmit(async (values) => {
     setRootError(null);
     try {
-      await createPayment.mutateAsync(toPaymentPayload(values));
+      const payload = toPaymentPayload({
+        ...values,
+        targetPeriodStart: values.targetPeriodStart || effectivePeriodValue,
+      });
+      await createPayment.mutateAsync(payload);
       toast.success(t("payments.created"));
       reset();
       setGroupId("");
@@ -104,7 +210,7 @@ export function RecordPaymentDialog({
           const message = messages[0];
           if (message && field in paymentFormSchema.shape) {
             hasFieldErrors = true;
-            setError(field as keyof PaymentFormValues, { message });
+            setError(field as keyof PaymentFormValues, { message: translateFieldMessage(message, t) });
           }
         }
         if (!hasFieldErrors) setRootError(error.message);
@@ -194,6 +300,38 @@ export function RecordPaymentDialog({
             options={defaultStudentId ? groupOptions : studentOptions}
             onSearch={handleEnrollmentSearch}
           />
+        </Field>
+        <Field
+          label={t("payments.periodLabel")}
+          htmlFor="payment-period"
+          error={errors.targetPeriodStart?.message}
+        >
+          <select
+            id="payment-period"
+            className={`${inputClassName} ${periodOptions.length === 0 ? "text-muted-foreground" : ""}`}
+            value={effectivePeriodValue}
+            disabled={!selectedEnrollment || availablePeriods.isLoading || periodOptions.length === 0}
+            onChange={(e) => setValue("targetPeriodStart", e.target.value, { shouldValidate: true })}
+          >
+            {availablePeriods.isLoading ? (
+              <option value="">{t("common.loading")}</option>
+            ) : periodOptions.length === 0 ? (
+              <option value="">
+                {enrollments.isLoading
+                  ? t("common.loading")
+                  : !selectedEnrollment
+                    ? t("payments.selectGroupFirst")
+                    : t("payments.noPeriodsAvailable")}
+              </option>
+            ) : (
+              periodOptions.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                  {option.hint ? ` (${option.hint})` : ""}
+                </option>
+              ))
+            )}
+          </select>
         </Field>
         <div className="grid gap-4 sm:grid-cols-2">
           <Field label={t("payments.amount")} htmlFor="payment-amount" error={errors.amount?.message}>

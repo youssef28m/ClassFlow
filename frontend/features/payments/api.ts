@@ -1,6 +1,7 @@
 import { apiClient, type QueryParams } from "@/lib/api-client";
 import type { StudentPaymentSummary } from "@/features/payments/payment-status";
 import type {
+  AvailablePeriod,
   PaymentFilters,
   PaymentListResponse,
   PaymentPayload,
@@ -17,6 +18,11 @@ export const paymentsApi = {
       `/payments/summary/${studentId}`,
     );
   },
+  availablePeriods(enrollmentId: number): Promise<AvailablePeriod[]> {
+    return apiClient.request<AvailablePeriod[]>(
+      `/payments/available-periods/${enrollmentId}`,
+    );
+  },
   create(payload: PaymentPayload): Promise<unknown> {
     return apiClient.request<unknown>("/payments", { method: "POST", body: payload });
   },
@@ -29,4 +35,5 @@ export const paymentKeys = {
   all: ["payments"] as const,
   lists: () => [...paymentKeys.all, "list"] as const,
   list: (filters: PaymentFilters) => [...paymentKeys.lists(), filters] as const,
+  availablePeriods: (enrollmentId: number) => [...paymentKeys.all, "available-periods", enrollmentId] as const,
 };

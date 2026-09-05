@@ -249,14 +249,15 @@ model Attendance {
 }
 
 model Payment {
-  id            Int           @id @default(autoincrement())
-  enrollmentId  Int           @map("enrollment_id")
-  amount        Decimal       @db.Decimal(10, 2)
-  paymentDate   DateTime      @db.Date @map("payment_date")
-  paymentMethod PaymentMethod @map("payment_method")
-  notes         String?
-  createdAt     DateTime      @default(now()) @map("created_at")
-  updatedAt     DateTime      @updatedAt @map("updated_at")
+  id                Int           @id @default(autoincrement())
+  enrollmentId      Int           @map("enrollment_id")
+  amount            Decimal       @db.Decimal(10, 2)
+  paymentDate       DateTime      @db.Date @map("payment_date")
+  paymentMethod     PaymentMethod @map("payment_method")
+  targetPeriodStart DateTime?     @db.Date @map("target_period_start")
+  notes             String?
+  createdAt         DateTime      @default(now()) @map("created_at")
+  updatedAt         DateTime      @updatedAt @map("updated_at")
 
   enrollment Enrollment @relation(fields: [enrollmentId], references: [id], onDelete: Cascade)
 

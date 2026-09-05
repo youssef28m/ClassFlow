@@ -3,6 +3,7 @@ import { AppError } from '../../../shared/middleware/error-handler.js';
 import type { AuthUser } from '../../auth/types/auth.types.js';
 import type { PaymentRepository } from '../repositories/payment.repository.js';
 import type {
+  AvailablePeriodDTO,
   EnrollmentPaymentEntryDTO,
   PaginatedResponse,
   PaymentDTO,
@@ -10,7 +11,13 @@ import type {
 } from '../types/payment.types.js';
 import { toPaymentDTO } from '../types/payment.types.js';
 import type { CreatePaymentInput, ListPaymentsQuery, UpdatePaymentInput } from '../validation/payment.validation.js';
-import { evaluateRecurring, PERIOD_MONTHS } from './payment-cycle.js';
+import {
+  evaluateRecurring,
+  firstPeriodStart,
+  generatePeriodsWithAmounts,
+  PERIOD_MONTHS,
+  paymentCoversWindow,
+} from './payment-cycle.js';
 
 type RouteId = string | string[] | undefined;
 
@@ -19,7 +26,41 @@ export class PaymentService {
 
   async create(input: CreatePaymentInput, centerId: number): Promise<PaymentDTO> {
     await this.ensureEnrollment(input.enrollmentId, centerId);
-    return toPaymentDTO(await this.repository.create(input));
+    const createData = {
+      ...input,
+      targetPeriodStart: input.targetPeriodStart ?? null,
+    };
+    return toPaymentDTO(await this.repository.create(createData));
+  }
+
+  async availablePeriods(enrollmentIdRaw: RouteId, centerId: number): Promise<AvailablePeriodDTO[]> {
+    const enrollmentId = this.parseId(enrollmentIdRaw);
+    const enrollment = await this.repository.findActiveEnrollmentInCenter(enrollmentId, centerId);
+    if (!enrollment) throw new AppError('Active enrollment not found in this center', 400);
+
+    const periodMonths = PERIOD_MONTHS[enrollment.group.paymentType];
+    if (periodMonths === null) return [];
+
+    const [existingPayments] = await Promise.all([this.repository.findPaymentsForEnrollment(enrollmentId)]);
+
+    const periods = generatePeriodsWithAmounts(
+      new Date(enrollment.enrollmentDate),
+      periodMonths,
+      enrollment.group.billingAnchorDay,
+      existingPayments.map((p) => ({
+        amount: Number(p.amount),
+        paymentDate: p.paymentDate,
+        targetPeriodStart: p.targetPeriodStart,
+      })),
+      new Date(),
+    );
+
+    return periods.map((p) => ({
+      periodStart: p.periodStart.toISOString().slice(0, 10),
+      dueDate: p.dueDate.toISOString().slice(0, 10),
+      status: p.status,
+      totalPaid: p.totalPaid,
+    }));
   }
 
   async getById(id: RouteId, centerId: number): Promise<PaymentDTO> {
@@ -81,10 +122,14 @@ export class PaymentService {
     ]);
 
     const today = new Date();
-    const paymentsByEnrollment = new Map<number, { amount: number; paymentDate: Date }[]>();
+    const paymentsByEnrollment = new Map<number, { amount: number; paymentDate: Date; targetPeriodStart: Date | null }[]>();
     for (const payment of payments) {
       const list = paymentsByEnrollment.get(payment.enrollmentId) ?? [];
-      list.push({ amount: Number(payment.amount), paymentDate: payment.paymentDate });
+      list.push({
+        amount: Number(payment.amount),
+        paymentDate: payment.paymentDate,
+        targetPeriodStart: payment.targetPeriodStart,
+      });
       paymentsByEnrollment.set(payment.enrollmentId, list);
     }
 
@@ -104,7 +149,7 @@ export class PaymentService {
           enrolledOn,
           periodMonths,
           enrollment.group.billingAnchorDay,
-          enrollmentPayments.map((p) => p.paymentDate),
+          enrollmentPayments.map((p) => ({ paymentDate: p.paymentDate, targetPeriodStart: p.targetPeriodStart })),
           today,
         );
         status = evaluation.status;
@@ -112,10 +157,14 @@ export class PaymentService {
         dueDate = evaluation.dueDate.toISOString().slice(0, 10);
         daysOverdue = evaluation.daysOverdue;
 
+        // firstStart must match the value evaluateRecurring used internally so
+        // the shared paymentCoversWindow applies the same first-period inclusive
+        // exception when summing what was paid into the current window.
+        const firstStart = firstPeriodStart(enrolledOn, enrollment.group.billingAnchorDay);
+
         for (const p of enrollmentPayments) {
-          const afterStart = p.paymentDate.getTime() > evaluation.periodStart.getTime();
-          const beforeDue = p.paymentDate.getTime() <= evaluation.dueDate.getTime();
-          if (afterStart && beforeDue) {
+          const inPeriod = paymentCoversWindow(p, evaluation.periodStart, firstStart, evaluation.dueDate);
+          if (inPeriod) {
             periodPaid += p.amount;
           }
           if (!lastPaymentDate || p.paymentDate > lastPaymentDate) {
@@ -177,10 +226,12 @@ export class PaymentService {
     );
   }
 
-  private async ensureEnrollment(enrollmentId: number, centerId: number): Promise<void> {
-    if (!(await this.repository.findActiveEnrollmentInCenter(enrollmentId, centerId))) {
+  private async ensureEnrollment(enrollmentId: number, centerId: number) {
+    const enrollment = await this.repository.findActiveEnrollmentInCenter(enrollmentId, centerId);
+    if (!enrollment) {
       throw new AppError('Active enrollment not found in this center', 400);
     }
+    return enrollment;
   }
 
   private parseId(id: RouteId): number {

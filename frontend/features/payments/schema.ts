@@ -13,6 +13,7 @@ export const paymentFormSchema = z.object({
     .refine((value) => Number(value) > 0, { message: "Amount must be greater than 0" }),
   paymentDate: z.string().min(1),
   paymentMethod: z.enum(["CASH", "CARD"]),
+  targetPeriodStart: z.string().optional(),
   notes: z.string().trim().max(500).optional(),
 });
 
@@ -24,6 +25,7 @@ export function toPaymentPayload(values: PaymentFormValues): PaymentPayload {
     amount: values.amount,
     paymentDate: values.paymentDate,
     paymentMethod: values.paymentMethod,
+    targetPeriodStart: values.targetPeriodStart ? values.targetPeriodStart : null,
     notes: values.notes ? values.notes : null,
   };
 }

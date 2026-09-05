@@ -18,6 +18,7 @@ export const createPaymentSchema = z.object({
   amount: amountSchema,
   paymentDate: paymentDateSchema,
   paymentMethod: z.enum(PaymentMethod),
+  targetPeriodStart: paymentDateSchema.nullable().optional(),
   notes: z.string().trim().max(500, 'Notes are too long').nullable().optional(),
 });
 

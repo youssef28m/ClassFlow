@@ -10,6 +10,7 @@ export interface PaymentDTO {
   amount: string;
   paymentDate: Date;
   paymentMethod: PaymentMethod;
+  targetPeriodStart: Date | null;
   notes: string | null;
   createdAt: Date;
   updatedAt: Date;
@@ -80,8 +81,16 @@ export function toPaymentDTO(payment: Payment & { enrollment?: EnrollmentForPaym
     amount: payment.amount.toString(),
     paymentDate: payment.paymentDate,
     paymentMethod: payment.paymentMethod,
+    targetPeriodStart: payment.targetPeriodStart ?? null,
     notes: payment.notes,
     createdAt: payment.createdAt,
     updatedAt: payment.updatedAt,
   };
+}
+
+export interface AvailablePeriodDTO {
+  periodStart: string;
+  dueDate: string;
+  status: 'PAID' | 'PENDING' | 'OVERDUE' | 'UNPAID';
+  totalPaid: number;
 }
